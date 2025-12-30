@@ -30,7 +30,7 @@ export async function createTeam(req: Request, res: Response, next: NextFunction
     }
 
     const { name, seasonYear, playerIds } = validation.data;
-    const userId = (req.user as any).id;
+    const userId = req.user!.userId;
 
     // Check if user's email is verified
     const user = await db.user.findUnique({ id: userId });
@@ -140,7 +140,7 @@ export async function getTeam(req: Request, res: Response, next: NextFunction) {
  */
 export async function getMyTeams(req: Request, res: Response, next: NextFunction) {
   try {
-    const userId = (req.user as any).id;
+    const userId = req.user!.userId;
     const { seasonYear } = req.query;
 
     const where: any = {
@@ -174,7 +174,7 @@ export async function getMyTeams(req: Request, res: Response, next: NextFunction
 export async function updateTeam(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
-    const userId = (req.user as any).id;
+    const userId = req.user!.userId;
 
     // Validate request body
     const validation = updateTeamSchema.safeParse(req.body);
@@ -281,7 +281,7 @@ export async function updateTeam(req: Request, res: Response, next: NextFunction
 export async function deleteTeam(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
-    const userId = (req.user as any).id;
+    const userId = req.user!.userId;
 
     // Fetch team
     const team = await db.team.findUnique({ id });

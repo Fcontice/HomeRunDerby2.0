@@ -48,10 +48,10 @@ export function generateRandomToken(bytes: number = 32): string {
 }
 
 /**
- * Create token expiry date
+ * Create token expiry date (returns ISO 8601 string for database compatibility)
  */
-export function createTokenExpiry(hours: number = 24): Date {
+export function createTokenExpiry(hours: number = 24): string {
   const expiry = new Date()
   expiry.setHours(expiry.getHours() + hours)
-  return expiry
+  return expiry.toISOString()
 }

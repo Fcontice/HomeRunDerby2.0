@@ -94,7 +94,7 @@ export async function verifyEmail(req: Request, res: Response) {
   const user = await db.user.findFirst({
     verificationToken: token,
     verificationTokenExpiry: {
-      gt: new Date(),
+      gt: new Date().toISOString(),
     },
   })
 
@@ -176,6 +176,9 @@ export async function login(req: Request, res: Response) {
         username: user.username,
         role: user.role,
         avatarUrl: user.avatarUrl,
+        emailVerified: user.emailVerified,
+        authProvider: user.authProvider,
+        createdAt: user.createdAt,
       },
       accessToken,
       refreshToken,
@@ -239,7 +242,7 @@ export async function resetPassword(req: Request, res: Response) {
   const user = await db.user.findFirst({
     resetToken: token,
     resetTokenExpiry: {
-      gt: new Date(),
+      gt: new Date().toISOString(),
     },
   })
 
@@ -297,6 +300,52 @@ export async function getProfile(req: Request, res: Response) {
   res.json({
     success: true,
     data: { user },
+  })
+}
+
+/**
+ * Resend verification email
+ */
+export async function resendVerification(req: Request, res: Response) {
+  if (!req.user) {
+    throw new AuthenticationError()
+  }
+
+  const user = await db.user.findUnique({
+    id: req.user.userId,
+  })
+
+  if (!user) {
+    throw new NotFoundError('User')
+  }
+
+  if (user.emailVerified) {
+    throw new ValidationError('Email is already verified')
+  }
+
+  if (user.authProvider !== 'email') {
+    throw new ValidationError('Email verification not required for this account type')
+  }
+
+  // Generate new verification token
+  const verificationToken = generateRandomToken()
+  const verificationTokenExpiry = createTokenExpiry(24)
+
+  // Update user with new token
+  await db.user.update(
+    { id: user.id },
+    {
+      verificationToken,
+      verificationTokenExpiry,
+    }
+  )
+
+  // Send verification email
+  await sendVerificationEmail(user.email, user.username, verificationToken)
+
+  res.json({
+    success: true,
+    message: 'Verification email sent successfully. Please check your inbox.',
   })
 }
 

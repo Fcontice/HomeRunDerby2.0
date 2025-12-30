@@ -74,7 +74,7 @@ export interface Player {
   name: string
   teamAbbr: string
   seasonYear: number
-  hrsPreviousSeason: number
+  hrsTotal: number
   isEligible: boolean
   photoUrl: string | null
   createdAt: string
@@ -178,6 +178,11 @@ export const authApi = {
 
   logout: async (): Promise<ApiResponse> => {
     const response = await api.post('/api/auth/logout')
+    return response.data
+  },
+
+  resendVerification: async (): Promise<ApiResponse> => {
+    const response = await api.post('/api/auth/resend-verification')
     return response.data
   },
 

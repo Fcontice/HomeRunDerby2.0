@@ -8,6 +8,7 @@ interface AuthContextType {
   logout: () => Promise<void>
   register: (email: string, username: string, password: string) => Promise<void>
   setUser: (user: User | null) => void
+  refreshUser: () => Promise<void>
   isAuthenticated: boolean
 }
 
@@ -71,6 +72,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Don't log in automatically - user needs to verify email first
   }
 
+  const refreshUser = async () => {
+    try {
+      const response = await authApi.getProfile()
+      if (response.success && response.data) {
+        setUser(response.data.user)
+      }
+    } catch (error) {
+      console.error('Failed to refresh user profile:', error)
+    }
+  }
+
   const logout = async () => {
     try {
       await authApi.logout()
@@ -90,6 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logout,
     register,
     setUser,
+    refreshUser,
     isAuthenticated: !!user,
   }
 

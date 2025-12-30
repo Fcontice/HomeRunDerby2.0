@@ -10,6 +10,7 @@ import {
   resetPassword,
   getProfile,
   logout,
+  resendVerification,
 } from '../controllers/authController.js'
 import { generateAccessToken, generateRefreshToken } from '../utils/jwt.js'
 
@@ -26,6 +27,12 @@ router.post('/register', asyncHandler(register))
  * Verify email address with token
  */
 router.post('/verify-email', asyncHandler(verifyEmail))
+
+/**
+ * POST /api/auth/resend-verification
+ * Resend verification email to authenticated user
+ */
+router.post('/resend-verification', authenticate, asyncHandler(resendVerification))
 
 /**
  * POST /api/auth/login

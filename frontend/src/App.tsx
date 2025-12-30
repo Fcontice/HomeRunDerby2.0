@@ -5,6 +5,11 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import VerifyEmail from './pages/VerifyEmail'
 import Dashboard from './pages/Dashboard'
+import CreateTeam from './pages/CreateTeam'
+
+// Test components
+import ComponentTest from './pages/test-pages/pcComponentTest'
+import TeamRosterCompTest from './pages/test-pages/TeamRosterCompTest'
 
 function App() {
   return (
@@ -15,12 +20,25 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
 
+        {/* Test component routes */}
+        <Route path="/pccomponent-test" element={<ComponentTest />} />  
+        <Route path="/teamrostercomponent-test" element={<TeamRosterCompTest />} />
+
+
         {/* Protected routes */}
         <Route
           path="/dashboard"
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/create-team"
+          element={
+            <ProtectedRoute>
+              <CreateTeam />
             </ProtectedRoute>
           }
         />

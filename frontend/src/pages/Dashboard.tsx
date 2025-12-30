@@ -56,9 +56,12 @@ export default function Dashboard() {
               <CardDescription>Your fantasy baseball teams</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
-                No teams created yet. Phase 2 feature coming soon!
+              <p className="text-muted-foreground mb-4">
+                No teams created yet. Create your first team to compete!
               </p>
+              <Button onClick={() => navigate('/create-team')} className="w-full">
+                Create Your First Team
+              </Button>
             </CardContent>
           </Card>
 

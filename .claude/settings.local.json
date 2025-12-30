@@ -26,7 +26,9 @@
       "Bash(node test-scraper.js:*)",
       "Bash(cat:*)",
       "Bash(timeout 5 bash:*)",
-      "Bash(node verify-email.js:*)"
+      "Bash(node verify-email.js:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
