@@ -6,6 +6,92 @@ A web-based sports pooling application where users create fantasy teams of MLB p
 
 ---
 
+## 🚧 IMPLEMENTATION STATUS (Updated: December 30, 2025)
+
+### ✅ COMPLETED
+
+**Phase 1: Foundation (100%)**
+- ✅ Database schema fully defined in Prisma (7 tables, all enums)
+- ✅ Supabase PostgreSQL integration with connection pooler
+- ✅ Complete authentication system (9 API endpoints)
+  - Email/password registration with bcrypt
+  - Email verification flow with Resend
+  - Password reset functionality
+  - Google OAuth integration
+  - JWT token generation and validation
+- ✅ Security middleware (Helmet, CORS, rate limiting)
+- ✅ Error handling with custom error classes
+- ✅ Frontend authentication pages (Login, Register, VerifyEmail, Dashboard)
+- ✅ AuthContext for global state management
+- ✅ Protected routes with ProtectedRoute component
+- ✅ shadcn/ui component library integrated
+
+**Phase 2: Team Creation (60%)**
+- ✅ Team creation UI components
+  - PlayerCard component for displaying players
+  - TeamRoster component with 8-slot validation
+  - PlayerBrowser with search and filters
+  - CreateTeam page with two-column layout
+- ✅ Team API routes (POST, GET, PATCH, DELETE)
+- ✅ Player API routes (GET, search, stats)
+- ✅ Real-time validation (8 players, ≤172 HRs)
+- ✅ Email verification required before team creation
+- ⏳ Stripe payment integration (configured but not connected)
+- ⏳ Admin approval system (pending)
+- ⏳ Player data scraper (partial implementation)
+
+### 🏗️ IN PROGRESS
+
+**Phase 2: Team Creation (Remaining)**
+- Player stats scraper from Baseball Reference
+- Stripe payment flow integration
+- Admin team approval workflow
+
+### ❌ NOT STARTED
+
+**Phase 3: Scoring & Leaderboards**
+- Player stats polling background job
+- Scoring calculator (best 7 of 8 logic)
+- Leaderboard calculation engine
+- Redis caching implementation
+- Background job queue (BullMQ infrastructure configured)
+
+**Phase 4: User Experience**
+- Leaderboard UI pages
+- Player profile/stats pages
+- Email notification system
+- Off-season mode
+
+**Phase 5: Testing & Launch**
+- End-to-end testing
+- Load testing
+- Admin dashboard
+- Production deployment
+
+### 🔧 TECHNICAL NOTES
+
+**Database Implementation:**
+- Using **hybrid Prisma/Supabase approach**
+- Prisma schema defines types and structure (`backend/prisma/schema.prisma`)
+- Supabase JS client handles actual queries via custom `db.ts` abstraction layer
+- Migration: `001_cumulative_archive_schema.sql` applied directly to Supabase
+- Connection uses pooler mode with `?pgbouncer=true` parameter
+
+**Current Environment:**
+- Frontend: Running on Vite dev server (port 5173)
+- Backend: Running with tsx watch (port 5000)
+- Database: Supabase PostgreSQL with 253 player records imported
+- Email: Resend API configured and working
+- Redis: Upstash configured but not yet utilized
+- Stripe: Keys configured, integration pending
+
+**Git Status:**
+- Main branch at commit: `8a0516c` (fixed email verification and team creation)
+- Recent fixes: User lookup in team creation (req.user.userId)
+- All core auth and team creation flows tested and working
+
+---
+
 ## TECH STACK
 
 ### Frontend
@@ -16,19 +102,36 @@ A web-based sports pooling application where users create fantasy teams of MLB p
 - **Forms**: React Hook Form + Zod validation
 - **Routing**: React Router v6
 - **UI Components**: shadcn/ui
-- **Hosting**: Vercel (free tier)
+- **Hosting**: Vercel (static site deployment)
 
 ### Backend
 - **Runtime**: Node.js 20 LTS
 - **Framework**: Express 4.19
 - **Language**: TypeScript 5.3
-- **ORM**: Supabase JS Client
+- **Database Layer**: Hybrid approach
+  - Prisma 5.18 for schema definition and type generation
+  - Supabase JS Client for queries via custom `db.ts` abstraction
 - **Authentication**: Passport.js (Local + Google OAuth) + JWT
-- **Password Hashing**: bcrypt
-- **Job Queue**: BullMQ
-- **Email**: Resend
-- **Web Scraping**: Cheerio + Axios
-- **Hosting**: Railway ($5-20/month)
+- **Password Hashing**: bcrypt (cost factor 10)
+- **Job Queue**: BullMQ (configured, not yet utilized)
+- **Email**: Resend (active and working)
+- **Web Scraping**: Cheerio + Axios (partial implementation)
+- **Hosting**: Railway/Render (Express server with background jobs)
+
+### Deployment Architecture
+- **Frontend**: Vercel (static hosting optimized for React/Vite builds)
+- **Backend**: Railway or Render (persistent server for Express, BullMQ, webhooks)
+- **Database**: Supabase PostgreSQL (cloud-hosted)
+- **Cache**: Upstash Redis (serverless)
+- **Payments**: Stripe (webhooks point to backend)
+- **Email**: Resend API
+- **Estimated Cost**: $5-20/month (backend hosting + usage-based services)
+
+**Configuration Files**:
+- `vercel.json` - Vercel build/deploy settings with API proxy to backend
+- `.vercelignore` - Excludes backend from frontend deployment
+- `VERCEL_DEPLOYMENT.md` - Complete step-by-step deployment guide
+- `frontend/.env.production.example` - Production environment variables template
 
 ### Database & Caching
 - **Database**: PostgreSQL 15+ (Supabase)
@@ -201,6 +304,12 @@ Users cannot:
 - Keep previous season data only (1 year)
 - Display previous season winners on homepage
 - Purge data older than 1 year (except payment records for tax/legal)
+
+**Current Database State** (as of Dec 30, 2025)
+- 253 player records imported for 2025 season
+- Migration `001_cumulative_archive_schema.sql` applied
+- All tables created with proper constraints and indexes
+- Soft delete functionality implemented via `deletedAt` timestamp
 
 ---
 
@@ -416,12 +525,13 @@ read_at: Timestamp (nullable)
 - League-wide stats (TTL: 10 minutes)
 - Invalidate on data updates
 
-**Database Indexing**
-- `users.email`, `users.username`
+**Database Indexing** (Implemented via Supabase)
+- `users.email`, `users.username` (unique indexes)
 - `teams.user_id`, `teams.entry_status`, `teams.season_year`
 - `team_players.team_id`, `team_players.player_id`
 - `player_stats.player_id`, `player_stats.season_year`
 - `leaderboards.leaderboard_type`, `leaderboards.rank`, `leaderboards.month`
+- All primary keys use UUID with `gen_random_uuid()` default
 
 ---
 
@@ -582,61 +692,136 @@ mlb-hr-pool/
 
 ## DEVELOPMENT PHASES
 
-**Phase 1: Foundation** (Weeks 1-3)
-- Database schema + Prisma setup
-- User auth (email/password + Google OAuth)
-- Email verification flow
-- Basic API structure
+**Phase 1: Foundation** ✅ **COMPLETE** (100%)
+- ✅ Database schema + Supabase setup (hybrid Prisma/Supabase approach)
+- ✅ User auth (email/password + Google OAuth)
+- ✅ Email verification flow with Resend
+- ✅ Basic API structure with error handling
+- ✅ Frontend authentication pages and protected routes
+- ✅ JWT token management and middleware
 
-**Phase 2: Team Creation** (Weeks 4-6)
-- Player data scraper
-- Team creation UI + validation
-- Stripe payment integration
-- Admin approval system
+**Phase 2: Team Creation** 🏗️ **IN PROGRESS** (60%)
+- ✅ Team creation UI + real-time validation
+- ✅ Team API routes (POST, GET, PATCH, DELETE)
+- ✅ Player API routes with search and filters
+- ✅ Email verification requirement for team creation
+- ⏳ Player data scraper (partial - 253 players imported)
+- ⏳ Stripe payment integration (configured, not connected)
+- ⏳ Admin approval system (pending)
 
-**Phase 3: Scoring & Leaderboards** (Weeks 7-9)
-- Player stats polling job
-- Scoring calculator (best 7 of 8)
-- Leaderboard calculation
-- Redis caching
+**Phase 3: Scoring & Leaderboards** ❌ **NOT STARTED** (0%)
+- ❌ Player stats polling job
+- ❌ Scoring calculator (best 7 of 8)
+- ❌ Leaderboard calculation engine
+- ❌ Redis caching implementation
+- Note: BullMQ infrastructure configured but not utilized
 
-**Phase 4: User Experience** (Weeks 10-11)
-- Leaderboard UI
-- Player stats pages
-- Email notifications
-- Off-season mode
+**Phase 4: User Experience** ❌ **NOT STARTED** (0%)
+- ❌ Leaderboard UI pages
+- ❌ Player stats pages
+- ❌ Email notification system (Resend configured)
+- ❌ Off-season mode
 
-**Phase 5: Testing & Launch** (Week 12)
-- End-to-end testing
-- Load testing
-- Admin dashboard
-- Production deployment
+**Phase 5: Testing & Launch** ❌ **NOT STARTED** (0%)
+- ❌ End-to-end testing (Vitest configured)
+- ❌ Load testing
+- ❌ Admin dashboard
+- ❌ Production deployment
+
+**Overall Progress: ~35%** (Phase 1 complete, Phase 2 in progress)
 
 ---
 
 ## ENVIRONMENT VARIABLES
 
-**Frontend (.env)**
+**Frontend Development (.env)**
 ```
 VITE_API_URL=http://localhost:5000
 VITE_STRIPE_PUBLIC_KEY=pk_test_xxx
 ```
 
-**Backend (.env)**
+**Frontend Production (Vercel Environment Variables)**
 ```
-DATABASE_URL=postgresql://user:pass@localhost:5432/mlb_pool
+VITE_API_URL=https://hrderbyus.com
+VITE_STRIPE_PUBLIC_KEY=pk_live_xxx
+```
+
+**Backend Development (.env)**
+```
+# Supabase Database
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+SUPABASE_ANON_KEY=your-anon-key
+
+# Redis Cache
 REDIS_URL=redis://localhost:6379
+
+# Authentication
 JWT_SECRET=your-secret-key
 GOOGLE_CLIENT_ID=xxx
-GOOGLE_CLIENT_SECRET=xxxultra
+GOOGLE_CLIENT_SECRET=xxx
+
+# Payments
 STRIPE_SECRET_KEY=sk_test_xxx
 STRIPE_WEBHOOK_SECRET=whsec_xxx
+
+# Email Service
 RESEND_API_KEY=re_xxx
+
+# App Configuration
 FRONTEND_URL=http://localhost:5173
 NODE_ENV=development
+PORT=5000
 ```
+
+**Backend Production (Railway/Render Environment Variables)**
+```
+# Supabase Database
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+SUPABASE_ANON_KEY=your-anon-key
+
+# Redis Cache (Upstash)
+REDIS_URL=redis://default:password@endpoint.upstash.io:port
+
+# Authentication
+JWT_SECRET=your-production-secret-min-32-chars
+GOOGLE_CLIENT_ID=xxx
+GOOGLE_CLIENT_SECRET=xxx
+
+# Payments (LIVE MODE)
+STRIPE_SECRET_KEY=sk_live_xxx
+STRIPE_WEBHOOK_SECRET=whsec_xxx
+STRIPE_PUBLIC_KEY=pk_live_xxx
+
+# Email Service
+RESEND_API_KEY=re_xxx
+
+# App Configuration
+FRONTEND_URL=https://your-domain.vercel.app
+NODE_ENV=production
+PORT=5000
+```
+
+**See `VERCEL_DEPLOYMENT.md` for complete deployment guide and environment variable setup instructions.**
 
 ---
 
+## NEXT STEPS
+
+**Immediate Priorities (Phase 2 Completion):**
+1. Complete Stripe payment integration for team entries
+2. Build admin approval workflow UI and API endpoints
+3. Finish player stats scraper for Baseball Reference
+4. Test complete team creation flow end-to-end
+
+**Future Development:**
+- Refer to Phase 3-5 in DEVELOPMENT PHASES section above
+- See CHANGELOG.md for detailed implementation history
+- See CLAUDE.md for architectural patterns and quick reference
+
+---
+
+**Document Version:** Updated December 30, 2025 with current implementation status
+
 This is the complete project context. Build with this as the single source of truth for requirements and technical decisions.
-```

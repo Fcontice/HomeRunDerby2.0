@@ -102,6 +102,14 @@ export const sendNotificationSchema = z.object({
 })
 
 /**
+ * Payment validation schemas
+ */
+
+export const createCheckoutSchema = z.object({
+  teamId: z.string().uuid('Invalid team ID'),
+})
+
+/**
  * Type exports for TypeScript
  */
 
@@ -115,3 +123,4 @@ export type CreateTeamInput = z.infer<typeof createTeamSchema>
 export type UpdateTeamInput = z.infer<typeof updateTeamSchema>
 export type UpdateTeamStatusInput = z.infer<typeof updateTeamStatusSchema>
 export type SendNotificationInput = z.infer<typeof sendNotificationSchema>
+export type CreateCheckoutInput = z.infer<typeof createCheckoutSchema>

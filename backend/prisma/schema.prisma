@@ -86,7 +86,7 @@ model Team {
   name            String         // Max 50 chars, validated in application
   seasonYear      Int            // e.g., 2025
   paymentStatus   PaymentStatus  @default(draft)
-  stripePaymentId String?
+  stripePaymentId String?        @unique // Prevents duplicate payment processing
   entryStatus     EntryStatus    @default(draft)
   totalHrs2024    Int            @default(0) // Cached for validation (combined 2024 HRs)
 

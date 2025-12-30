@@ -113,9 +113,9 @@ export default function CreateTeam() {
         playerIds,
       })
 
-      if (response.success) {
-        // Success! Navigate to teams page
-        navigate('/dashboard')
+      if (response.success && response.data) {
+        // Success! Navigate to payment page
+        navigate(`/teams/${response.data.id}/payment`)
       } else {
         setError(response.error?.message || 'Failed to create team')
       }

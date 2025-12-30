@@ -6,6 +6,7 @@ import Register from './pages/Register'
 import VerifyEmail from './pages/VerifyEmail'
 import Dashboard from './pages/Dashboard'
 import CreateTeam from './pages/CreateTeam'
+import PaymentPage from './pages/PaymentPage'
 
 // Test components
 import ComponentTest from './pages/test-pages/pcComponentTest'
@@ -39,6 +40,14 @@ function App() {
           element={
             <ProtectedRoute>
               <CreateTeam />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teams/:teamId/payment"
+          element={
+            <ProtectedRoute>
+              <PaymentPage />
             </ProtectedRoute>
           }
         />

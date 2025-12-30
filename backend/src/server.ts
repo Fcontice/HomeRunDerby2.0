@@ -9,6 +9,7 @@ import passport from './config/passport.js'
 import authRoutes from './routes/authRoutes.js'
 import playerRoutes from './routes/playerRoutes.js'
 import teamRoutes from './routes/teamRoutes.js'
+import paymentRoutes from './routes/paymentRoutes.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
 import rateLimit from 'express-rate-limit'
 
@@ -44,6 +45,13 @@ const limiter = rateLimit({
 app.use('/api/', limiter)
 
 // ==================== GENERAL MIDDLEWARE ====================
+
+// Webhook endpoint needs raw body for signature verification
+// Must be registered BEFORE express.json()
+app.use(
+  '/api/payments/webhook',
+  express.raw({ type: 'application/json' })
+)
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
@@ -82,6 +90,9 @@ app.use('/api/players', playerRoutes)
 // Team routes
 app.use('/api/teams', teamRoutes)
 
+// Payment routes
+app.use('/api/payments', paymentRoutes)
+
 // Future routes will be added here:
 // app.use('/api/users', userRoutes)
 // app.use('/api/leaderboards', leaderboardRoutes)
@@ -107,6 +118,9 @@ app.listen(PORT, () => {
   )
   console.log(
     `🔑 Google OAuth: ${process.env.GOOGLE_CLIENT_ID ? '✓ Configured' : '⚠ Not configured'}`
+  )
+  console.log(
+    `💳 Stripe: ${process.env.STRIPE_SECRET_KEY ? '✓ Configured' : '⚠ Not configured'}`
   )
 })
 

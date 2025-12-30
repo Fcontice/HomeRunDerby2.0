@@ -233,6 +233,14 @@ export const teamsApi = {
   },
 
   /**
+   * Alias for getTeamById
+   */
+  getTeam: async (id: string): Promise<ApiResponse<Team>> => {
+    const response = await api.get(`/api/teams/${id}`)
+    return response.data
+  },
+
+  /**
    * Get current user's teams
    */
   getMyTeams: async (seasonYear?: number): Promise<ApiResponse<Team[]>> => {
@@ -331,6 +339,20 @@ export const playersApi = {
   getStats: async (seasonYear?: number): Promise<ApiResponse<PlayerStatsResponse>> => {
     const queryParams = seasonYear ? `?seasonYear=${seasonYear}` : ''
     const response = await api.get(`/api/players/stats/summary${queryParams}`)
+    return response.data
+  },
+}
+
+// ==================== PAYMENTS API ====================
+
+export const paymentsApi = {
+  /**
+   * Create a checkout session for team payment
+   */
+  createCheckout: async (
+    teamId: string
+  ): Promise<ApiResponse<{ checkoutUrl: string; sessionId: string }>> => {
+    const response = await api.post('/api/payments/checkout', { teamId })
     return response.data
   },
 }

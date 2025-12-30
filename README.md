@@ -102,14 +102,21 @@ The backend API will be available at `http://localhost:5000`
 
 ## Environment Variables
 
-### Frontend (.env)
+### Frontend (.env) - Development
 
 ```env
 VITE_API_URL=http://localhost:5000
 VITE_STRIPE_PUBLIC_KEY=pk_test_xxx
 ```
 
-### Backend (.env)
+### Frontend (Vercel) - Production
+
+```env
+VITE_API_URL=https://hrderbyus.com
+VITE_STRIPE_PUBLIC_KEY=pk_live_xxx
+```
+
+### Backend (.env) - Development
 
 ```env
 DATABASE_URL=postgresql://user:pass@localhost:5432/mlb_pool
@@ -124,6 +131,8 @@ FRONTEND_URL=http://localhost:5173
 NODE_ENV=development
 PORT=5000
 ```
+
+**Production Environment Variables:** See `PROJECT_CONTEXT.md` → Environment Variables → Production for complete backend production configuration.
 
 ## Database Setup
 
@@ -207,6 +216,47 @@ PORT=5000
    ```
 
 3. Open your browser to `http://localhost:5173`
+
+## Production Deployment
+
+This project uses a split deployment architecture:
+
+- **Frontend**: Vercel (static site hosting)
+- **Backend**: Railway or Render (persistent Express server)
+
+### Quick Deploy Guide
+
+**1. Deploy Backend to Railway**
+- Connect GitHub repo at [railway.app](https://railway.app)
+- Set root directory: `backend`
+- Configure build/start commands (auto-detected)
+- Add production environment variables
+- Deploy → Get backend URL (e.g., `https://hrderbyus.com`)
+
+**2. Deploy Frontend to Vercel**
+```bash
+npm install -g vercel
+vercel login
+vercel                    # Preview deployment
+vercel --prod            # Production deployment
+```
+
+**3. Configure Environment Variables**
+- **Vercel**: Add `VITE_API_URL` (your backend URL) and `VITE_STRIPE_PUBLIC_KEY`
+- **Railway**: Add all backend production env vars (see `VERCEL_DEPLOYMENT.md`)
+
+**4. Update Configurations**
+- Update `vercel.json` with your backend domain
+- Update backend CORS to allow your Vercel domain
+- Configure Stripe webhook to point to backend URL
+
+### Deployment Files
+- `vercel.json` - Vercel build configuration and API proxy
+- `.vercelignore` - Excludes backend from frontend deployment
+- `VERCEL_DEPLOYMENT.md` - Complete deployment guide with troubleshooting
+- `frontend/.env.production.example` - Production environment variables template
+
+**For complete step-by-step instructions, see [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md)**
 
 ## Project Documentation
 
