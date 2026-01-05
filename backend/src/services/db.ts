@@ -880,6 +880,232 @@ export const teamPlayerDb = {
   }
 }
 
+// ==================== PLAYER STATS OPERATIONS ====================
+
+export const playerStatsDb = {
+  async findMany(where: any = {}, options: any = {}) {
+    let query = supabaseAdmin.from('PlayerStats').select('*')
+
+    // Apply filters
+    if (where.playerId) query = query.eq('playerId', where.playerId)
+    if (where.seasonYear) query = query.eq('seasonYear', where.seasonYear)
+    if (where.date) {
+      if (typeof where.date === 'object') {
+        if (where.date.gte) query = query.gte('date', where.date.gte)
+        if (where.date.lte) query = query.lte('date', where.date.lte)
+      } else {
+        query = query.eq('date', where.date)
+      }
+    }
+
+    // Apply ordering
+    if (options.orderBy) {
+      const field = Object.keys(options.orderBy)[0]
+      const direction = options.orderBy[field]
+      query = query.order(field, { ascending: direction === 'asc' })
+    }
+
+    // Apply pagination
+    if (options.take) query = query.limit(options.take)
+    if (options.skip) query = query.range(options.skip, options.skip + (options.take || 100) - 1)
+
+    const { data, error } = await query
+    if (error) throw error
+    return data || []
+  },
+
+  async findFirst(where: any, options: any = {}) {
+    return (await this.findMany(where, { ...options, take: 1 }))[0] || null
+  },
+
+  async findUnique(where: { playerId: string; seasonYear: number; date: string }) {
+    const { data, error } = await supabaseAdmin
+      .from('PlayerStats')
+      .select('*')
+      .eq('playerId', where.playerId)
+      .eq('seasonYear', where.seasonYear)
+      .eq('date', where.date)
+      .single()
+
+    if (error && error.code !== 'PGRST116') throw error
+    return data
+  },
+
+  async create(data: any) {
+    const { id, ...cleanData } = data
+
+    const now = new Date().toISOString()
+    const insertData = {
+      ...(id ? { id } : {}),
+      ...cleanData,
+      lastUpdated: cleanData.lastUpdated || now,
+    }
+
+    const { data: stats, error } = await supabaseAdmin
+      .from('PlayerStats')
+      .insert(insertData)
+      .select()
+      .single()
+
+    if (error) throw error
+    return stats
+  },
+
+  async update(where: { playerId: string; seasonYear: number; date: string }, data: any) {
+    const updateData = {
+      ...data,
+      lastUpdated: new Date().toISOString(),
+    }
+
+    const { data: stats, error } = await supabaseAdmin
+      .from('PlayerStats')
+      .update(updateData)
+      .eq('playerId', where.playerId)
+      .eq('seasonYear', where.seasonYear)
+      .eq('date', where.date)
+      .select()
+      .single()
+
+    if (error) throw error
+    return stats
+  },
+
+  async upsert(
+    where: { playerId: string; seasonYear: number; date: string },
+    create: any,
+    update: any
+  ) {
+    const existing = await this.findUnique(where)
+
+    if (existing) {
+      return await this.update(where, update)
+    } else {
+      return await this.create({ ...where, ...create })
+    }
+  },
+
+  // Get latest stats for a player
+  async getLatest(playerId: string, seasonYear: number) {
+    return await this.findFirst(
+      { playerId, seasonYear },
+      { orderBy: { date: 'desc' }, take: 1 }
+    )
+  },
+}
+
+// ==================== LEADERBOARD OPERATIONS ====================
+
+export const leaderboardDb = {
+  async findMany(where: any = {}, options: any = {}) {
+    let query = supabaseAdmin.from('Leaderboard').select('*')
+
+    // Apply filters
+    if (where.teamId) query = query.eq('teamId', where.teamId)
+    if (where.leaderboardType) query = query.eq('leaderboardType', where.leaderboardType)
+    if (where.month !== undefined) {
+      if (where.month === null) {
+        query = query.is('month', null)
+      } else {
+        query = query.eq('month', where.month)
+      }
+    }
+    if (where.seasonYear) query = query.eq('seasonYear', where.seasonYear)
+
+    // Apply ordering
+    if (options.orderBy) {
+      const field = Object.keys(options.orderBy)[0]
+      const direction = options.orderBy[field]
+      query = query.order(field, { ascending: direction === 'asc' })
+    }
+
+    // Apply pagination
+    if (options.take) query = query.limit(options.take)
+    if (options.skip) query = query.range(options.skip, options.skip + (options.take || 100) - 1)
+
+    const { data, error } = await query
+    if (error) throw error
+    return data || []
+  },
+
+  async findUnique(where: { teamId: string; leaderboardType: string; month?: number | null }) {
+    let query = supabaseAdmin
+      .from('Leaderboard')
+      .select('*')
+      .eq('teamId', where.teamId)
+      .eq('leaderboardType', where.leaderboardType)
+
+    if (where.month !== undefined) {
+      if (where.month === null) {
+        query = query.is('month', null)
+      } else {
+        query = query.eq('month', where.month)
+      }
+    }
+
+    const { data, error } = await query.single()
+
+    if (error && error.code !== 'PGRST116') throw error
+    return data
+  },
+
+  async create(data: any) {
+    const { id, ...cleanData } = data
+
+    const now = new Date().toISOString()
+    const insertData = {
+      ...(id ? { id } : {}),
+      ...cleanData,
+      calculatedAt: cleanData.calculatedAt || now,
+    }
+
+    const { data: leaderboard, error } = await supabaseAdmin
+      .from('Leaderboard')
+      .insert(insertData)
+      .select()
+      .single()
+
+    if (error) throw error
+    return leaderboard
+  },
+
+  async delete(where: { teamId: string; leaderboardType: string; month?: number | null }) {
+    let query = supabaseAdmin
+      .from('Leaderboard')
+      .delete()
+      .eq('teamId', where.teamId)
+      .eq('leaderboardType', where.leaderboardType)
+
+    if (where.month !== undefined) {
+      if (where.month === null) {
+        query = query.is('month', null)
+      } else {
+        query = query.eq('month', where.month)
+      }
+    }
+
+    const { error } = await query
+
+    if (error) throw error
+  },
+
+  async deleteMany(where: any = {}) {
+    let query = supabaseAdmin.from('Leaderboard').delete()
+
+    if (where.leaderboardType) query = query.eq('leaderboardType', where.leaderboardType)
+    if (where.month !== undefined) {
+      if (where.month === null) {
+        query = query.is('month', null)
+      } else {
+        query = query.eq('month', where.month)
+      }
+    }
+
+    const { error } = await query
+
+    if (error) throw error
+  },
+}
+
 // Export a db object that mimics Prisma's structure
 export const db = {
   user: userDb,
@@ -887,6 +1113,8 @@ export const db = {
   team: teamDb,
   teamPlayer: teamPlayerDb,
   playerSeasonStats: playerSeasonStatsDb,
+  playerStats: playerStatsDb,
+  leaderboard: leaderboardDb,
 
   // Raw query support
   async $queryRaw(query: string, ...params: any[]) {

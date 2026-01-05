@@ -1,0 +1,66 @@
+✅ Phase 3 Complete - Stats, Scoring & Leaderboards
+
+  Files Created:
+
+  Backend Services:
+  - backend/src/services/statsService.ts - Baseball Savant scraper & daily stats updater
+  - backend/src/services/scoringService.ts - "Best 7 of 8" team scoring calculator
+  - backend/src/services/leaderboardService.ts - Leaderboard generation & caching engine
+
+  API Layer:
+  - backend/src/controllers/leaderboardController.ts - 5 endpoint handlers
+  - backend/src/routes/leaderboardRoutes.ts - Route definitions
+
+  Testing:
+  - backend/src/scripts/testPhase3.ts - Comprehensive pipeline test
+
+  Files Modified:
+  - backend/src/services/db.ts - Added playerStats and leaderboard database operations
+  - backend/src/server.ts - Registered leaderboard routes
+
+  API Endpoints Available:
+
+  GET  /api/leaderboards/overall              - Overall season leaderboard
+  GET  /api/leaderboards/monthly/:month       - Monthly leaderboard (1-12)
+  GET  /api/leaderboards/team/:teamId         - Specific team ranking
+  GET  /api/leaderboards/stats                - League-wide statistics
+  POST /api/leaderboards/recalculate          - Manual recalc (admin only)
+
+  All endpoints support ?seasonYear=2025 query parameter.
+
+  Testing the Pipeline:
+
+  The test script verifies the complete flow:
+  1. Scrape latest HR stats from Baseball Savant
+  2. Update PlayerStats table in database
+  3. Calculate team scores using "best 7 of 8" rule
+  4. Generate overall and monthly leaderboards
+  5. Cache results in Leaderboard table
+  6. Retrieve cached data
+
+  Run the test:
+  cd backend
+  npm run test:phase3
+
+  The test will show you:
+  - Stats update results (created/updated/errors)
+  - Sample player stats verification
+  - Team scoring breakdown (which players count)
+  - Top teams by HR count
+  - Leaderboard rankings with usernames
+
+  Next Steps:
+
+  Option 1 - Background Jobs (automated stats updates):
+  - Set up BullMQ job to run updatePlayerStats() daily
+  - Auto-recalculate leaderboards after stats update
+
+  Option 2 - Frontend UI (visualize the data):
+  - Create frontend/src/pages/Leaderboards.tsx
+  - Add leaderboard API calls to frontend/src/services/api.ts
+  - Display overall/monthly leaderboards with team details
+
+  Option 3 - Manual Testing:
+  - Start backend: npm run dev
+  - Test endpoints with curl/Postman
+  - Verify database records in Prisma 

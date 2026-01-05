@@ -31,14 +31,16 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
       error: error.message,
       to: options.to,
       subject: options.subject,
-      from: FROM_EMAIL
     })
-    // Don't throw in development to prevent blocking registration
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('Failed to send email')
-    } else {
-      console.warn('⚠️  Email sending failed but continuing (development mode)')
+
+    // Always throw in production
+    // In development, throw unless explicitly disabled
+    if (process.env.NODE_ENV === 'production' ||
+        process.env.DISABLE_EMAIL_ERRORS !== 'true') {
+      throw new Error(`Failed to send email: ${error.message}`)
     }
+
+    console.warn('⚠️  Email error suppressed (DISABLE_EMAIL_ERRORS=true)')
   }
 }
 

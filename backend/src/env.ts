@@ -23,6 +23,34 @@ if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
   process.exit(1)
 }
 
+// Validate email service (required for user flows)
+if (!process.env.RESEND_API_KEY) {
+  console.error('❌ Missing RESEND_API_KEY!')
+  console.error('Email verification, password reset, and payment confirmations will FAIL')
+  console.error('Set RESEND_API_KEY in your .env file')
+
+  if (process.env.NODE_ENV === 'production') {
+    process.exit(1)  // Fail fast in production
+  } else {
+    console.warn('⚠️  Continuing in development mode without email')
+  }
+}
+
+// Validate Google OAuth (optional but warn if incomplete)
+const hasGoogleClientId = !!process.env.GOOGLE_CLIENT_ID
+const hasGoogleClientSecret = !!process.env.GOOGLE_CLIENT_SECRET
+
+if (hasGoogleClientId !== hasGoogleClientSecret) {
+  console.error('❌ Partial Google OAuth configuration detected!')
+  console.error('Both GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET required')
+  console.error('Google OAuth login will be DISABLED')
+}
+
+if (!hasGoogleClientId && !hasGoogleClientSecret) {
+  console.warn('⚠️  Google OAuth not configured (optional)')
+  console.warn('Users will only be able to use email/password authentication')
+}
+
 console.log('✅ Environment variables loaded')
 
 // Export typed environment variables

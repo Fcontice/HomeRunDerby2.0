@@ -34,7 +34,20 @@
       "mcp__plugin_compound-engineering_pw__browser_snapshot",
       "mcp__plugin_compound-engineering_pw__browser_click",
       "mcp__plugin_compound-engineering_pw__browser_type",
-      "Skill(compound-engineering:frontend-design)"
+      "Skill(compound-engineering:frontend-design)",
+      "Bash(python -m pip:*)",
+      "Bash(python:*)",
+      "Bash(dir:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(del \"src\\\\services\\\\scraperService.ts\" \"src\\\\scripts\\\\debugScraper.ts\" \"src\\\\scripts\\\\seedPlayers.ts\" \"src\\\\scripts\\\\importPlayers.ts\" \"src\\\\scripts\\\\import2025Season.ts\" \"src\\\\scripts\\\\runMigration.ts\")",
+      "Bash(npm uninstall:*)",
+      "mcp__supabase__execute_sql",
+      "Bash(npx prisma db pull:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(taskkill:*)",
+      "Bash(npm run import:season:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

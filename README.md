@@ -201,6 +201,7 @@ PORT=5000
 - `npm run prisma:generate` - Generate Prisma client
 - `npm run prisma:migrate` - Run database migrations
 - `npm run prisma:studio` - Open Prisma Studio GUI
+- `npm run test:phase3` - Test stats/scoring/leaderboard pipeline
 - `npm run lint` - Run ESLint
 - `npm run format` - Format code with Prettier
 
@@ -269,11 +270,13 @@ For complete project requirements, technical specifications, database schema, AP
 
 The project is organized into 5 development phases:
 
-1. **Phase 1: Foundation** - Database schema, user authentication, email verification
-2. **Phase 2: Team Creation** - Player data scraper, team builder UI, Stripe integration
-3. **Phase 3: Scoring & Leaderboards** - Stats polling, scoring calculator, Redis caching
-4. **Phase 4: User Experience** - Leaderboard UI, player pages, notifications
+1. **Phase 1: Foundation** ✅ - Database schema, user authentication, email verification
+2. **Phase 2: Team Creation** ✅ - Player data scraper, team builder UI, Stripe integration
+3. **Phase 3: Scoring & Leaderboards** ✅ - Stats polling, scoring calculator, leaderboard caching
+4. **Phase 4: User Experience** 🚧 - Leaderboard UI, player pages, notifications, automation
 5. **Phase 5: Testing & Launch** - Testing, admin dashboard, deployment
+
+**Current Status:** Phase 3 complete. Backend API fully functional with stats scraping, team scoring ("best 7 of 8"), and leaderboard generation. Ready for frontend UI integration and background job automation.
 
 ## Third-Party Services Required
 

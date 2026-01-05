@@ -228,12 +228,18 @@ A web-based sports pooling application where users create fantasy teams of MLB p
 - **End**: After World Series concludes
 - Admin can manually end season early if needed
 
-**Player Stats Updates**
-- Poll every 10 minutes during active games
-- Poll every 60 minutes during off-hours
-- Source: Baseball Reference (automated scraping)
-- If scraping fails: Retry with exponential backoff, alert admin after 3+ failures
-- Stats corrections (HR ruled double) immediately reflected
+**Player Stats Updates** (REFACTORED - December 31, 2024)
+- **Data Source**: MLB-StatsAPI (Official MLB API) - replaced Baseball Savant CSV scraping
+- **Update Schedule**: Daily at 3:00 AM ET (recommended) - after all games conclude
+- **Implementation**: Python script (`update_stats.py`) writes directly to Supabase
+- **Granularity**: Game-by-game tracking with daily aggregation
+- **Filtering**: Regular season only (`game_type='R'`) - excludes spring training, all-star, postseason
+- **Player Metadata**: Automatically updates team abbreviation and name from MLB API
+- **Idempotency**: Safe to re-run for same date (upserts by playerId, seasonYear, date composite key)
+- **Season Coverage**: 2026 season forward (no historical backfill)
+- **Automation**: Via cron (Linux/Mac), Task Scheduler (Windows), or BullMQ (future)
+- **Documentation**: See `backend/src/scripts/python/README.md` for complete implementation guide
+- Stats corrections (HR ruled double) immediately reflected by re-running update for affected date
 
 **Edge Cases**
 - Player traded mid-season: Stays on team, HRs count regardless of MLB team
@@ -709,12 +715,17 @@ mlb-hr-pool/
 - ⏳ Stripe payment integration (configured, not connected)
 - ⏳ Admin approval system (pending)
 
-**Phase 3: Scoring & Leaderboards** ❌ **NOT STARTED** (0%)
-- ❌ Player stats polling job
-- ❌ Scoring calculator (best 7 of 8)
-- ❌ Leaderboard calculation engine
-- ❌ Redis caching implementation
-- Note: BullMQ infrastructure configured but not utilized
+**Phase 3: Scoring & Leaderboards** ✅ **COMPLETE** (100%) - REFACTORED December 31, 2024
+- ✅ Player stats updater (MLB-StatsAPI Python script - replaced Baseball Savant)
+- ✅ Game-by-game tracking with regular season filtering
+- ✅ Scoring calculator (best 7 of 8) - `scoringService.ts`
+- ✅ Leaderboard calculation engine (overall + monthly) - `leaderboardService.ts`
+- ✅ Database-backed caching (Leaderboard table)
+- ✅ API endpoints (5 routes: overall, monthly, team, stats, recalculate)
+- ✅ Test script (testPhase3.ts) with full pipeline verification
+- ⏳ Redis caching (infrastructure ready, not yet utilized)
+- ⏳ Background jobs (BullMQ configured, manual execution for now)
+- 📚 Complete documentation: `backend/src/scripts/python/README.md`
 
 **Phase 4: User Experience** ❌ **NOT STARTED** (0%)
 - ❌ Leaderboard UI pages
@@ -728,7 +739,7 @@ mlb-hr-pool/
 - ❌ Admin dashboard
 - ❌ Production deployment
 
-**Overall Progress: ~35%** (Phase 1 complete, Phase 2 in progress)
+**Overall Progress: ~60%** (Phase 1 complete, Phase 2 complete, Phase 3 complete with MLB-StatsAPI refactor)
 
 ---
 

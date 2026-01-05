@@ -1,47 +1,47 @@
-# Dependencies
+# # Dependencies
 node_modules/
-.pnp
-.pnp.js
+ .pnp
+ .pnp.js
 
-# Testing
-coverage/
+# # Testing
+ coverage/
 
-# Production
-dist/
-build/
+# # Production
+ dist/
+ build/
 
-# Environment variables
+# # Environment variables
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
+ .env.development.local
+ .env.test.local
+ .env.production.local
 
-# Logs
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# # Logs
+ logs/
+ *.log
+ npm-debug.log*
+ yarn-debug.log*
+ yarn-error.log*
+ pnpm-debug.log*
+ lerna-debug.log*
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# # Editor directories and files
+ .vscode/*
+ !.vscode/extensions.json
+ .idea
+ .DS_Store
+ *.suo
+ *.ntvs*
+ *.njsproj
+ *.sln
+ *.sw?
 
-# OS
-Thumbs.db
+# # OS
+ Thumbs.db
 
-.claude
+# .claude
 
-# Project files
-*.md
-*.txt
+# # Project files
+# *.md
+# *.txt

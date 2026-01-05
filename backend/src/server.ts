@@ -10,6 +10,8 @@ import authRoutes from './routes/authRoutes.js'
 import playerRoutes from './routes/playerRoutes.js'
 import teamRoutes from './routes/teamRoutes.js'
 import paymentRoutes from './routes/paymentRoutes.js'
+import leaderboardRoutes from './routes/leaderboardRoutes.js'
+import healthRoutes from './routes/healthRoutes.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
 import rateLimit from 'express-rate-limit'
 
@@ -62,13 +64,8 @@ app.use(passport.initialize())
 
 // ==================== HEALTH CHECK ====================
 
-app.get('/health', (req, res) => {
-  res.json({
-    success: true,
-    message: 'HRD 2.0 API is running',
-    timestamp: new Date().toISOString(),
-  })
-})
+// Health check routes (includes Python environment check)
+app.use('/health', healthRoutes)
 
 // ==================== API ROUTES ====================
 
@@ -93,9 +90,11 @@ app.use('/api/teams', teamRoutes)
 // Payment routes
 app.use('/api/payments', paymentRoutes)
 
+// Leaderboard routes
+app.use('/api/leaderboards', leaderboardRoutes)
+
 // Future routes will be added here:
 // app.use('/api/users', userRoutes)
-// app.use('/api/leaderboards', leaderboardRoutes)
 // app.use('/api/admin', adminRoutes)
 
 // ==================== ERROR HANDLING ====================
