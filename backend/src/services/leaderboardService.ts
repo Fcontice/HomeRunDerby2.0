@@ -54,6 +54,7 @@ export async function calculateOverallLeaderboard(seasonYear: number = 2025): Pr
       month: null,
       rank,
       totalHrs: score.totalHrs,
+      seasonYear,
       calculatedAt: new Date().toISOString(),
     })
 
@@ -105,6 +106,7 @@ export async function calculateMonthlyLeaderboard(
       month,
       rank,
       totalHrs: score.totalHrs,
+      seasonYear,
       calculatedAt: new Date().toISOString(),
     })
 
@@ -207,6 +209,7 @@ async function clearLeaderboard(
   await db.$queryRaw(`
     DELETE FROM "Leaderboard"
     WHERE "leaderboardType" = '${leaderboardType}'
+    AND "seasonYear" = ${seasonYear}
     ${monthFilter}
   `)
 }
