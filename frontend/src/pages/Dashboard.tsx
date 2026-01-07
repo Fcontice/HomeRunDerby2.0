@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '../components/ui/card'
+import { LeaderboardWidget } from '../components/leaderboard'
 
 export default function Dashboard() {
   const { user, logout } = useAuth()
@@ -65,35 +66,25 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Leaderboard</CardTitle>
-              <CardDescription>Current season standings</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Leaderboard will be available when the season starts!
-              </p>
-            </CardContent>
-          </Card>
+          <LeaderboardWidget />
         </div>
 
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle>Phase 1 Complete!</CardTitle>
-            <CardDescription>Authentication system is fully functional</CardDescription>
+            <CardTitle>Phase 3 Complete!</CardTitle>
+            <CardDescription>Stats, scoring, and leaderboards are fully functional</CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="list-disc list-inside space-y-1 text-sm">
-              <li>Email/password registration and login</li>
-              <li>Google OAuth integration</li>
-              <li>Email verification flow</li>
-              <li>Password reset functionality</li>
-              <li>Protected routes</li>
-              <li>JWT token management</li>
+              <li>MLB-StatsAPI integration for live stats</li>
+              <li>Daily home run tracking with game-by-game data</li>
+              <li>Team scoring with "best 7 of 8" algorithm</li>
+              <li>Overall and monthly leaderboards</li>
+              <li>Player stats dashboard with season totals</li>
+              <li>Leaderboard caching for performance</li>
             </ul>
             <p className="mt-4 text-muted-foreground">
-              Next up: Phase 2 - Team creation, player selection, and Stripe payments!
+              Next up: Phase 4 - Admin dashboard and automated stats updates!
             </p>
           </CardContent>
         </Card>
