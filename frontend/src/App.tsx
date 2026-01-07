@@ -7,6 +7,7 @@ import VerifyEmail from './pages/VerifyEmail'
 import Dashboard from './pages/Dashboard'
 import CreateTeam from './pages/CreateTeam'
 import PaymentPage from './pages/PaymentPage'
+import Leaderboard from './pages/Leaderboard'
 
 // Test components
 import ComponentTest from './pages/test-pages/pcComponentTest'
@@ -20,6 +21,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
 
         {/* Test component routes */}
         <Route path="/pccomponent-test" element={<ComponentTest />} />  
