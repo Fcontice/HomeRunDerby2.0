@@ -1,5 +1,5 @@
 import { useAuth } from '../contexts/AuthContext'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { Button } from '../components/ui/button'
 import {
   Card,
@@ -23,7 +23,29 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-4">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8 pt-8">
-          <h1 className="text-4xl font-bold text-white">Home Run Derby</h1>
+          <div className="flex items-center gap-8">
+            <h1 className="text-4xl font-bold text-white">Home Run Derby</h1>
+            <nav className="flex gap-4">
+              <Link
+                to="/dashboard"
+                className="text-white hover:text-gray-300 transition-colors"
+              >
+                Dashboard
+              </Link>
+              <Link
+                to="/leaderboard"
+                className="text-white hover:text-gray-300 transition-colors"
+              >
+                Leaderboard
+              </Link>
+              <Link
+                to="/create-team"
+                className="text-white hover:text-gray-300 transition-colors"
+              >
+                Create Team
+              </Link>
+            </nav>
+          </div>
           <Button variant="outline" onClick={handleLogout}>
             Logout
           </Button>
