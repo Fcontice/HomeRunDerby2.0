@@ -4,7 +4,7 @@ All notable changes to Home Run Derby 2.0 project.
 
 ## [Unreleased]
 
-### Phase 3 Refactor: MLB-StatsAPI Migration - December 31, 2024
+### Phase 3 Refactor: MLB-StatsAPI Migration - December 31, 2025
 
 #### Changed
 - **Migrated player stats data source from Baseball Savant CSV to MLB-StatsAPI (Official MLB API)**
@@ -90,7 +90,7 @@ npm run test:phase3 -- --date 2026-04-15
 
 ---
 
-### Bug Fixes - December, 2024
+### Bug Fixes - December, 2025
 
 #### Fixed
 - **Payment Routes Import Error**
@@ -118,7 +118,7 @@ npm run test:phase3 -- --date 2026-04-15
 
 ---
 
-### Phase 2.5: Payment System Integration - December 30, 2024
+### Phase 2.5: Payment System Integration - December 30, 2025
 
 #### Added
 - **Payment Service Layer** (`backend/src/services/paymentService.ts`)
@@ -195,7 +195,7 @@ npm run test:phase3 -- --date 2026-04-15
 
 ---
 
-### Phase 3: Scoring & Leaderboards - December 30, 2024
+### Phase 3: Scoring & Leaderboards - December 30, 2025
 
 #### Added
 - **Player Stats Service** (`backend/src/services/statsService.ts`)
@@ -359,7 +359,7 @@ Test verifies:
 
 ---
 
-### Phase 2: Team Creation UI - December 29, 2024
+### Phase 2: Team Creation UI - December 29, 2025
 
 #### Added
 - **Team Creation Components**
@@ -595,9 +595,9 @@ Test verifies:
 ✅ Frontend payment page with Stripe Checkout
 ⏳ Admin approval system (deferred to Phase 4)
 
-### Completed (Phase 3 - 100%)
-✅ Player stats scraper (Baseball Savant CSV)
-✅ Daily stats update service (PlayerStats table)
+### Completed (Phase 3 - 100%) - Refactored December 31, 2025
+✅ Player stats updater (MLB-StatsAPI Python script - replaced Baseball Savant)
+✅ Game-by-game tracking with regular season filtering
 ✅ Team scoring calculator ("best 7 of 8" logic)
 ✅ Leaderboard calculation engine (overall + monthly)
 ✅ Database-backed leaderboard caching
@@ -605,10 +605,11 @@ Test verifies:
 ✅ Comprehensive test script (7-step pipeline verification)
 
 ### Pending (Phase 4-5)
-❌ Background jobs for automated stats syncing (BullMQ + Redis)
-❌ Admin dashboard for team management
+❌ Leaderboard UI pages (frontend)
+❌ Player profile/stats pages
+❌ Admin dashboard with team approval workflow
 ❌ Email notification system for leaderboard updates
-❌ Leaderboard UI page (frontend)
+❌ Background jobs for automated stats syncing (BullMQ + Redis)
 ❌ Production deployment configuration
 
 ---

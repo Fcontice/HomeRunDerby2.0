@@ -297,7 +297,7 @@ See `backend/src/scripts/python/README.md` for complete implementation details, 
 - **Payments**: Stripe integration with webhook processing fully functional.
 - **Python stats updater**: Robust retry logic with exponential backoff (3 attempts, 5min timeout)
 - **Health monitoring**: `/health` and `/health/python` endpoints for system checks
-- **Current phase**: Phase 3 complete (stats/scoring/leaderboards). Next: Phase 4 (automation & admin).
+- **Current status**: Phases 1-3 complete (~60%). Next: Phase 4 (User Experience & Admin - leaderboard UI, admin dashboard).
 
 ## Testing
 

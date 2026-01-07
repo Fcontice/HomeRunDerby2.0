@@ -6,7 +6,7 @@ A web-based sports pooling application where users create fantasy teams of MLB p
 
 ---
 
-## 🚧 IMPLEMENTATION STATUS (Updated: December 30, 2025)
+## 🚧 IMPLEMENTATION STATUS (Updated: January 7, 2026)
 
 ### ✅ COMPLETED
 
@@ -26,7 +26,7 @@ A web-based sports pooling application where users create fantasy teams of MLB p
 - ✅ Protected routes with ProtectedRoute component
 - ✅ shadcn/ui component library integrated
 
-**Phase 2: Team Creation (60%)**
+**Phase 2: Team Creation & Payments (100%)**
 - ✅ Team creation UI components
   - PlayerCard component for displaying players
   - TeamRoster component with 8-slot validation
@@ -36,30 +36,29 @@ A web-based sports pooling application where users create fantasy teams of MLB p
 - ✅ Player API routes (GET, search, stats)
 - ✅ Real-time validation (8 players, ≤172 HRs)
 - ✅ Email verification required before team creation
-- ⏳ Stripe payment integration (configured but not connected)
-- ⏳ Admin approval system (pending)
-- ⏳ Player data scraper (partial implementation)
+- ✅ Stripe payment integration with provider abstraction
+- ✅ Payment webhook processing with security hardening
+- ✅ Frontend payment page with Stripe Checkout
+- ✅ Player data imported (253 players for 2025 season)
 
-### 🏗️ IN PROGRESS
-
-**Phase 2: Team Creation (Remaining)**
-- Player stats scraper from Baseball Reference
-- Stripe payment flow integration
-- Admin team approval workflow
+**Phase 3: Scoring & Leaderboards (100%)** - Refactored December 31, 2025
+- ✅ Player stats updater (MLB-StatsAPI Python script - replaced Baseball Savant)
+- ✅ Game-by-game tracking with regular season filtering
+- ✅ Scoring calculator (best 7 of 8 logic) - `scoringService.ts`
+- ✅ Leaderboard calculation engine (overall + monthly) - `leaderboardService.ts`
+- ✅ Database-backed caching (Leaderboard table)
+- ✅ API endpoints (5 routes: overall, monthly, team, stats, recalculate)
+- ✅ Test script (testPhase3.ts) with full pipeline verification
+- ⏳ Redis caching (infrastructure ready, not yet utilized)
+- ⏳ Background jobs automation (BullMQ configured, manual execution for now)
 
 ### ❌ NOT STARTED
 
-**Phase 3: Scoring & Leaderboards**
-- Player stats polling background job
-- Scoring calculator (best 7 of 8 logic)
-- Leaderboard calculation engine
-- Redis caching implementation
-- Background job queue (BullMQ infrastructure configured)
-
-**Phase 4: User Experience**
+**Phase 4: User Experience & Admin**
 - Leaderboard UI pages
 - Player profile/stats pages
 - Email notification system
+- Admin dashboard and team approval workflow
 - Off-season mode
 
 **Phase 5: Testing & Launch**
@@ -706,16 +705,17 @@ mlb-hr-pool/
 - ✅ Frontend authentication pages and protected routes
 - ✅ JWT token management and middleware
 
-**Phase 2: Team Creation** 🏗️ **IN PROGRESS** (60%)
+**Phase 2: Team Creation & Payments** ✅ **COMPLETE** (100%)
 - ✅ Team creation UI + real-time validation
 - ✅ Team API routes (POST, GET, PATCH, DELETE)
 - ✅ Player API routes with search and filters
 - ✅ Email verification requirement for team creation
-- ⏳ Player data scraper (partial - 253 players imported)
-- ⏳ Stripe payment integration (configured, not connected)
-- ⏳ Admin approval system (pending)
+- ✅ Player data imported (253 players for 2025 season)
+- ✅ Stripe payment integration with provider abstraction
+- ✅ Payment webhook processing with security hardening
+- ✅ Frontend payment page with Stripe Checkout
 
-**Phase 3: Scoring & Leaderboards** ✅ **COMPLETE** (100%) - REFACTORED December 31, 2024
+**Phase 3: Scoring & Leaderboards** ✅ **COMPLETE** (100%) - Refactored December 31, 2025
 - ✅ Player stats updater (MLB-StatsAPI Python script - replaced Baseball Savant)
 - ✅ Game-by-game tracking with regular season filtering
 - ✅ Scoring calculator (best 7 of 8) - `scoringService.ts`
@@ -727,10 +727,11 @@ mlb-hr-pool/
 - ⏳ Background jobs (BullMQ configured, manual execution for now)
 - 📚 Complete documentation: `backend/src/scripts/python/README.md`
 
-**Phase 4: User Experience** ❌ **NOT STARTED** (0%)
+**Phase 4: User Experience & Admin** ❌ **NOT STARTED** (0%)
 - ❌ Leaderboard UI pages
 - ❌ Player stats pages
 - ❌ Email notification system (Resend configured)
+- ❌ Admin dashboard and team approval workflow
 - ❌ Off-season mode
 
 **Phase 5: Testing & Launch** ❌ **NOT STARTED** (0%)
@@ -739,7 +740,7 @@ mlb-hr-pool/
 - ❌ Admin dashboard
 - ❌ Production deployment
 
-**Overall Progress: ~60%** (Phase 1 complete, Phase 2 complete, Phase 3 complete with MLB-StatsAPI refactor)
+**Overall Progress: ~60%** (Phases 1-3 complete, Phases 4-5 remaining)
 
 ---
 
@@ -820,19 +821,19 @@ PORT=5000
 
 ## NEXT STEPS
 
-**Immediate Priorities (Phase 2 Completion):**
-1. Complete Stripe payment integration for team entries
-2. Build admin approval workflow UI and API endpoints
-3. Finish player stats scraper for Baseball Reference
-4. Test complete team creation flow end-to-end
+**Immediate Priorities (Phase 4):**
+1. Build leaderboard UI pages (frontend)
+2. Create player profile/stats pages
+3. Build admin dashboard with team approval workflow
+4. Implement email notifications for leaderboard updates
 
 **Future Development:**
-- Refer to Phase 3-5 in DEVELOPMENT PHASES section above
+- Refer to Phases 4-5 in DEVELOPMENT PHASES section above
 - See CHANGELOG.md for detailed implementation history
 - See CLAUDE.md for architectural patterns and quick reference
 
 ---
 
-**Document Version:** Updated December 30, 2025 with current implementation status
+**Document Version:** Updated January 7, 2026 with current implementation status
 
 This is the complete project context. Build with this as the single source of truth for requirements and technical decisions.

@@ -47,7 +47,13 @@
       "Bash(npx prisma db pull:*)",
       "Bash(npx prisma generate:*)",
       "Bash(taskkill:*)",
-      "Bash(npm run import:season:*)"
+      "Bash(npm run import:season:*)",
+      "Bash(cmd /c \"cd /d C:\\\\Users\\\\conti\\\\Desktop\\\\HRD2.0\\\\HRD2.0\\\\frontend && npm install\")",
+      "Bash(cmd /c \"cd /d C:\\\\Users\\\\conti\\\\Desktop\\\\HRD2.0\\\\HRD2.0\\\\backend && npm install\")",
+      "Bash(powershell.exe -Command \"cd ''C:\\\\Users\\\\conti\\\\Desktop\\\\HRD2.0\\\\HRD2.0\\\\frontend''; npm install\")",
+      "Bash(powershell.exe -Command \"cd ''C:\\\\Users\\\\conti\\\\Desktop\\\\HRD2.0\\\\HRD2.0\\\\backend''; npm install\")",
+      "Skill(superpowers:brainstorming)",
+      "Skill(superpowers:writing-plans)"
     ]
   },
   "enableAllProjectMcpServers": true,
