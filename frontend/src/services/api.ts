@@ -133,6 +133,46 @@ export interface AuthResponse {
   refreshToken: string
 }
 
+// ==================== LEADERBOARD TYPES ====================
+
+export interface PlayerScore {
+  playerId: string
+  playerName: string
+  hrsTotal: number
+  hrsRegularSeason: number
+  hrsPostseason: number
+  included: boolean
+}
+
+export interface LeaderboardEntry {
+  rank: number
+  teamId: string
+  teamName: string
+  totalHrs: number
+  regularSeasonHrs?: number
+  postseasonHrs?: number
+  userId: string
+  username: string
+  avatarUrl: string | null
+  playerScores?: PlayerScore[]
+}
+
+export interface LeaderboardResponse {
+  leaderboard: LeaderboardEntry[]
+  seasonYear: number
+  leaderboardType: 'overall' | 'monthly'
+  totalTeams: number
+  month?: number
+}
+
+export interface LeagueStats {
+  averageScore: number
+  highestScore: number
+  lowestScore: number
+  totalTeams: number
+  topTeam?: LeaderboardEntry
+}
+
 // ==================== AUTH API ====================
 
 export const authApi = {
@@ -357,8 +397,52 @@ export const paymentsApi = {
   },
 }
 
-// ==================== LEADERBOARDS API (Placeholder) ====================
+// ==================== LEADERBOARDS API ====================
 
 export const leaderboardsApi = {
-  // Will be implemented in Phase 2
+  /**
+   * Get overall season leaderboard
+   */
+  getOverall: async (seasonYear?: number): Promise<ApiResponse<LeaderboardResponse>> => {
+    const queryParams = seasonYear ? `?seasonYear=${seasonYear}` : ''
+    const response = await api.get(`/api/leaderboards/overall${queryParams}`)
+    return response.data
+  },
+
+  /**
+   * Get monthly leaderboard
+   */
+  getMonthly: async (month: number, seasonYear?: number): Promise<ApiResponse<LeaderboardResponse>> => {
+    const queryParams = seasonYear ? `?seasonYear=${seasonYear}` : ''
+    const response = await api.get(`/api/leaderboards/monthly/${month}${queryParams}`)
+    return response.data
+  },
+
+  /**
+   * Get specific team's rank and score
+   */
+  getTeamRank: async (teamId: string, seasonYear?: number): Promise<ApiResponse<{
+    teamId: string
+    teamName: string
+    totalHrs: number
+    regularSeasonHrs: number
+    postseasonHrs: number
+    playerScores?: PlayerScore[]
+    calculatedAt: string
+    rank: number | null
+    totalTeams: number
+  }>> => {
+    const queryParams = seasonYear ? `?seasonYear=${seasonYear}` : ''
+    const response = await api.get(`/api/leaderboards/team/${teamId}${queryParams}`)
+    return response.data
+  },
+
+  /**
+   * Get league-wide statistics
+   */
+  getStats: async (seasonYear?: number): Promise<ApiResponse<LeagueStats>> => {
+    const queryParams = seasonYear ? `?seasonYear=${seasonYear}` : ''
+    const response = await api.get(`/api/leaderboards/stats${queryParams}`)
+    return response.data
+  },
 }
