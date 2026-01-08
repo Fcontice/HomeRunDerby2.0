@@ -4,6 +4,82 @@ All notable changes to Home Run Derby 2.0 project.
 
 ## [Unreleased]
 
+### Phase 4: Leaderboard UI - January 8, 2026
+
+#### Added
+- **Leaderboard Page** (`frontend/src/pages/Leaderboard.tsx`)
+  - Tab-based navigation between Overall and Monthly leaderboards
+  - Month dropdown selector for monthly view (March-September)
+  - Loading states and error handling with retry functionality
+  - Responsive design for mobile and desktop
+
+- **Leaderboard Components** (`frontend/src/components/leaderboard/`)
+  - `LeaderboardTable.tsx` - Table container with header, loading skeleton, empty state, refresh button
+  - `LeaderboardRow.tsx` - Expandable row with rank medals (🥇🥈🥉), team name, owner, HR totals
+  - `TeamDetails.tsx` - Expanded view showing all 8 players with "best 7 of 8" visualization
+  - `LeaderboardWidget.tsx` - Dashboard widget showing top 5 teams
+  - `index.ts` - Barrel export for components
+
+- **Frontend API Integration** (`frontend/src/services/api.ts`)
+  - `LeaderboardEntry` interface with playerScores support
+  - `LeaderboardResponse` interface matching backend response
+  - `PlayerScore` interface for player breakdown
+  - `LeagueStats` interface for statistics
+  - `leaderboardsApi.getOverall()` - Fetch overall leaderboard
+  - `leaderboardsApi.getMonthly()` - Fetch monthly leaderboard with month parameter
+  - `leaderboardsApi.getTeamRank()` - Fetch specific team ranking
+  - `leaderboardsApi.getStats()` - Fetch league-wide statistics
+
+- **Dashboard Integration** (`frontend/src/pages/Dashboard.tsx`)
+  - Integrated LeaderboardWidget showing top 5 teams
+  - Added navigation links (Dashboard, Leaderboard, Create Team)
+
+- **Routing** (`frontend/src/App.tsx`)
+  - Added public route `/leaderboard` for leaderboard page
+
+- **Test Data Seeding** (`backend/src/scripts/seedTestData.ts`)
+  - Creates 5 test users with teams
+  - Assigns 8 random players per team
+  - Generates random HR stats (5-35 per player)
+  - Calculates and caches leaderboard
+  - NPM script: `npm run seed:test`
+
+#### Fixed
+- **Missing seasonYear column in Leaderboard table**
+  - Created migration `backend/migrations/add_leaderboard_season_year.sql`
+  - Added `seasonYear` column with default 2025
+  - Added indexes for performance
+
+- **execute_sql RPC function not found**
+  - Updated `clearLeaderboard()` to use `db.leaderboard.deleteMany()` instead of raw SQL
+  - Added `seasonYear` filter support to `leaderboardDb.deleteMany()`
+
+- **Player scores not included in leaderboard response**
+  - Updated `getOverallLeaderboard()` to fetch and include `playerScores`
+  - Calculates "best 7 of 8" included status for each player
+  - Imported `PlayerScore` type from scoringService
+
+#### Technical Details
+- **Leaderboard Row Features:**
+  - Medals for top 3 ranks (gold, silver, bronze emojis)
+  - Clickable rows to expand/collapse player details
+  - Owner username with avatar placeholder
+  - Total HRs prominently displayed
+
+- **Team Details (Expanded View):**
+  - 2-column grid layout for 8 players
+  - ✓ Green checkmark for included players (top 7)
+  - ○ Gray circle for excluded player (8th lowest)
+  - Players sorted by HR total descending
+  - "Best 7 of 8 players count toward team score" explanation
+
+- **Dashboard Widget:**
+  - Compact top-5 leaderboard preview
+  - Links to full leaderboard page
+  - Shows user's team position if outside top 5
+
+---
+
 ### Phase 3 Refactor: MLB-StatsAPI Migration - December 31, 2025
 
 #### Changed
@@ -569,7 +645,6 @@ Test verifies:
 - Redis caching infrastructure ready but not utilized
 - Admin routes not implemented
 - Structured logging (Winston/Pino) not implemented (using console.log)
-- Leaderboard UI page not yet built (API endpoints functional)
 
 ---
 
@@ -604,8 +679,12 @@ Test verifies:
 ✅ Leaderboard API endpoints (5 routes)
 ✅ Comprehensive test script (7-step pipeline verification)
 
+### Completed (Phase 4 - In Progress)
+✅ Leaderboard UI pages (frontend) - January 8, 2026
+✅ Dashboard leaderboard widget
+✅ Test data seeding script
+
 ### Pending (Phase 4-5)
-❌ Leaderboard UI pages (frontend)
 ❌ Player profile/stats pages
 ❌ Admin dashboard with team approval workflow
 ❌ Email notification system for leaderboard updates

@@ -6,7 +6,7 @@ A web-based sports pooling application where users create fantasy teams of MLB p
 
 ---
 
-## 🚧 IMPLEMENTATION STATUS (Updated: January 7, 2026)
+## 🚧 IMPLEMENTATION STATUS (Updated: January 8, 2026)
 
 ### ✅ COMPLETED
 
@@ -52,14 +52,16 @@ A web-based sports pooling application where users create fantasy teams of MLB p
 - ⏳ Redis caching (infrastructure ready, not yet utilized)
 - ⏳ Background jobs automation (BullMQ configured, manual execution for now)
 
-### ❌ NOT STARTED
+### 🔄 IN PROGRESS
 
-**Phase 4: User Experience & Admin**
-- Leaderboard UI pages
-- Player profile/stats pages
-- Email notification system
-- Admin dashboard and team approval workflow
-- Off-season mode
+**Phase 4: User Experience & Admin** (~25% complete)
+- ✅ Leaderboard UI pages (Overall + Monthly with expandable team details)
+- ✅ Dashboard leaderboard widget (Top 5 teams)
+- ✅ Test data seeding script (`npm run seed:test`)
+- ❌ Player profile/stats pages
+- ❌ Email notification system
+- ❌ Admin dashboard and team approval workflow
+- ❌ Off-season mode
 
 **Phase 5: Testing & Launch**
 - End-to-end testing
@@ -727,8 +729,10 @@ mlb-hr-pool/
 - ⏳ Background jobs (BullMQ configured, manual execution for now)
 - 📚 Complete documentation: `backend/src/scripts/python/README.md`
 
-**Phase 4: User Experience & Admin** ❌ **NOT STARTED** (0%)
-- ❌ Leaderboard UI pages
+**Phase 4: User Experience & Admin** 🔄 **IN PROGRESS** (~25%)
+- ✅ Leaderboard UI pages (Overall + Monthly, expandable rows with player details)
+- ✅ Dashboard leaderboard widget (Top 5 teams)
+- ✅ Test data seeding script (`npm run seed:test`)
 - ❌ Player stats pages
 - ❌ Email notification system (Resend configured)
 - ❌ Admin dashboard and team approval workflow
@@ -740,7 +744,7 @@ mlb-hr-pool/
 - ❌ Admin dashboard
 - ❌ Production deployment
 
-**Overall Progress: ~60%** (Phases 1-3 complete, Phases 4-5 remaining)
+**Overall Progress: ~65%** (Phases 1-3 complete, Phase 4 in progress)
 
 ---
 
@@ -821,8 +825,8 @@ PORT=5000
 
 ## NEXT STEPS
 
-**Immediate Priorities (Phase 4):**
-1. Build leaderboard UI pages (frontend)
+**Immediate Priorities (Phase 4 - Remaining):**
+1. ~~Build leaderboard UI pages (frontend)~~ ✅ DONE
 2. Create player profile/stats pages
 3. Build admin dashboard with team approval workflow
 4. Implement email notifications for leaderboard updates
@@ -834,6 +838,6 @@ PORT=5000
 
 ---
 
-**Document Version:** Updated January 7, 2026 with current implementation status
+**Document Version:** Updated January 8, 2026 - Leaderboard UI complete
 
 This is the complete project context. Build with this as the single source of truth for requirements and technical decisions.

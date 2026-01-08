@@ -1092,6 +1092,7 @@ export const leaderboardDb = {
     let query = supabaseAdmin.from('Leaderboard').delete()
 
     if (where.leaderboardType) query = query.eq('leaderboardType', where.leaderboardType)
+    if (where.seasonYear) query = query.eq('seasonYear', where.seasonYear)
     if (where.month !== undefined) {
       if (where.month === null) {
         query = query.is('month', null)

@@ -4,7 +4,7 @@
  */
 
 import { db } from './db.js'
-import { calculateAllTeamScores, calculateMonthlyScores, TeamScore } from './scoringService.js'
+import { calculateAllTeamScores, calculateMonthlyScores, TeamScore, PlayerScore } from './scoringService.js'
 
 export type LeaderboardType = 'overall' | 'monthly' | 'allstar'
 
@@ -16,7 +16,7 @@ export interface LeaderboardEntry {
   userId: string
   username: string
   avatarUrl: string | null
-  playerScores?: any[]  // Optional detailed player breakdown
+  playerScores?: PlayerScore[]  // Optional detailed player breakdown
 }
 
 /**
@@ -140,9 +140,33 @@ export async function getOverallLeaderboard(seasonYear: number = 2025): Promise<
   const entries: LeaderboardEntry[] = []
 
   for (const record of leaderboardRecords) {
-    const team = await db.team.findUnique({ id: record.teamId }, { user: true })
+    const team = await db.team.findUnique({ id: record.teamId }, { user: true, teamPlayers: true })
 
     if (!team || !team.user) continue
+
+    // Get player scores for this team
+    const playerScores: PlayerScore[] = []
+    if (team.teamPlayers) {
+      for (const tp of team.teamPlayers) {
+        const player = tp.player
+        const latestStats = await db.playerStats.getLatest(player.id, seasonYear)
+
+        playerScores.push({
+          playerId: player.id,
+          playerName: player.name,
+          hrsTotal: latestStats?.hrsTotal || 0,
+          hrsRegularSeason: latestStats?.hrsRegularSeason || 0,
+          hrsPostseason: latestStats?.hrsPostseason || 0,
+          included: false, // Will be calculated below
+        })
+      }
+
+      // Sort by HRs and mark top 7 as included
+      playerScores.sort((a, b) => b.hrsTotal - a.hrsTotal)
+      for (let i = 0; i < Math.min(7, playerScores.length); i++) {
+        playerScores[i].included = true
+      }
+    }
 
     entries.push({
       rank: record.rank,
@@ -152,6 +176,7 @@ export async function getOverallLeaderboard(seasonYear: number = 2025): Promise<
       userId: team.user.id,
       username: team.user.username,
       avatarUrl: team.user.avatarUrl,
+      playerScores,
     })
   }
 
@@ -202,16 +227,11 @@ async function clearLeaderboard(
   leaderboardType: LeaderboardType,
   month?: number
 ) {
-  // Note: We need to implement a delete method in db.leaderboard
-  // For now, we'll delete via raw query
-  const monthFilter = month !== undefined ? `AND month = ${month}` : 'AND month IS NULL'
-
-  await db.$queryRaw(`
-    DELETE FROM "Leaderboard"
-    WHERE "leaderboardType" = '${leaderboardType}'
-    AND "seasonYear" = ${seasonYear}
-    ${monthFilter}
-  `)
+  await db.leaderboard.deleteMany({
+    leaderboardType,
+    seasonYear,
+    month: month !== undefined ? month : null,
+  })
 }
 
 /**

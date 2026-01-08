@@ -18,6 +18,7 @@
     "import:players": "tsx src/scripts/importPlayers.ts",
     "import:2025": "tsx src/scripts/import2025Season.ts",
     "test:phase3": "tsx src/scripts/testPhase3.ts",
+    "seed:test": "tsx src/scripts/seedTestData.ts",
     "import:season": "python src/scripts/python/import_season_stats.py",
     "update:stats:python": "python src/scripts/python/update_stats.py",
     "update:stats:install": "python -m pip install -r src/scripts/python/requirements.txt",
