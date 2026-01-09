@@ -3,6 +3,7 @@
  * Displays the 8-player roster with validation status
  */
 
+import { Link } from 'react-router-dom'
 import { Player } from '../../services/api'
 import { Card } from '../ui/card'
 import { Button } from '../ui/button'
@@ -59,9 +60,13 @@ export default function TeamRoster({
             {player ? (
               <>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-sm truncate">
+                  <Link
+                    to={`/players/${player.id}`}
+                    className="font-semibold text-sm truncate hover:text-primary hover:underline block"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     {player.name}
-                  </div>
+                  </Link>
                   <div className="text-xs text-muted-foreground">
                     {player.teamAbbr}
                   </div>
