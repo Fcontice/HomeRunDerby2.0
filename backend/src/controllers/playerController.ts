@@ -110,7 +110,7 @@ export async function getPlayers(req: Request, res: Response, next: NextFunction
 
 /**
  * GET /api/players/:id
- * Get a single player by ID with season history
+ * Get a single player by ID with season history and draft context
  */
 export async function getPlayerById(req: Request, res: Response, next: NextFunction) {
   try {
@@ -128,11 +128,42 @@ export async function getPlayerById(req: Request, res: Response, next: NextFunct
     // Get player's season history
     const seasonHistory = await db.playerSeasonStats.findByPlayer(id);
 
+    // Get latest season stats for eligibility display
+    const latestSeasonStats = seasonHistory.length > 0
+      ? seasonHistory.sort((a: any, b: any) => b.seasonYear - a.seasonYear)[0]
+      : null;
+
+    // Count how many teams (paid or locked) have drafted this player
+    const teamPlayers = await db.teamPlayer.findMany({ playerId: id });
+
+    // Get team statuses to filter for paid/locked only
+    let draftCount = 0;
+    if (teamPlayers.length > 0) {
+      const teamIds = teamPlayers.map((tp: any) => tp.teamId);
+      const teams = await db.team.findMany({
+        id: { in: teamIds },
+        paymentStatus: { in: ['paid'] },
+        entryStatus: { in: ['entered', 'locked'] }
+      });
+      draftCount = teams.length;
+    }
+
+    // Calculate cap percentage (based on latest season HRs)
+    const hrsTotal = latestSeasonStats?.hrsTotal || 0;
+    const capPercentage = Math.round((hrsTotal / 172) * 1000) / 10; // One decimal place
+
     res.json({
       success: true,
       data: {
         ...player,
         seasonHistory,
+        draftCount,
+        latestSeasonStats: latestSeasonStats ? {
+          seasonYear: latestSeasonStats.seasonYear,
+          hrsTotal: latestSeasonStats.hrsTotal,
+          isEligible: latestSeasonStats.hrsTotal >= 10
+        } : null,
+        capPercentage
       },
     });
   } catch (error) {
