@@ -81,6 +81,22 @@ export interface Player {
   updatedAt: string
 }
 
+export interface PlayerProfile extends Player {
+  seasonHistory: Array<{
+    id: string
+    seasonYear: number
+    hrsTotal: number
+    teamAbbr: string
+  }>
+  draftCount: number
+  latestSeasonStats: {
+    seasonYear: number
+    hrsTotal: number
+    isEligible: boolean
+  } | null
+  capPercentage: number
+}
+
 export interface PlayerListResponse {
   players: Player[]
   pagination: {
@@ -346,7 +362,7 @@ export const playersApi = {
   /**
    * Get a single player by ID
    */
-  getPlayerById: async (id: string): Promise<ApiResponse<Player>> => {
+  getPlayerById: async (id: string): Promise<ApiResponse<PlayerProfile>> => {
     const response = await api.get(`/api/players/${id}`)
     return response.data
   },
