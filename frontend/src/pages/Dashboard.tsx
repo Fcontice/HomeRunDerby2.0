@@ -33,6 +33,12 @@ export default function Dashboard() {
                 Dashboard
               </Link>
               <Link
+                to="/players"
+                className="text-white hover:text-gray-300 transition-colors"
+              >
+                Players
+              </Link>
+              <Link
                 to="/leaderboard"
                 className="text-white hover:text-gray-300 transition-colors"
               >
