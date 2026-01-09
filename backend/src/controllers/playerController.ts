@@ -6,6 +6,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { db } from '../services/db.js';
+import { supabaseAdmin } from '../config/supabase.js';
 
 /**
  * GET /api/players
@@ -136,16 +137,21 @@ export async function getPlayerById(req: Request, res: Response, next: NextFunct
     // Count how many teams (paid or locked) have drafted this player
     const teamPlayers = await db.teamPlayer.findMany({ playerId: id });
 
-    // Get team statuses to filter for paid/locked only
     let draftCount = 0;
     if (teamPlayers.length > 0) {
       const teamIds = teamPlayers.map((tp: any) => tp.teamId);
-      const teams = await db.team.findMany({
-        id: { in: teamIds },
-        paymentStatus: { in: ['paid'] },
-        entryStatus: { in: ['entered', 'locked'] }
-      });
-      draftCount = teams.length;
+
+      // Use Supabase client directly since teamDb.findMany doesn't support these filters
+      const { data: teams, error: teamsError } = await supabaseAdmin
+        .from('Team')
+        .select('id')
+        .in('id', teamIds)
+        .in('paymentStatus', ['paid'])
+        .in('entryStatus', ['entered', 'locked'])
+        .is('deletedAt', null);
+
+      if (teamsError) throw teamsError;
+      draftCount = teams?.length || 0;
     }
 
     // Calculate cap percentage (based on latest season HRs)
