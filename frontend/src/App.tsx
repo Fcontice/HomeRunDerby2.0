@@ -8,6 +8,8 @@ import Dashboard from './pages/Dashboard'
 import CreateTeam from './pages/CreateTeam'
 import PaymentPage from './pages/PaymentPage'
 import Leaderboard from './pages/Leaderboard'
+import Players from './pages/Players'
+import PlayerProfile from './pages/PlayerProfile'
 
 // Test components
 import ComponentTest from './pages/test-pages/pcComponentTest'
@@ -22,6 +24,8 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/players" element={<Players />} />
+        <Route path="/players/:id" element={<PlayerProfile />} />
 
         {/* Test component routes */}
         <Route path="/pccomponent-test" element={<ComponentTest />} />  
