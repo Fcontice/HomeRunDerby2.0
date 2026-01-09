@@ -24,7 +24,7 @@ export default function Players() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [teamFilter, setTeamFilter] = useState<string>('')
+  const [teamFilter, setTeamFilter] = useState<string>('all')
 
   useEffect(() => {
     const fetchPlayers = async () => {
@@ -36,7 +36,7 @@ export default function Players() {
           minHrs: 10,
           sortBy: 'hrs',
           sortOrder: 'desc',
-          team: teamFilter || undefined,
+          team: teamFilter === 'all' ? undefined : teamFilter,
           search: searchQuery || undefined,
         })
 
@@ -87,7 +87,7 @@ export default function Players() {
               <SelectValue placeholder="All Teams" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Teams</SelectItem>
+              <SelectItem value="all">All Teams</SelectItem>
               {MLB_TEAMS.map((team) => (
                 <SelectItem key={team} value={team}>
                   {team}
