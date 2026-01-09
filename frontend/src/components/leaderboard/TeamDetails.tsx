@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { PlayerScore } from '../../services/api'
 
 interface TeamDetailsProps {
@@ -27,9 +28,13 @@ export function TeamDetails({ playerScores }: TeamDetailsProps) {
                 <span className="text-gray-400 text-sm">○</span>
               )}
               <div>
-                <p className={`font-medium text-sm ${!player.included && 'text-gray-500'}`}>
+                <Link
+                  to={`/players/${player.playerId}`}
+                  className={`font-medium text-sm hover:underline ${!player.included && 'text-gray-500'}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
                   {player.playerName}
-                </p>
+                </Link>
               </div>
             </div>
             <div className={`text-right ${!player.included && 'text-gray-500'}`}>
