@@ -6,7 +6,7 @@ A web-based sports pooling application where users create fantasy teams of MLB p
 
 ---
 
-## 🚧 IMPLEMENTATION STATUS (Updated: January 8, 2026)
+## 🚧 IMPLEMENTATION STATUS (Updated: January 9, 2026)
 
 ### ✅ COMPLETED
 
@@ -39,7 +39,7 @@ A web-based sports pooling application where users create fantasy teams of MLB p
 - ✅ Stripe payment integration with provider abstraction
 - ✅ Payment webhook processing with security hardening
 - ✅ Frontend payment page with Stripe Checkout
-- ✅ Player data imported (253 players for 2025 season)
+- ✅ Player data imported (226 players with ≥10 HRs for 2025 season)
 
 **Phase 3: Scoring & Leaderboards (100%)** - Refactored December 31, 2025
 - ✅ Player stats updater (MLB-StatsAPI Python script - replaced Baseball Savant)
@@ -54,11 +54,14 @@ A web-based sports pooling application where users create fantasy teams of MLB p
 
 ### 🔄 IN PROGRESS
 
-**Phase 4: User Experience & Admin** (~25% complete)
+**Phase 4: User Experience & Admin** (~40% complete)
 - ✅ Leaderboard UI pages (Overall + Monthly with expandable team details)
 - ✅ Dashboard leaderboard widget (Top 5 teams)
 - ✅ Test data seeding script (`npm run seed:test`)
-- ❌ Player profile/stats pages
+- ✅ Player profile pages (list + individual profiles with draft context)
+  - `/players` - Searchable player pool with team filter
+  - `/players/:id` - Player profile with eligibility stats & draft popularity
+  - Clickable player names throughout app (TeamRoster, TeamDetails)
 - ❌ Email notification system
 - ❌ Admin dashboard and team approval workflow
 - ❌ Off-season mode
@@ -229,18 +232,26 @@ A web-based sports pooling application where users create fantasy teams of MLB p
 - **End**: After World Series concludes
 - Admin can manually end season early if needed
 
-**Player Stats Updates** (REFACTORED - December 31, 2024)
-- **Data Source**: MLB-StatsAPI (Official MLB API) - replaced Baseball Savant CSV scraping
+**Player Eligibility Import** (Yearly - `import_season_stats.py`)
+- **Purpose**: Import previous season's HR totals to determine eligible players for team creation
+- **Data Source**: MLB Stats API leaderboard with offset pagination (bypasses 100-result API limit)
+- **Deduplication**: Handles traded players who appear multiple times (keeps highest HR entry)
+- **Team Data**: Uses `hydrate=team` parameter for team abbreviations
+- **Threshold**: Default ≥10 HRs, configurable via `--min-hrs`
+- **Command**: `npm run import:season` or `npm run import:season -- --season 2024`
+- **Frequency**: Run ONCE per year before contest opens
+
+**Player Stats Updates** (Daily - `update_stats.py`)
+- **Purpose**: Track game-by-game home runs during active contest
+- **Data Source**: MLB-StatsAPI (Official MLB API)
 - **Update Schedule**: Daily at 3:00 AM ET (recommended) - after all games conclude
-- **Implementation**: Python script (`update_stats.py`) writes directly to Supabase
 - **Granularity**: Game-by-game tracking with daily aggregation
 - **Filtering**: Regular season only (`game_type='R'`) - excludes spring training, all-star, postseason
 - **Player Metadata**: Automatically updates team abbreviation and name from MLB API
 - **Idempotency**: Safe to re-run for same date (upserts by playerId, seasonYear, date composite key)
-- **Season Coverage**: 2026 season forward (no historical backfill)
+- **Command**: `npm run update:stats:python` or `npm run update:stats:python -- --date 2026-04-15`
 - **Automation**: Via cron (Linux/Mac), Task Scheduler (Windows), or BullMQ (future)
 - **Documentation**: See `backend/src/scripts/python/README.md` for complete implementation guide
-- Stats corrections (HR ruled double) immediately reflected by re-running update for affected date
 
 **Edge Cases**
 - Player traded mid-season: Stays on team, HRs count regardless of MLB team
@@ -313,7 +324,7 @@ Users cannot:
 - Purge data older than 1 year (except payment records for tax/legal)
 
 **Current Database State** (as of Dec 30, 2025)
-- 253 player records imported for 2025 season
+- 226 player records imported for 2025 season (players with ≥10 HRs)
 - Migration `001_cumulative_archive_schema.sql` applied
 - All tables created with proper constraints and indexes
 - Soft delete functionality implemented via `deletedAt` timestamp
@@ -712,7 +723,7 @@ mlb-hr-pool/
 - ✅ Team API routes (POST, GET, PATCH, DELETE)
 - ✅ Player API routes with search and filters
 - ✅ Email verification requirement for team creation
-- ✅ Player data imported (253 players for 2025 season)
+- ✅ Player data imported (226 players with ≥10 HRs for 2025 season)
 - ✅ Stripe payment integration with provider abstraction
 - ✅ Payment webhook processing with security hardening
 - ✅ Frontend payment page with Stripe Checkout
@@ -744,7 +755,7 @@ mlb-hr-pool/
 - ❌ Admin dashboard
 - ❌ Production deployment
 
-**Overall Progress: ~65%** (Phases 1-3 complete, Phase 4 in progress)
+**Overall Progress: ~70%** (Phases 1-3 complete, Phase 4 ~40% complete)
 
 ---
 
@@ -827,7 +838,7 @@ PORT=5000
 
 **Immediate Priorities (Phase 4 - Remaining):**
 1. ~~Build leaderboard UI pages (frontend)~~ ✅ DONE
-2. Create player profile/stats pages
+2. ~~Create player profile/stats pages~~ ✅ DONE (January 9, 2026)
 3. Build admin dashboard with team approval workflow
 4. Implement email notifications for leaderboard updates
 
@@ -838,6 +849,6 @@ PORT=5000
 
 ---
 
-**Document Version:** Updated January 8, 2026 - Leaderboard UI complete
+**Document Version:** Updated January 9, 2026 - Added player profile pages feature
 
 This is the complete project context. Build with this as the single source of truth for requirements and technical decisions.

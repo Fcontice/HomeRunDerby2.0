@@ -109,7 +109,7 @@ Use these endpoints to verify:
 ### File Organization
 
 **Frontend** (`/frontend/src`):
-- `pages/` - Route components (Login, Register, Dashboard, CreateTeam, VerifyEmail)
+- `pages/` - Route components (Login, Register, Dashboard, CreateTeam, VerifyEmail, Players, PlayerProfile, Leaderboard)
 - `components/ui/` - Reusable Radix UI components (button, card, input, etc.)
 - `components/team/` - Team-specific components
 - `contexts/AuthContext.tsx` - Global auth state
@@ -189,7 +189,7 @@ BullMQ + Redis configured but not fully implemented. Job queues defined for play
 **PlayerSeasonStats Model:**
 - `playerId` - Player's historical stats
 - `seasonYear` - Season filtering
-- `hrsTotal` - Eligibility calculations (2024 HRs ≤ 21)
+- `hrsTotal` - Eligibility calculations (previous season HRs >= 10)
 
 ### Phase 3: Stats & Leaderboards (Implemented - REFACTORED)
 
@@ -245,10 +245,10 @@ BullMQ + Redis configured but not fully implemented. Job queues defined for play
 npm run update:stats:install
 
 # ===== YEARLY SETUP (Run ONCE before each contest) =====
-# Import entire previous season for player eligibility (≥20 HRs)
+# Import entire previous season for player eligibility (≥10 HRs)
 npm run import:season                     # Import 2025 season (default)
 npm run import:season -- --season 2024    # Import specific season
-npm run import:season -- --min-hrs 25     # Custom HR threshold
+npm run import:season -- --min-hrs 20     # Custom HR threshold
 
 # ===== DAILY UPDATES (During contest) =====
 # Update stats for yesterday (default)
@@ -269,11 +269,13 @@ npm run test:phase3 -- --date 2026-04-15
 
 1. **Pre-Contest Setup (Yearly)**: `import:season`
    - Imports entire previous season's data (e.g., 2025 stats for 2026 contest)
-   - Populates `PlayerSeasonStats` table with season totals only
-   - Filters for players with ≥20 home runs (eligibility threshold)
-   - Used for team creation - determines which players are available
+   - Populates `Player` and `PlayerSeasonStats` tables
+   - Uses MLB Stats API leaderboard with **offset pagination** (bypasses 100-result API limit)
+   - Includes `hydrate=team` for team abbreviations
+   - **Dedupes traded players** (keeps first/highest HR entry)
+   - Filters for players with ≥10 home runs (eligibility threshold)
    - Run ONCE per year before contest starts
-   - Example: Before 2026 contest, import all 2025 players with ≥20 HRs
+   - Example: Before 2026 contest, run `npm run import:season -- --season 2025`
 
 2. **Active Contest (Daily)**: `update:stats:python`
    - Updates current season's game-by-game data (e.g., 2026 daily HRs)
@@ -297,7 +299,7 @@ See `backend/src/scripts/python/README.md` for complete implementation details, 
 - **Payments**: Stripe integration with webhook processing fully functional.
 - **Python stats updater**: Robust retry logic with exponential backoff (3 attempts, 5min timeout)
 - **Health monitoring**: `/health` and `/health/python` endpoints for system checks
-- **Current status**: Phases 1-3 complete (~60%). Next: Phase 4 (User Experience & Admin - leaderboard UI, admin dashboard).
+- **Current status**: Phases 1-3 complete, Phase 4 ~40% (~70% overall). Next: Admin dashboard, email notifications.
 
 ## Testing
 
