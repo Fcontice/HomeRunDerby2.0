@@ -82,7 +82,18 @@
       "mcp__plugin_playwright_playwright__browser_console_messages",
       "mcp__plugin_playwright_playwright__browser_evaluate",
       "mcp__plugin_playwright_playwright__browser_take_screenshot",
-      "mcp__plugin_playwright_playwright__browser_wait_for"
+      "mcp__plugin_playwright_playwright__browser_wait_for",
+      "Bash(powershell -Command:*)",
+      "WebFetch(domain:statsapi.mlb.com)",
+      "Bash(cmd.exe /c \"cd /d C:\\\\Users\\\\conti\\\\Desktop\\\\HRD2.0\\\\backend && npm run build\")",
+      "Bash(cmd.exe /c \"cd /d C:\\\\Users\\\\conti\\\\Desktop\\\\HRD2.0\\\\backend && npm run build 2>&1\")",
+      "Bash(powershell.exe -Command \"Set-Location ''C:\\\\Users\\\\conti\\\\Desktop\\\\HRD2.0\\\\backend''; npm run build\")",
+      "Bash(/mnt/c/Windows/System32/cmd.exe /c \"cd /d C:\\\\Users\\\\conti\\\\Desktop\\\\HRD2.0\\\\backend && npm run build\")",
+      "Bash(timeout /t 5 /nobreak)",
+      "mcp__plugin_playwright_playwright__browser_close",
+      "mcp__plugin_playwright_playwright__browser_fill_form",
+      "mcp__plugin_playwright_playwright__browser_press_key",
+      "mcp__plugin_playwright_playwright__browser_type"
     ]
   },
   "enableAllProjectMcpServers": true,

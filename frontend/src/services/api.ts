@@ -189,6 +189,63 @@ export interface LeagueStats {
   topTeam?: LeaderboardEntry
 }
 
+// ==================== ADMIN TYPES ====================
+
+export interface AdminStats {
+  totalTeams: number
+  pendingApprovals: number
+  revenue: number
+  activeUsers: number
+  totalUsers: number
+  teamsByPaymentStatus: {
+    draft: number
+    pending: number
+    paid: number
+    rejected: number
+    refunded: number
+  }
+  teamsByEntryStatus: {
+    draft: number
+    entered: number
+    locked: number
+  }
+  seasonYear: number
+}
+
+export interface AdminTeam extends Team {
+  user?: {
+    id: string
+    username: string
+    email: string
+    avatarUrl: string | null
+  }
+}
+
+export interface AdminUser {
+  id: string
+  email: string
+  username: string
+  role: 'user' | 'admin'
+  emailVerified: boolean
+  authProvider: 'email' | 'google'
+  avatarUrl: string | null
+  createdAt: string
+  teamCount: number
+  paidTeamCount: number
+}
+
+export interface RecipientCounts {
+  all: number
+  unpaid: number
+  paid: number
+}
+
+export interface NotificationResult {
+  sentCount: number
+  failedCount: number
+  totalRecipients: number
+}
+
 // ==================== AUTH API ====================
 
 export const authApi = {
@@ -459,6 +516,143 @@ export const leaderboardsApi = {
   getStats: async (seasonYear?: number): Promise<ApiResponse<LeagueStats>> => {
     const queryParams = seasonYear ? `?seasonYear=${seasonYear}` : ''
     const response = await api.get(`/api/leaderboards/stats${queryParams}`)
+    return response.data
+  },
+}
+
+// ==================== ADMIN API ====================
+
+export const adminApi = {
+  /**
+   * Get dashboard statistics
+   */
+  getStats: async (seasonYear?: number): Promise<ApiResponse<AdminStats>> => {
+    const queryParams = seasonYear ? `?seasonYear=${seasonYear}` : ''
+    const response = await api.get(`/api/admin/stats${queryParams}`)
+    return response.data
+  },
+
+  /**
+   * Get all teams with filters
+   */
+  getTeams: async (params?: {
+    paymentStatus?: string
+    entryStatus?: string
+    seasonYear?: number
+    search?: string
+  }): Promise<ApiResponse<AdminTeam[]>> => {
+    const queryParams = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, String(value))
+        }
+      })
+    }
+    const response = await api.get(`/api/admin/teams?${queryParams.toString()}`)
+    return response.data
+  },
+
+  /**
+   * Get team details
+   */
+  getTeamDetails: async (id: string): Promise<ApiResponse<AdminTeam>> => {
+    const response = await api.get(`/api/admin/teams/${id}`)
+    return response.data
+  },
+
+  /**
+   * Update team payment status
+   */
+  updateTeamStatus: async (
+    id: string,
+    paymentStatus: string
+  ): Promise<ApiResponse<AdminTeam>> => {
+    const response = await api.patch(`/api/admin/teams/${id}/status`, { paymentStatus })
+    return response.data
+  },
+
+  /**
+   * Get all users with filters
+   */
+  getUsers: async (params?: {
+    verified?: string
+    role?: string
+    search?: string
+  }): Promise<ApiResponse<AdminUser[]>> => {
+    const queryParams = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, String(value))
+        }
+      })
+    }
+    const response = await api.get(`/api/admin/users?${queryParams.toString()}`)
+    return response.data
+  },
+
+  /**
+   * Manually verify user email
+   */
+  verifyUserEmail: async (id: string): Promise<ApiResponse> => {
+    const response = await api.patch(`/api/admin/users/${id}/verify`)
+    return response.data
+  },
+
+  /**
+   * Send password reset to user
+   */
+  sendPasswordReset: async (id: string): Promise<ApiResponse> => {
+    const response = await api.post(`/api/admin/users/${id}/reset-password`)
+    return response.data
+  },
+
+  /**
+   * Delete user
+   */
+  deleteUser: async (id: string): Promise<ApiResponse> => {
+    const response = await api.delete(`/api/admin/users/${id}`)
+    return response.data
+  },
+
+  /**
+   * Get notification recipient counts
+   */
+  getRecipientCounts: async (): Promise<ApiResponse<RecipientCounts>> => {
+    const response = await api.get('/api/admin/recipient-counts')
+    return response.data
+  },
+
+  /**
+   * Send bulk notifications
+   */
+  sendNotifications: async (data: {
+    recipientGroup?: 'all' | 'unpaid' | 'paid'
+    userEmail?: string
+    subject: string
+    body: string
+  }): Promise<ApiResponse<NotificationResult>> => {
+    const response = await api.post('/api/admin/notifications', data)
+    return response.data
+  },
+
+  /**
+   * End season
+   */
+  endSeason: async (seasonYear: number): Promise<ApiResponse> => {
+    const response = await api.post('/api/admin/season/end', {
+      confirmation: 'END SEASON',
+      seasonYear,
+    })
+    return response.data
+  },
+
+  /**
+   * Verify admin password for re-auth
+   */
+  verifyPassword: async (password: string): Promise<ApiResponse> => {
+    const response = await api.post('/api/admin/verify-password', { password })
     return response.data
   },
 }

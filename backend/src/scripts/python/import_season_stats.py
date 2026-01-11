@@ -6,9 +6,9 @@ Imports entire season's home run totals to populate PlayerSeasonStats table.
 This determines which players are eligible for the next contest.
 
 Usage:
-    python import_season_stats.py                    # Import 2025 season (default)
+    python import_season_stats.py                    # Import 2025 season (default, >=10 HRs)
     python import_season_stats.py --season 2024      # Import specific season
-    python import_season_stats.py --min-hrs 25       # Custom HR threshold
+    python import_season_stats.py --min-hrs 20       # Custom HR threshold
 
 This script should be run ONCE per year before the contest starts.
 For daily updates during the contest, use update_stats.py instead.
@@ -31,53 +31,64 @@ load_dotenv(env_path)
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from db_utils import SupabaseDB
 
-def fetch_season_leaders(season_year: int, min_home_runs: int = 20) -> list:
+
+def fetch_season_leaders_paginated(season_year: int, min_home_runs: int = 10) -> list:
     """
-    Fetch all players with >= min_home_runs for the specified season.
+    Fetch all players with >= min_home_runs for the specified season using pagination.
+
+    The MLB Stats API leaderboard endpoint caps at ~100 results per call, but supports
+    offset pagination. This function fetches all pages and dedupes players who appear
+    multiple times (e.g., traded mid-season).
 
     Args:
         season_year: MLB season year (e.g., 2025)
-        min_home_runs: Minimum HRs required for eligibility (default: 20)
+        min_home_runs: Minimum HRs required for eligibility (default: 10)
 
     Returns:
-        List of player data dictionaries with HR totals
+        List of player data dictionaries with HR totals (deduped, sorted by HRs desc)
     """
     print(f"Fetching season leaders for {season_year}...")
     print(f"   Minimum threshold: {min_home_runs} home runs")
 
+    base_url = "https://statsapi.mlb.com/api/v1/stats/leaders"
+    all_players = {}  # Dedupe by mlbId, sum HRs for traded players
+    page_size = 100
+    offset = 0
+    total_fetched = 0
+
     try:
-        # Use MLB Stats API leaderboard endpoint directly via HTTP
-        # Regular season only (R), sorted by home runs
-        base_url = "https://statsapi.mlb.com/api/v1/stats/leaders"
-        params = {
-            'leaderCategories': 'homeRuns',
-            'season': season_year,
-            'limit': 500,  # Get top 500 players
-            'leaderGameTypes': 'R',  # Regular season only
-            'statGroup': 'hitting'
-        }
+        while True:
+            params = {
+                'leaderCategories': 'homeRuns',
+                'season': season_year,
+                'limit': page_size,
+                'offset': offset,
+                'leaderGameTypes': 'R',  # Regular season only
+                'statGroup': 'hitting',
+                'hydrate': 'team'  # Include team data (abbreviation, name, etc.)
+            }
 
-        print(f"   Calling MLB API: {base_url}")
-        response = requests.get(base_url, params=params, timeout=30)
-        response.raise_for_status()
+            print(f"   Fetching offset {offset}...", end=' ')
+            response = requests.get(base_url, params=params, timeout=30)
+            response.raise_for_status()
+            data = response.json()
 
-        data = response.json()
-        eligible_players = []
+            # Navigate the response structure
+            if 'leagueLeaders' not in data:
+                print("no data")
+                break
 
-        # Navigate the response structure
-        if 'leagueLeaders' not in data:
-            print("ERROR: Unexpected API response format")
-            print(f"Response keys: {data.keys()}")
-            return []
+            page_count = 0
+            min_hr_on_page = float('inf')
 
-        for league_leader in data['leagueLeaders']:
-            if 'leaders' not in league_leader:
-                continue
+            for league_leader in data['leagueLeaders']:
+                if 'leaders' not in league_leader:
+                    continue
 
-            for leader in league_leader['leaders']:
-                hr_total = int(leader.get('value', 0))
+                for leader in league_leader['leaders']:
+                    hr_total = int(leader.get('value', 0))
+                    min_hr_on_page = min(min_hr_on_page, hr_total)
 
-                if hr_total >= min_home_runs:
                     player_data = leader.get('person', {})
                     team_data = leader.get('team', {})
 
@@ -85,17 +96,56 @@ def fetch_season_leaders(season_year: int, min_home_runs: int = 20) -> list:
                     player_name = player_data.get('fullName', 'Unknown')
                     team_abbr = team_data.get('abbreviation', 'FA')
 
-                    eligible_players.append({
-                        'mlbId': player_id,
-                        'name': player_name,
-                        'teamAbbr': team_abbr,
-                        'hrsTotal': hr_total,
-                        'seasonYear': season_year
-                    })
+                    if player_id:
+                        if player_id not in all_players:
+                            # New player - add them
+                            all_players[player_id] = {
+                                'mlbId': player_id,
+                                'name': player_name,
+                                'teamAbbr': team_abbr,
+                                'hrsTotal': hr_total,
+                                'seasonYear': season_year
+                            }
+                        # else: Player already seen (traded) - keep first entry since
+                        # list is sorted by HRs desc and API shows total HRs per entry
 
-                    print(f"   OK {player_name} ({team_abbr}): {hr_total} HRs")
+                        page_count += 1
 
-        print(f"\nFound {len(eligible_players)} eligible players")
+            total_fetched += page_count
+            print(f"got {page_count} entries (min HR: {min_hr_on_page})")
+
+            # Stop if we got fewer than page_size (no more data)
+            # or if the minimum HR on this page is below our threshold
+            if page_count < page_size:
+                print(f"   Reached end of data")
+                break
+
+            if min_hr_on_page < min_home_runs:
+                print(f"   Reached players below {min_home_runs} HR threshold")
+                break
+
+            offset += page_size
+
+        # Filter by minimum home runs and sort
+        eligible_players = [
+            p for p in all_players.values()
+            if p['hrsTotal'] >= min_home_runs
+        ]
+        eligible_players.sort(key=lambda x: x['hrsTotal'], reverse=True)
+
+        print(f"\n   Total entries fetched: {total_fetched}")
+        print(f"   Unique players: {len(all_players)}")
+        print(f"   Players with >= {min_home_runs} HRs: {len(eligible_players)}")
+
+        # Show top 5 and bottom 5
+        if eligible_players:
+            print(f"\n   Top 5:")
+            for p in eligible_players[:5]:
+                print(f"      {p['name']} ({p['teamAbbr']}): {p['hrsTotal']} HRs")
+            print(f"   Bottom 5:")
+            for p in eligible_players[-5:]:
+                print(f"      {p['name']} ({p['teamAbbr']}): {p['hrsTotal']} HRs")
+
         return eligible_players
 
     except requests.exceptions.RequestException as e:
@@ -106,6 +156,7 @@ def fetch_season_leaders(season_year: int, min_home_runs: int = 20) -> list:
         import traceback
         traceback.print_exc()
         return []
+
 
 def upsert_player_season_stats(supabase, players_data: list) -> dict:
     """
@@ -147,8 +198,6 @@ def upsert_player_season_stats(supabase, players_data: list) -> dict:
                 # Check if this was an insert or update
                 existing_check = supabase.table('Player').select('id').eq('mlbId', player['mlbId']).execute()
                 if len(existing_check.data) == 1:
-                    # Determine if we created or updated based on whether the player existed before
-                    # This is a simplification - in practice, the upsert doesn't tell us directly
                     results['players_updated'] += 1
                 else:
                     results['players_created'] += 1
@@ -178,6 +227,7 @@ def upsert_player_season_stats(supabase, players_data: list) -> dict:
 
     return results
 
+
 def main():
     """Main execution function."""
     parser = argparse.ArgumentParser(
@@ -192,8 +242,8 @@ def main():
     parser.add_argument(
         '--min-hrs',
         type=int,
-        default=20,
-        help='Minimum home runs for eligibility (default: 20)'
+        default=10,
+        help='Minimum home runs for eligibility (default: 10)'
     )
 
     args = parser.parse_args()
@@ -206,8 +256,8 @@ def main():
     print("=" * 60)
     print()
 
-    # Step 1: Fetch eligible players from MLB API
-    players_data = fetch_season_leaders(args.season, args.min_hrs)
+    # Step 1: Fetch eligible players from MLB API with pagination
+    players_data = fetch_season_leaders_paginated(args.season, args.min_hrs)
 
     if not players_data:
         print("\nWARNING: No eligible players found. Check the season year and threshold.")
@@ -241,6 +291,7 @@ def main():
         print(f"\nSUCCESS: Imported {args.season} season stats!")
         print(f"   {len(players_data)} players with >={args.min_hrs} HRs are now eligible\n")
         sys.exit(0)
+
 
 if __name__ == '__main__':
     main()

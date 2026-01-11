@@ -110,14 +110,16 @@ Use these endpoints to verify:
 
 **Frontend** (`/frontend/src`):
 - `pages/` - Route components (Login, Register, Dashboard, CreateTeam, VerifyEmail, Players, PlayerProfile, Leaderboard)
-- `components/ui/` - Reusable Radix UI components (button, card, input, etc.)
+- `pages/admin/` - Admin dashboard pages (AdminLayout, AdminDashboard, AdminTeams, AdminUsers, AdminNotifications)
+- `components/ui/` - Reusable Radix UI components (button, card, input, dialog, table, dropdown-menu, badge, textarea, etc.)
+- `components/admin/` - Admin-specific components (ReAuthModal, StatsCard)
 - `components/team/` - Team-specific components
 - `contexts/AuthContext.tsx` - Global auth state
-- `services/api.ts` - Axios instance with all API endpoints organized as `authApi`, `teamsApi`, `playersApi`
+- `services/api.ts` - Axios instance with all API endpoints organized as `authApi`, `teamsApi`, `playersApi`, `adminApi`
 
 **Backend** (`/backend/src`):
-- `routes/` - Route definitions (auth, teams, players, payments, leaderboards)
-- `controllers/` - Request handlers with business logic
+- `routes/` - Route definitions (auth, teams, players, payments, leaderboards, admin)
+- `controllers/` - Request handlers with business logic (includes adminController.ts)
 - `services/` - Core business logic services:
   - `db.ts` - Database abstraction layer (Supabase wrapper)
   - `emailService.ts` - Resend email integration
@@ -287,6 +289,55 @@ npm run test:phase3 -- --date 2026-04-15
 **Python Script Documentation:**
 See `backend/src/scripts/python/README.md` for complete implementation details, scheduling options, and troubleshooting.
 
+### Phase 4: Admin Dashboard (Implemented)
+
+**Overview:**
+Full admin dashboard for managing teams, users, and sending notifications. Accessible at `/admin/*` routes with dedicated sidebar layout.
+
+**Admin Routes:**
+- `/admin` - Dashboard with stats overview, teams by status, quick actions
+- `/admin/teams` - Team management with filters and status actions
+- `/admin/users` - User management with search and actions
+- `/admin/notifications` - Send email notifications to user groups
+
+**Backend API Endpoints** (`/api/admin/*`):
+- `GET /stats` - Dashboard statistics (total teams, pending approvals, revenue, active users)
+- `GET /teams` - List teams with optional filters (paymentStatus, entryStatus, search)
+- `GET /teams/:id` - Get team details with players
+- `PATCH /teams/:id/status` - Update team payment status
+- `GET /users` - List users with optional search
+- `PATCH /users/:id/verify-email` - Manually verify user email
+- `POST /users/:id/password-reset` - Send password reset email
+- `DELETE /users/:id` - Soft delete user
+- `POST /notifications` - Send email notifications
+- `GET /notifications/recipient-counts` - Get counts for recipient groups
+- `POST /end-season` - End the current season (locks all teams)
+- `POST /verify-password` - Re-authenticate for destructive actions
+
+**Security Features:**
+- All admin routes require `requireAdmin` middleware (checks `user.role === 'admin'`)
+- Destructive actions require re-authentication:
+  - Email/password users: Must enter password
+  - OAuth users (Google): Auto-verified (authenticated via trusted provider)
+  - Actions requiring re-auth: Reject team, delete user, send notifications, end season
+
+**Frontend Components:**
+- `AdminLayout.tsx` - Sidebar navigation with role check, redirects non-admins
+- `AdminDashboard.tsx` - Stats cards, teams by status, quick actions, end season modal
+- `AdminTeams.tsx` - Team table with filters, status badges, approve/reject actions
+- `AdminUsers.tsx` - User table with verify email, password reset, delete actions
+- `AdminNotifications.tsx` - Email composer with recipient group selection
+- `ReAuthModal.tsx` - Password verification modal for destructive actions
+- `StatsCard.tsx` - Reusable stats display card with variants
+
+**Admin Link:**
+- Visible only to admin users in main Dashboard navigation (purple "Admin" link)
+
+**Testing Admin Access:**
+1. Update user role in Supabase: `UPDATE "User" SET role = 'admin' WHERE email = 'your@email.com';`
+2. Log out and log back in to get a new JWT token with admin role
+3. Navigate to `/admin` or click the "Admin" link in navigation
+
 ## Important Notes
 
 - **LocalStorage security**: Tokens currently stored in localStorage (XSS vulnerable). Consider httpOnly cookies for production.
@@ -299,7 +350,7 @@ See `backend/src/scripts/python/README.md` for complete implementation details, 
 - **Payments**: Stripe integration with webhook processing fully functional.
 - **Python stats updater**: Robust retry logic with exponential backoff (3 attempts, 5min timeout)
 - **Health monitoring**: `/health` and `/health/python` endpoints for system checks
-- **Current status**: Phases 1-3 complete, Phase 4 ~40% (~70% overall). Next: Admin dashboard, email notifications.
+- **Current status**: Phases 1-4 complete (~85% overall). Admin dashboard fully functional. Next: Automated stats scheduling, polish & testing.
 
 ## Testing
 
@@ -338,6 +389,12 @@ npm run test        # (frontend or backend)
 4. Generate leaderboard: `leaderboardService.calculateOverallLeaderboard(2025)`
 5. Retrieve cached: `leaderboardService.getOverallLeaderboard(2025)`
 6. Test pipeline: `npm run test:phase3`
+
+**Work with admin dashboard:**
+1. Make user admin: `UPDATE "User" SET role = 'admin' WHERE email = 'user@example.com';`
+2. Access admin panel: Navigate to `/admin` (requires admin role)
+3. Admin API calls require valid JWT with `role: 'admin'`
+4. Re-auth required for: reject team, delete user, send notifications, end season
 
 ## Deployment
 

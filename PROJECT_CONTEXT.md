@@ -54,7 +54,7 @@ A web-based sports pooling application where users create fantasy teams of MLB p
 
 ### 🔄 IN PROGRESS
 
-**Phase 4: User Experience & Admin** (~40% complete)
+**Phase 4: User Experience & Admin** (~85% complete)
 - ✅ Leaderboard UI pages (Overall + Monthly with expandable team details)
 - ✅ Dashboard leaderboard widget (Top 5 teams)
 - ✅ Test data seeding script (`npm run seed:test`)
@@ -62,14 +62,19 @@ A web-based sports pooling application where users create fantasy teams of MLB p
   - `/players` - Searchable player pool with team filter
   - `/players/:id` - Player profile with eligibility stats & draft popularity
   - Clickable player names throughout app (TeamRoster, TeamDetails)
-- ❌ Email notification system
-- ❌ Admin dashboard and team approval workflow
+- ✅ Admin dashboard and team approval workflow
+  - `/admin` - Dashboard with stats, teams by status, quick actions
+  - `/admin/teams` - Team management with filters, approve/reject/refund
+  - `/admin/users` - User management with verify email, password reset, delete
+  - `/admin/notifications` - Email notifications to user groups
+  - Re-authentication for destructive actions (password for email users, auto-verify for OAuth)
+  - End season functionality
+- ❌ Email notification system (automated reminders)
 - ❌ Off-season mode
 
 **Phase 5: Testing & Launch**
 - End-to-end testing
 - Load testing
-- Admin dashboard
 - Production deployment
 
 ### 🔧 TECHNICAL NOTES
@@ -458,13 +463,19 @@ read_at: Timestamp (nullable)
 - `GET /api/leaderboards/allstar` - Get all-star break leaderboard
 - `GET /api/leaderboards/stats` - Get league-wide stats
 
-**Admin**
-- `GET /api/admin/teams` - Get all teams (with payment status)
-- `PATCH /api/admin/teams/:id/status` - Approve/reject team
-- `POST /api/admin/teams/:id/override` - Add team past deadline
-- `POST /api/admin/season/end` - Manually end season
-- `POST /api/admin/notifications` - Send notification to users
-- `PATCH /api/admin/players/:id/stats` - Manual stats override
+**Admin** (Implemented January 11, 2026)
+- `GET /api/admin/stats` - Dashboard statistics (total teams, pending, revenue, users)
+- `GET /api/admin/teams` - Get all teams with filters (paymentStatus, entryStatus, search)
+- `GET /api/admin/teams/:id` - Get team details with players
+- `PATCH /api/admin/teams/:id/status` - Update team payment status
+- `GET /api/admin/users` - Get all users with optional search
+- `PATCH /api/admin/users/:id/verify-email` - Manually verify user email
+- `POST /api/admin/users/:id/password-reset` - Send password reset email
+- `DELETE /api/admin/users/:id` - Soft delete user
+- `POST /api/admin/notifications` - Send email notifications to user groups
+- `GET /api/admin/notifications/recipient-counts` - Get counts for recipient groups
+- `POST /api/admin/end-season` - End the current season (locks all teams)
+- `POST /api/admin/verify-password` - Re-authenticate for destructive actions
 
 ---
 
@@ -740,22 +751,27 @@ mlb-hr-pool/
 - ⏳ Background jobs (BullMQ configured, manual execution for now)
 - 📚 Complete documentation: `backend/src/scripts/python/README.md`
 
-**Phase 4: User Experience & Admin** 🔄 **IN PROGRESS** (~25%)
+**Phase 4: User Experience & Admin** 🔄 **IN PROGRESS** (~85%)
 - ✅ Leaderboard UI pages (Overall + Monthly, expandable rows with player details)
 - ✅ Dashboard leaderboard widget (Top 5 teams)
 - ✅ Test data seeding script (`npm run seed:test`)
-- ❌ Player stats pages
-- ❌ Email notification system (Resend configured)
-- ❌ Admin dashboard and team approval workflow
+- ✅ Player profile pages (`/players`, `/players/:id`)
+- ✅ Admin dashboard and team approval workflow (January 11, 2026)
+  - Dashboard with stats cards and quick actions
+  - Team management with filters and status actions
+  - User management with verify/reset/delete
+  - Email notifications to user groups
+  - Re-authentication for destructive actions (password for email users, auto-verify for OAuth)
+  - End season functionality
+- ❌ Email notification system (automated reminders)
 - ❌ Off-season mode
 
 **Phase 5: Testing & Launch** ❌ **NOT STARTED** (0%)
 - ❌ End-to-end testing (Vitest configured)
 - ❌ Load testing
-- ❌ Admin dashboard
 - ❌ Production deployment
 
-**Overall Progress: ~70%** (Phases 1-3 complete, Phase 4 ~40% complete)
+**Overall Progress: ~85%** (Phases 1-4 nearly complete, Phase 5 pending)
 
 ---
 
@@ -839,8 +855,9 @@ PORT=5000
 **Immediate Priorities (Phase 4 - Remaining):**
 1. ~~Build leaderboard UI pages (frontend)~~ ✅ DONE
 2. ~~Create player profile/stats pages~~ ✅ DONE (January 9, 2026)
-3. Build admin dashboard with team approval workflow
-4. Implement email notifications for leaderboard updates
+3. ~~Build admin dashboard with team approval workflow~~ ✅ DONE (January 11, 2026)
+4. Implement automated email notifications (reminders, updates)
+5. Build off-season mode
 
 **Future Development:**
 - Refer to Phases 4-5 in DEVELOPMENT PHASES section above
@@ -849,6 +866,6 @@ PORT=5000
 
 ---
 
-**Document Version:** Updated January 9, 2026 - Added player profile pages feature
+**Document Version:** Updated January 11, 2026 - Added admin dashboard feature (teams, users, notifications, end season)
 
 This is the complete project context. Build with this as the single source of truth for requirements and technical decisions.

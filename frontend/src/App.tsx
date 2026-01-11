@@ -11,6 +11,13 @@ import Leaderboard from './pages/Leaderboard'
 import Players from './pages/Players'
 import PlayerProfile from './pages/PlayerProfile'
 
+// Admin pages
+import AdminLayout from './pages/admin/AdminLayout'
+import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminTeams from './pages/admin/AdminTeams'
+import AdminUsers from './pages/admin/AdminUsers'
+import AdminNotifications from './pages/admin/AdminNotifications'
+
 // Test components
 import ComponentTest from './pages/test-pages/pcComponentTest'
 import TeamRosterCompTest from './pages/test-pages/TeamRosterCompTest'
@@ -57,6 +64,21 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* Admin routes */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<AdminDashboard />} />
+          <Route path="teams" element={<AdminTeams />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="notifications" element={<AdminNotifications />} />
+        </Route>
 
         {/* Default redirect */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

@@ -102,6 +102,30 @@ export const sendNotificationSchema = z.object({
 })
 
 /**
+ * Admin validation schemas
+ */
+
+export const verifyPasswordSchema = z.object({
+  password: z.string().min(1, 'Password is required'),
+})
+
+export const updateTeamPaymentStatusSchema = z.object({
+  paymentStatus: z.enum(['draft', 'pending', 'paid', 'rejected', 'refunded']),
+})
+
+export const adminSendNotificationSchema = z.object({
+  recipientGroup: z.enum(['all', 'unpaid', 'paid']).optional(),
+  userEmail: z.string().email().optional(),
+  subject: z.string().min(1, 'Subject is required').max(200),
+  body: z.string().min(1, 'Body is required').max(10000),
+})
+
+export const endSeasonSchema = z.object({
+  confirmation: z.literal('END SEASON'),
+  seasonYear: z.number().int().min(2020).max(2100),
+})
+
+/**
  * Payment validation schemas
  */
 
@@ -124,3 +148,7 @@ export type UpdateTeamInput = z.infer<typeof updateTeamSchema>
 export type UpdateTeamStatusInput = z.infer<typeof updateTeamStatusSchema>
 export type SendNotificationInput = z.infer<typeof sendNotificationSchema>
 export type CreateCheckoutInput = z.infer<typeof createCheckoutSchema>
+export type VerifyPasswordInput = z.infer<typeof verifyPasswordSchema>
+export type UpdateTeamPaymentStatusInput = z.infer<typeof updateTeamPaymentStatusSchema>
+export type AdminSendNotificationInput = z.infer<typeof adminSendNotificationSchema>
+export type EndSeasonInput = z.infer<typeof endSeasonSchema>

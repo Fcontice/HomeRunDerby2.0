@@ -50,6 +50,14 @@ export default function Dashboard() {
               >
                 Create Team
               </Link>
+              {user?.role === 'admin' && (
+                <Link
+                  to="/admin"
+                  className="text-purple-400 hover:text-purple-300 transition-colors font-medium"
+                >
+                  Admin
+                </Link>
+              )}
             </nav>
           </div>
           <Button variant="outline" onClick={handleLogout}>

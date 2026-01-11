@@ -97,6 +97,29 @@ export const userDb = {
       .eq('id', where.id)
 
     if (error) throw error
+  },
+
+  async findMany(where: any = {}) {
+    let query = supabaseAdmin
+      .from('User')
+      .select('*')
+      .is('deletedAt', null)
+
+    // Apply filters
+    Object.entries(where).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && key !== 'deletedAt') {
+        if (typeof value === 'boolean') {
+          query = query.eq(key, value)
+        } else {
+          query = query.eq(key, value)
+        }
+      }
+    })
+
+    const { data, error } = await query.order('createdAt', { ascending: false })
+
+    if (error) throw error
+    return data || []
   }
 }
 

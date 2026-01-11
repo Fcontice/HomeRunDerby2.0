@@ -12,6 +12,7 @@ import teamRoutes from './routes/teamRoutes.js'
 import paymentRoutes from './routes/paymentRoutes.js'
 import leaderboardRoutes from './routes/leaderboardRoutes.js'
 import healthRoutes from './routes/healthRoutes.js'
+import adminRoutes from './routes/adminRoutes.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
 import rateLimit from 'express-rate-limit'
 
@@ -93,9 +94,8 @@ app.use('/api/payments', paymentRoutes)
 // Leaderboard routes
 app.use('/api/leaderboards', leaderboardRoutes)
 
-// Future routes will be added here:
-// app.use('/api/users', userRoutes)
-// app.use('/api/admin', adminRoutes)
+// Admin routes
+app.use('/api/admin', adminRoutes)
 
 // ==================== ERROR HANDLING ====================
 
