@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { adminApi, AdminStats } from '../../services/api'
 import StatsCard from '../../components/admin/StatsCard'
 import ReAuthModal from '../../components/admin/ReAuthModal'
+import SeasonCard from '../../components/admin/SeasonCard'
 import { Button } from '../../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Input } from '../../components/ui/input'
@@ -135,6 +136,9 @@ export default function AdminDashboard() {
           description={`${stats.totalUsers} total`}
         />
       </div>
+
+      {/* Season Management */}
+      <SeasonCard />
 
       {/* Teams by Status */}
       <Card className="bg-slate-800 border-slate-700">

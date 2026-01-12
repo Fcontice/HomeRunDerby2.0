@@ -1,4 +1,5 @@
 import { useAuth } from '../contexts/AuthContext'
+import { useSeason } from '../contexts/SeasonContext'
 import { useNavigate, Link } from 'react-router-dom'
 import { Button } from '../components/ui/button'
 import {
@@ -8,11 +9,15 @@ import {
   CardHeader,
   CardTitle,
 } from '../components/ui/card'
+import { Badge } from '../components/ui/badge'
 import { LeaderboardWidget } from '../components/leaderboard'
 
 export default function Dashboard() {
   const { user, logout } = useAuth()
+  const { season } = useSeason()
   const navigate = useNavigate()
+
+  const isRegistrationOpen = season?.phase === 'registration'
 
   const handleLogout = async () => {
     await logout()
@@ -44,12 +49,21 @@ export default function Dashboard() {
               >
                 Leaderboard
               </Link>
-              <Link
-                to="/create-team"
-                className="text-white hover:text-gray-300 transition-colors"
-              >
-                Create Team
-              </Link>
+              {isRegistrationOpen ? (
+                <Link
+                  to="/create-team"
+                  className="text-white hover:text-gray-300 transition-colors"
+                >
+                  Create Team
+                </Link>
+              ) : (
+                <span className="flex items-center gap-2 text-slate-500 cursor-not-allowed">
+                  Create Team
+                  <Badge variant="secondary" className="text-xs">
+                    Closed
+                  </Badge>
+                </span>
+              )}
               {user?.role === 'admin' && (
                 <Link
                   to="/admin"

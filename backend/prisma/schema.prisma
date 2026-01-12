@@ -25,6 +25,7 @@ model User {
   deletedAt               DateTime?
   notifications           Notification[]
   reminderLogs            ReminderLog[]
+  seasonConfigChanges     SeasonConfig[] @relation("SeasonConfigChangedBy")
   teams                   Team[]
 
   @@index([email])
@@ -195,4 +196,29 @@ enum NotificationType {
 enum ReminderType {
   payment
   lock_deadline
+}
+
+enum SeasonPhase {
+  off_season
+  registration
+  active
+  completed
+}
+
+model SeasonConfig {
+  id                    String       @id @default(dbgenerated("gen_random_uuid()"))
+  seasonYear            Int          @unique
+  phase                 SeasonPhase  @default(off_season)
+  registrationOpenDate  DateTime?    @db.Date
+  registrationCloseDate DateTime?    @db.Date
+  seasonStartDate       DateTime?    @db.Date
+  seasonEndDate         DateTime?    @db.Date
+  isCurrentSeason       Boolean      @default(false)
+  lastPhaseChange       DateTime     @default(now())
+  changedBy             String?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  changedByUser         User?        @relation("SeasonConfigChangedBy", fields: [changedBy], references: [id])
+
+  @@index([seasonYear])
 }

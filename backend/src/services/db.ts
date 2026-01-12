@@ -1202,6 +1202,119 @@ export const reminderLogDb = {
   },
 }
 
+// ==================== SEASON CONFIG OPERATIONS ====================
+
+export const seasonConfigDb = {
+  async findCurrent() {
+    const { data, error } = await supabaseAdmin
+      .from('SeasonConfig')
+      .select('*')
+      .eq('isCurrentSeason', true)
+      .single()
+
+    if (error && error.code !== 'PGRST116') throw error
+    return data
+  },
+
+  async findByYear(year: number) {
+    const { data, error } = await supabaseAdmin
+      .from('SeasonConfig')
+      .select('*')
+      .eq('seasonYear', year)
+      .single()
+
+    if (error && error.code !== 'PGRST116') throw error
+    return data
+  },
+
+  async findMany() {
+    const { data, error } = await supabaseAdmin
+      .from('SeasonConfig')
+      .select('*')
+      .order('seasonYear', { ascending: false })
+
+    if (error) throw error
+    return data || []
+  },
+
+  async create(data: any) {
+    const { id, ...cleanData } = data
+
+    const now = new Date().toISOString()
+    const insertData = {
+      ...(id ? { id } : {}),
+      ...cleanData,
+      createdAt: cleanData.createdAt || now,
+      updatedAt: cleanData.updatedAt || now,
+      lastPhaseChange: cleanData.lastPhaseChange || now,
+    }
+
+    const { data: seasonConfig, error } = await supabaseAdmin
+      .from('SeasonConfig')
+      .insert(insertData)
+      .select()
+      .single()
+
+    if (error) throw error
+    return seasonConfig
+  },
+
+  async updatePhase(year: number, phase: string, changedById: string) {
+    const now = new Date().toISOString()
+
+    const { data, error } = await supabaseAdmin
+      .from('SeasonConfig')
+      .update({
+        phase,
+        lastPhaseChange: now,
+        changedBy: changedById,
+        updatedAt: now,
+      })
+      .eq('seasonYear', year)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  async update(year: number, data: any) {
+    const updateData = {
+      ...data,
+      updatedAt: new Date().toISOString(),
+    }
+
+    const { data: updated, error } = await supabaseAdmin
+      .from('SeasonConfig')
+      .update(updateData)
+      .eq('seasonYear', year)
+      .select()
+      .single()
+
+    if (error) throw error
+    return updated
+  },
+
+  async setCurrent(year: number) {
+    // Clear all current flags first
+    await supabaseAdmin
+      .from('SeasonConfig')
+      .update({ isCurrentSeason: false, updatedAt: new Date().toISOString() })
+      .neq('seasonYear', 0) // Update all
+
+    // Set target as current
+    const { data, error } = await supabaseAdmin
+      .from('SeasonConfig')
+      .update({ isCurrentSeason: true, updatedAt: new Date().toISOString() })
+      .eq('seasonYear', year)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+}
+
 // Export a db object that mimics Prisma's structure
 export const db = {
   user: userDb,
@@ -1212,6 +1325,7 @@ export const db = {
   playerStats: playerStatsDb,
   leaderboard: leaderboardDb,
   reminderLog: reminderLogDb,
+  seasonConfig: seasonConfigDb,
 
   // Raw query support
   async $queryRaw(query: string, ...params: any[]) {

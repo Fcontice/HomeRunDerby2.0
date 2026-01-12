@@ -94,7 +94,10 @@
       "mcp__plugin_playwright_playwright__browser_fill_form",
       "mcp__plugin_playwright_playwright__browser_press_key",
       "mcp__plugin_playwright_playwright__browser_type",
-      "Bash(xargs cat:*)"
+      "Bash(xargs cat:*)",
+      "mcp__plugin_supabase_supabase__apply_migration",
+      "mcp__plugin_supabase_supabase__generate_typescript_types",
+      "Bash(npm ls:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

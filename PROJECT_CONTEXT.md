@@ -6,7 +6,7 @@ A web-based sports pooling application where users create fantasy teams of MLB p
 
 ---
 
-## 🚧 IMPLEMENTATION STATUS (Updated: January 9, 2026)
+## 🚧 IMPLEMENTATION STATUS (Updated: January 12, 2026)
 
 ### ✅ COMPLETED
 
@@ -52,9 +52,9 @@ A web-based sports pooling application where users create fantasy teams of MLB p
 - ⏳ Redis caching (infrastructure ready, not yet utilized)
 - ⏳ Background jobs automation (BullMQ configured, manual execution for now)
 
-### 🔄 IN PROGRESS
+### ✅ COMPLETED (continued)
 
-**Phase 4: User Experience & Admin** (~85% complete)
+**Phase 4: User Experience & Admin** (100%)
 - ✅ Leaderboard UI pages (Overall + Monthly with expandable team details)
 - ✅ Dashboard leaderboard widget (Top 5 teams)
 - ✅ Test data seeding script (`npm run seed:test`)
@@ -66,11 +66,20 @@ A web-based sports pooling application where users create fantasy teams of MLB p
   - `/admin` - Dashboard with stats, teams by status, quick actions
   - `/admin/teams` - Team management with filters, approve/reject/refund
   - `/admin/users` - User management with verify email, password reset, delete
-  - `/admin/notifications` - Email notifications to user groups
+  - `/admin/notifications` - Quick reminders + custom email notifications
   - Re-authentication for destructive actions (password for email users, auto-verify for OAuth)
   - End season functionality
-- ❌ Email notification system (automated reminders)
-- ❌ Off-season mode
+- ✅ Quick Reminders System (January 12, 2026)
+  - Payment reminders: Customizable targeting (draft/pending teams)
+  - Lock deadline reminders: Personalized emails based on user's team status
+  - ReminderLog table: Tracks when each reminder type was last sent
+- ✅ Off-season mode (January 12, 2026)
+  - Four phases: off_season → registration → active → completed
+  - SeasonConfig table with phase dates and current season flag
+  - Phase-protected routes (team creation, payments require registration phase)
+  - Admin UI: SeasonCard component with phase dropdown and confirmation dialogs
+  - Frontend: SeasonBanner, SeasonContext, usePhaseCheck hook
+  - Dashboard nav disables "Create Team" link with "Closed" badge when not in registration
 
 **Phase 5: Testing & Launch**
 - End-to-end testing
@@ -424,6 +433,32 @@ sent_at: Timestamp
 read_at: Timestamp (nullable)
 ```
 
+**ReminderLog Table** (Added January 12, 2026)
+```
+id: UUID (PK)
+reminder_type: Enum (payment | lock_deadline)
+sent_at: Timestamp
+sent_by_id: UUID (FK → users.id)
+recipient_count: Integer
+metadata: JSONB (nullable)
+```
+
+**SeasonConfig Table** (Added January 12, 2026)
+```
+id: TEXT (PK)
+season_year: Integer (unique)
+phase: TEXT ('off_season' | 'registration' | 'active' | 'completed')
+registration_open_date: Date (nullable)
+registration_close_date: Date (nullable)
+season_start_date: Date (nullable)
+season_end_date: Date (nullable)
+is_current_season: Boolean (partial unique index - only one true allowed)
+last_phase_change: Timestamp
+changed_by: TEXT (FK → users.id, nullable)
+created_at: Timestamp
+updated_at: Timestamp
+```
+
 ---
 
 ### 7. API ENDPOINTS (Overview)
@@ -463,7 +498,7 @@ read_at: Timestamp (nullable)
 - `GET /api/leaderboards/allstar` - Get all-star break leaderboard
 - `GET /api/leaderboards/stats` - Get league-wide stats
 
-**Admin** (Implemented January 11, 2026)
+**Admin** (Implemented January 11-12, 2026)
 - `GET /api/admin/stats` - Dashboard statistics (total teams, pending, revenue, users)
 - `GET /api/admin/teams` - Get all teams with filters (paymentStatus, entryStatus, search)
 - `GET /api/admin/teams/:id` - Get team details with players
@@ -473,9 +508,20 @@ read_at: Timestamp (nullable)
 - `POST /api/admin/users/:id/password-reset` - Send password reset email
 - `DELETE /api/admin/users/:id` - Soft delete user
 - `POST /api/admin/notifications` - Send email notifications to user groups
-- `GET /api/admin/notifications/recipient-counts` - Get counts for recipient groups
-- `POST /api/admin/end-season` - End the current season (locks all teams)
+- `GET /api/admin/recipient-counts` - Get counts for recipient groups
+- `GET /api/admin/reminders/status` - Get last sent time for each reminder type
+- `POST /api/admin/reminders/payment` - Send payment reminders to users with unpaid teams
+- `POST /api/admin/reminders/lock-deadline` - Send personalized lock deadline reminders
+- `POST /api/admin/season/end` - End the current season (locks all teams)
 - `POST /api/admin/verify-password` - Re-authenticate for destructive actions
+
+**Season** (Added January 12, 2026)
+- `GET /api/season/current` - Get current season config (public)
+- `GET /api/admin/seasons` - List all seasons (admin)
+- `POST /api/admin/seasons` - Create new season (admin)
+- `PATCH /api/admin/seasons/:seasonYear/phase` - Update season phase (admin)
+- `PATCH /api/admin/seasons/:seasonYear` - Update season details (admin)
+- `PATCH /api/admin/seasons/:seasonYear/set-current` - Set as current season (admin)
 
 ---
 
@@ -751,7 +797,7 @@ mlb-hr-pool/
 - ⏳ Background jobs (BullMQ configured, manual execution for now)
 - 📚 Complete documentation: `backend/src/scripts/python/README.md`
 
-**Phase 4: User Experience & Admin** 🔄 **IN PROGRESS** (~85%)
+**Phase 4: User Experience & Admin** ✅ **COMPLETE** (100%)
 - ✅ Leaderboard UI pages (Overall + Monthly, expandable rows with player details)
 - ✅ Dashboard leaderboard widget (Top 5 teams)
 - ✅ Test data seeding script (`npm run seed:test`)
@@ -763,15 +809,22 @@ mlb-hr-pool/
   - Email notifications to user groups
   - Re-authentication for destructive actions (password for email users, auto-verify for OAuth)
   - End season functionality
-- ❌ Email notification system (automated reminders)
-- ❌ Off-season mode
+- ✅ Quick Reminders System (January 12, 2026)
+  - Payment reminders with customizable targeting (draft/pending)
+  - Personalized lock deadline reminders based on user team status
+  - ReminderLog table for tracking sent reminders
+- ✅ Off-season mode (January 12, 2026)
+  - SeasonConfig table with four phases (off_season, registration, active, completed)
+  - Phase-protected routes via seasonGuard middleware
+  - Admin SeasonCard component for phase management
+  - SeasonContext, usePhaseCheck hook, SeasonBanner for frontend
 
 **Phase 5: Testing & Launch** ❌ **NOT STARTED** (0%)
 - ❌ End-to-end testing (Vitest configured)
 - ❌ Load testing
 - ❌ Production deployment
 
-**Overall Progress: ~85%** (Phases 1-4 nearly complete, Phase 5 pending)
+**Overall Progress: ~95%** (Phases 1-4 complete, Phase 5 pending)
 
 ---
 
@@ -852,20 +905,25 @@ PORT=5000
 
 ## NEXT STEPS
 
-**Immediate Priorities (Phase 4 - Remaining):**
+**Phase 4 Complete!**
 1. ~~Build leaderboard UI pages (frontend)~~ ✅ DONE
 2. ~~Create player profile/stats pages~~ ✅ DONE (January 9, 2026)
 3. ~~Build admin dashboard with team approval workflow~~ ✅ DONE (January 11, 2026)
-4. Implement automated email notifications (reminders, updates)
-5. Build off-season mode
+4. ~~Implement quick reminders system~~ ✅ DONE (January 12, 2026)
+5. ~~Build off-season mode~~ ✅ DONE (January 12, 2026)
+
+**Immediate Priorities (Phase 5 - Testing & Launch):**
+1. End-to-end testing with Vitest
+2. Load testing for concurrent users
+3. Production deployment to Vercel/Railway
 
 **Future Development:**
-- Refer to Phases 4-5 in DEVELOPMENT PHASES section above
+- Refer to Phase 5 in DEVELOPMENT PHASES section above
 - See CHANGELOG.md for detailed implementation history
 - See CLAUDE.md for architectural patterns and quick reference
 
 ---
 
-**Document Version:** Updated January 11, 2026 - Added admin dashboard feature (teams, users, notifications, end season)
+**Document Version:** Updated January 12, 2026 - Added off-season mode (SeasonConfig table, phase-protected routes, admin SeasonCard, SeasonContext/usePhaseCheck/SeasonBanner). Phase 4 complete!
 
 This is the complete project context. Build with this as the single source of truth for requirements and technical decisions.

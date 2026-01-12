@@ -7,15 +7,16 @@ import { createCheckout, handleWebhook } from '../controllers/paymentController.
 import { requireAuth } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { checkoutRateLimiter, webhookRateLimiter } from '../middleware/paymentRateLimits.js';
+import { requirePhase } from '../middleware/seasonGuard.js';
 
 const router = Router();
 
 /**
  * POST /api/payments/checkout
  * Create a checkout session for team payment
- * Requires authentication and rate limiting (10 req/15min per user)
+ * Requires authentication, registration phase, and rate limiting (10 req/15min per user)
  */
-router.post('/checkout', checkoutRateLimiter, requireAuth, asyncHandler(createCheckout));
+router.post('/checkout', checkoutRateLimiter, requireAuth, requirePhase(['registration']), asyncHandler(createCheckout));
 
 /**
  * POST /api/payments/webhook

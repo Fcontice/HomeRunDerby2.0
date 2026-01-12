@@ -142,6 +142,38 @@ export const createCheckoutSchema = z.object({
 })
 
 /**
+ * Season validation schemas
+ */
+
+export const seasonPhaseEnum = z.enum([
+  'off_season',
+  'registration',
+  'active',
+  'completed',
+])
+
+export const createSeasonSchema = z.object({
+  seasonYear: z.number().int().min(2020).max(2100),
+  phase: seasonPhaseEnum.optional().default('off_season'),
+  registrationOpenDate: z.string().optional(),
+  registrationCloseDate: z.string().optional(),
+  seasonStartDate: z.string().optional(),
+  seasonEndDate: z.string().optional(),
+  isCurrentSeason: z.boolean().optional().default(false),
+})
+
+export const updateSeasonPhaseSchema = z.object({
+  phase: seasonPhaseEnum,
+})
+
+export const updateSeasonSchema = z.object({
+  registrationOpenDate: z.string().nullable().optional(),
+  registrationCloseDate: z.string().nullable().optional(),
+  seasonStartDate: z.string().nullable().optional(),
+  seasonEndDate: z.string().nullable().optional(),
+})
+
+/**
  * Type exports for TypeScript
  */
 
@@ -162,3 +194,7 @@ export type AdminSendNotificationInput = z.infer<typeof adminSendNotificationSch
 export type EndSeasonInput = z.infer<typeof endSeasonSchema>
 export type SendPaymentReminderInput = z.infer<typeof sendPaymentReminderSchema>
 export type SendLockReminderInput = z.infer<typeof sendLockReminderSchema>
+export type SeasonPhase = z.infer<typeof seasonPhaseEnum>
+export type CreateSeasonInput = z.infer<typeof createSeasonSchema>
+export type UpdateSeasonPhaseInput = z.infer<typeof updateSeasonPhaseSchema>
+export type UpdateSeasonInput = z.infer<typeof updateSeasonSchema>

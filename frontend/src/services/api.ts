@@ -257,6 +257,25 @@ export interface ReminderStatus {
   lock_deadline: ReminderStatusItem | null
 }
 
+// ==================== SEASON TYPES ====================
+
+export type SeasonPhase = 'off_season' | 'registration' | 'active' | 'completed'
+
+export interface SeasonConfig {
+  id: string
+  seasonYear: number
+  phase: SeasonPhase
+  registrationOpenDate: string | null
+  registrationCloseDate: string | null
+  seasonStartDate: string | null
+  seasonEndDate: string | null
+  isCurrentSeason: boolean
+  lastPhaseChange: string
+  changedBy: string | null
+  createdAt: string
+  updatedAt: string
+}
+
 // ==================== AUTH API ====================
 
 export const authApi = {
@@ -688,6 +707,79 @@ export const adminApi = {
    */
   sendLockReminder: async (lockDate: string): Promise<ApiResponse<NotificationResult>> => {
     const response = await api.post('/api/admin/reminders/lock-deadline', { lockDate })
+    return response.data
+  },
+
+  // ========== SEASON MANAGEMENT (Admin) ==========
+
+  /**
+   * Get all seasons
+   */
+  getSeasons: async (): Promise<ApiResponse<SeasonConfig[]>> => {
+    const response = await api.get('/api/admin/seasons')
+    return response.data
+  },
+
+  /**
+   * Create a new season
+   */
+  createSeason: async (data: {
+    seasonYear: number
+    phase?: SeasonPhase
+    registrationOpenDate?: string
+    registrationCloseDate?: string
+    seasonStartDate?: string
+    seasonEndDate?: string
+    isCurrentSeason?: boolean
+  }): Promise<ApiResponse<SeasonConfig>> => {
+    const response = await api.post('/api/admin/seasons', data)
+    return response.data
+  },
+
+  /**
+   * Update season phase
+   */
+  updateSeasonPhase: async (
+    seasonYear: number,
+    phase: SeasonPhase
+  ): Promise<ApiResponse<SeasonConfig>> => {
+    const response = await api.patch(`/api/admin/seasons/${seasonYear}/phase`, { phase })
+    return response.data
+  },
+
+  /**
+   * Update season dates/config
+   */
+  updateSeason: async (
+    seasonYear: number,
+    data: {
+      registrationOpenDate?: string | null
+      registrationCloseDate?: string | null
+      seasonStartDate?: string | null
+      seasonEndDate?: string | null
+    }
+  ): Promise<ApiResponse<SeasonConfig>> => {
+    const response = await api.patch(`/api/admin/seasons/${seasonYear}`, data)
+    return response.data
+  },
+
+  /**
+   * Set season as current
+   */
+  setCurrentSeason: async (seasonYear: number): Promise<ApiResponse<SeasonConfig>> => {
+    const response = await api.patch(`/api/admin/seasons/${seasonYear}/set-current`)
+    return response.data
+  },
+}
+
+// ==================== SEASON API (Public) ====================
+
+export const seasonApi = {
+  /**
+   * Get current season configuration (public endpoint)
+   */
+  getCurrent: async (): Promise<ApiResponse<SeasonConfig | null>> => {
+    const response = await api.get('/api/season/current')
     return response.data
   },
 }

@@ -4,9 +4,10 @@
  */
 
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { playersApi, teamsApi, Player, authApi } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
+import { usePhaseCheck } from '../hooks/usePhaseCheck'
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { Input } from '../components/ui/input'
@@ -14,7 +15,7 @@ import { Label } from '../components/ui/label'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import PlayerBrowser from '../components/team/PlayerBrowser'
 import TeamRoster from '../components/team/TeamRoster'
-import { Loader2, AlertCircle, Mail } from 'lucide-react'
+import { Loader2, AlertCircle, Mail, Clock, Calendar } from 'lucide-react'
 
 const MAX_HRS = 172
 const CONTEST_YEAR = 2026
@@ -23,6 +24,7 @@ const PLAYER_SEASON_YEAR = 2025
 export default function CreateTeam() {
   const navigate = useNavigate()
   const { user, refreshUser } = useAuth()
+  const { isAllowed: isRegistrationOpen, currentPhase, season, loading: seasonLoading } = usePhaseCheck(['registration'])
 
   // State
   const [players, setPlayers] = useState<Player[]>([])
@@ -165,6 +167,82 @@ export default function CreateTeam() {
     } finally {
       setResendingVerification(false)
     }
+  }
+
+  // Season loading state
+  if (seasonLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-white mx-auto mb-4" />
+          <p className="text-white text-lg">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Off-season / registration closed state
+  if (!isRegistrationOpen) {
+    const getPhaseMessage = () => {
+      switch (currentPhase) {
+        case 'off_season':
+          return {
+            title: 'Registration Opens Soon',
+            description: `Season ${season?.seasonYear || CONTEST_YEAR} registration is not yet open. Check back later for updates!`,
+            icon: <Clock className="h-16 w-16 text-blue-400 mx-auto mb-4" />,
+          }
+        case 'active':
+          return {
+            title: 'Season In Progress',
+            description: `Season ${season?.seasonYear || CONTEST_YEAR} is currently active. Teams are locked and the leaderboard is live!`,
+            icon: <Calendar className="h-16 w-16 text-green-400 mx-auto mb-4" />,
+          }
+        case 'completed':
+          return {
+            title: 'Season Completed',
+            description: `Season ${season?.seasonYear || CONTEST_YEAR} has ended. Congratulations to all winners! Stay tuned for next season.`,
+            icon: <Calendar className="h-16 w-16 text-slate-400 mx-auto mb-4" />,
+          }
+        default:
+          return {
+            title: 'Registration Closed',
+            description: 'Team registration is currently closed. Please check back later.',
+            icon: <Clock className="h-16 w-16 text-slate-400 mx-auto mb-4" />,
+          }
+      }
+    }
+
+    const { title, description, icon } = getPhaseMessage()
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center py-8 px-4">
+        <Card className="max-w-lg w-full p-8 text-center">
+          {icon}
+          <h1 className="text-2xl font-bold text-white mb-4">{title}</h1>
+          <p className="text-slate-300 mb-6">{description}</p>
+          {season?.registrationOpenDate && currentPhase === 'off_season' && (
+            <p className="text-sm text-slate-400 mb-6">
+              Registration opens:{' '}
+              {new Date(season.registrationOpenDate).toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+            </p>
+          )}
+          <div className="flex gap-4 justify-center">
+            <Link to="/dashboard">
+              <Button variant="outline">Back to Dashboard</Button>
+            </Link>
+            {currentPhase === 'active' && (
+              <Link to="/leaderboard">
+                <Button>View Leaderboard</Button>
+              </Link>
+            )}
+          </div>
+        </Card>
+      </div>
+    )
   }
 
   // Loading state

@@ -58,6 +58,10 @@ Key middleware in `backend/src/middleware/auth.ts`:
 - `requireOwnership` - User owns the resource
 - `optionalAuth` - Attach user if token exists, don't fail if missing
 
+Key middleware in `backend/src/middleware/seasonGuard.ts`:
+- `requirePhase(['registration'])` - Restrict routes to specific season phases
+- Attaches `req.season` with current SeasonConfig for downstream use
+
 ### API Response Format
 
 All endpoints return consistent JSON:
@@ -112,14 +116,17 @@ Use these endpoints to verify:
 - `pages/` - Route components (Login, Register, Dashboard, CreateTeam, VerifyEmail, Players, PlayerProfile, Leaderboard)
 - `pages/admin/` - Admin dashboard pages (AdminLayout, AdminDashboard, AdminTeams, AdminUsers, AdminNotifications)
 - `components/ui/` - Reusable Radix UI components (button, card, input, dialog, table, dropdown-menu, badge, textarea, etc.)
-- `components/admin/` - Admin-specific components (ReAuthModal, StatsCard)
+- `components/admin/` - Admin-specific components (ReAuthModal, StatsCard, SeasonCard)
 - `components/team/` - Team-specific components
+- `components/SeasonBanner.tsx` - Global banner showing season status
 - `contexts/AuthContext.tsx` - Global auth state
-- `services/api.ts` - Axios instance with all API endpoints organized as `authApi`, `teamsApi`, `playersApi`, `adminApi`
+- `contexts/SeasonContext.tsx` - Global season state and phase info
+- `hooks/usePhaseCheck.ts` - Hook for checking allowed phases
+- `services/api.ts` - Axios instance with all API endpoints organized as `authApi`, `teamsApi`, `playersApi`, `adminApi`, `seasonApi`
 
 **Backend** (`/backend/src`):
-- `routes/` - Route definitions (auth, teams, players, payments, leaderboards, admin)
-- `controllers/` - Request handlers with business logic (includes adminController.ts)
+- `routes/` - Route definitions (auth, teams, players, payments, leaderboards, admin, season)
+- `controllers/` - Request handlers with business logic (includes adminController.ts, seasonController.ts)
 - `services/` - Core business logic services:
   - `db.ts` - Database abstraction layer (Supabase wrapper)
   - `emailService.ts` - Resend email integration
@@ -333,6 +340,29 @@ Full admin dashboard for managing teams, users, and sending notifications. Acces
 - `ReAuthModal.tsx` - Password verification modal for destructive actions
 - `StatsCard.tsx` - Reusable stats display card with variants
 
+**Quick Reminders System:**
+The admin notifications page includes pre-configured reminder emails with tracking:
+
+- **Payment Reminders**: Send to users with unpaid teams
+  - Customizable targeting: Select draft and/or pending payment status
+  - Email lists user's unpaid teams with "Pay Now" button
+  - Tracks last sent timestamp and recipient count
+
+- **Lock Deadline Reminders**: Personalized emails to all verified users
+  - Requires specifying the lock date
+  - Three email variants based on user's team status:
+    - `no_teams`: Encourages creating a team before deadline
+    - `has_unpaid`: Reminds to pay before teams lock
+    - `all_paid`: Confirms they're ready for the season
+  - Tracks last sent timestamp and recipient count
+
+- **ReminderLog Table**: Tracks all sent reminders
+  - `reminderType`: 'payment' | 'lock_deadline'
+  - `sentAt`: Timestamp when sent
+  - `sentById`: Admin who sent it
+  - `recipientCount`: Number of emails sent
+  - `metadata`: Optional JSON for additional context
+
 **Admin Link:**
 - Visible only to admin users in main Dashboard navigation (purple "Admin" link)
 
@@ -340,6 +370,67 @@ Full admin dashboard for managing teams, users, and sending notifications. Acces
 1. Update user role in Supabase: `UPDATE "User" SET role = 'admin' WHERE email = 'your@email.com';`
 2. Log out and log back in to get a new JWT token with admin role
 3. Navigate to `/admin` or click the "Admin" link in navigation
+
+### Season Management / Off-Season Mode (Implemented)
+
+**Overview:**
+Season phase management system that controls what users can do based on the current season phase. Enables off-season mode where users can view data but cannot create teams or make payments.
+
+**Season Phases:**
+- `off_season` - View only mode, no team creation or payments
+- `registration` - Team creation and payments enabled
+- `active` - Season in progress, teams locked
+- `completed` - Season ended, view final results
+
+**Database Table (`SeasonConfig`):**
+```sql
+id: TEXT (PK)
+seasonYear: INTEGER (unique)
+phase: TEXT ('off_season' | 'registration' | 'active' | 'completed')
+registrationOpenDate: DATE
+registrationCloseDate: DATE
+seasonStartDate: DATE
+seasonEndDate: DATE
+isCurrentSeason: BOOLEAN (partial unique index - only one true)
+lastPhaseChange: TIMESTAMP
+changedBy: TEXT (FK → User.id)
+createdAt: TIMESTAMP
+updatedAt: TIMESTAMP
+```
+
+**Backend API Endpoints:**
+- `GET /api/season/current` - Get current season (public)
+- `GET /api/admin/seasons` - List all seasons (admin)
+- `POST /api/admin/seasons` - Create new season (admin)
+- `PATCH /api/admin/seasons/:seasonYear/phase` - Update phase (admin)
+- `PATCH /api/admin/seasons/:seasonYear` - Update season details (admin)
+- `PATCH /api/admin/seasons/:seasonYear/set-current` - Set as current season (admin)
+
+**Phase-Protected Routes:**
+- `POST /api/teams` - Requires `registration` phase
+- `PATCH /api/teams/:id` - Requires `registration` phase
+- `DELETE /api/teams/:id` - Requires `registration` phase
+- `POST /api/payments/checkout` - Requires `registration` phase
+
+**Frontend Components:**
+- `SeasonContext` - Global provider for season state
+- `usePhaseCheck(phases)` - Hook returns `{ isAllowed, currentPhase, season, loading }`
+- `SeasonBanner` - Global banner showing registration/active/completed status
+- `SeasonCard` - Admin component for managing seasons and phases
+- Dashboard nav - "Create Team" link disabled with "Closed" badge when not in registration
+- CreateTeam page - Shows phase-appropriate message when registration closed
+
+**Usage:**
+```typescript
+// Check if action is allowed
+const { isAllowed, currentPhase } = usePhaseCheck(['registration'])
+if (!isAllowed) {
+  return <OffSeasonMessage />
+}
+
+// Access season data
+const { season, loading } = useSeason()
+```
 
 ## Important Notes
 
@@ -353,7 +444,7 @@ Full admin dashboard for managing teams, users, and sending notifications. Acces
 - **Payments**: Stripe integration with webhook processing fully functional.
 - **Python stats updater**: Robust retry logic with exponential backoff (3 attempts, 5min timeout)
 - **Health monitoring**: `/health` and `/health/python` endpoints for system checks
-- **Current status**: Phases 1-4 complete (~90% overall). Admin dashboard with quick reminders fully functional. Next: Automated stats scheduling, polish & testing.
+- **Current status**: Phases 1-4 complete (~95% overall). Admin dashboard with quick reminders and season management fully functional. Next: Automated stats scheduling, polish & testing.
 
 ## Testing
 
@@ -380,6 +471,7 @@ npm run test        # (frontend or backend)
 **Available migrations:**
 - `add_payment_status_index.sql` - Adds index on Team.paymentStatus for admin queries
 - `add_reminder_log.sql` - Creates ReminderLog table for tracking sent reminders
+- `add_season_config.sql` - Creates SeasonConfig table for season phase management
 
 **Add a new page:**
 1. Create component in `frontend/src/pages/`
@@ -398,7 +490,22 @@ npm run test        # (frontend or backend)
 1. Make user admin: `UPDATE "User" SET role = 'admin' WHERE email = 'user@example.com';`
 2. Access admin panel: Navigate to `/admin` (requires admin role)
 3. Admin API calls require valid JWT with `role: 'admin'`
-4. Re-auth required for: reject team, delete user, send notifications, end season
+4. Re-auth required for: reject team, delete user, send notifications, send reminders, end season
+
+**Work with reminders:**
+1. Navigate to `/admin/notifications` for Quick Reminders UI
+2. Payment reminders: Select draft/pending statuses, click "Send Payment Reminder"
+3. Lock deadline reminders: Enter lock date, click "Send Lock Reminder"
+4. Check reminder history: `GET /api/admin/reminders/status`
+5. Both actions require re-authentication before sending
+
+**Work with season phases:**
+1. Get current season: `GET /api/season/current` (public endpoint)
+2. Admin season management: Navigate to `/admin` → Season Management card
+3. Change phase: Select from dropdown, confirm in dialog
+4. Create new season: Click "New Season" button in admin dashboard
+5. Phase-protected routes use `requirePhase(['registration'])` middleware
+6. Frontend uses `usePhaseCheck(['registration'])` hook for UI state
 
 ## Deployment
 

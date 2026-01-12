@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { SeasonProvider } from './contexts/SeasonContext'
+import { SeasonBanner } from './components/SeasonBanner'
 import ProtectedRoute from './components/ProtectedRoute'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -25,7 +27,9 @@ import TeamRosterCompTest from './pages/test-pages/TeamRosterCompTest'
 function App() {
   return (
     <AuthProvider>
-      <Routes>
+      <SeasonProvider>
+        <SeasonBanner />
+        <Routes>
         {/* Public routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -85,7 +89,8 @@ function App() {
 
         {/* 404 - Catch all */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
+        </Routes>
+      </SeasonProvider>
     </AuthProvider>
   )
 }

@@ -28,3 +28,20 @@ CREATE INDEX IF NOT EXISTS "ReminderLog_sentAt_idx" ON "ReminderLog"("sentAt");
 ALTER TABLE "ReminderLog"
 ADD CONSTRAINT "ReminderLog_sentById_fkey"
 FOREIGN KEY ("sentById") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- Enable RLS
+ALTER TABLE "ReminderLog" ENABLE ROW LEVEL SECURITY;
+
+-- Allow service role full access
+CREATE POLICY "Service role has full access to ReminderLog"
+ON "ReminderLog"
+FOR ALL
+TO service_role
+USING (true)
+WITH CHECK (true);
+
+-- Grant permissions
+GRANT ALL ON "ReminderLog" TO service_role;
+GRANT SELECT, INSERT ON "ReminderLog" TO authenticated;
+GRANT USAGE ON TYPE "ReminderType" TO authenticated;
+GRANT USAGE ON TYPE "ReminderType" TO service_role;

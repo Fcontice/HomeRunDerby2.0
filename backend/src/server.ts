@@ -13,6 +13,7 @@ import paymentRoutes from './routes/paymentRoutes.js'
 import leaderboardRoutes from './routes/leaderboardRoutes.js'
 import healthRoutes from './routes/healthRoutes.js'
 import adminRoutes from './routes/adminRoutes.js'
+import seasonRoutes from './routes/seasonRoutes.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
 import rateLimit from 'express-rate-limit'
 
@@ -96,6 +97,12 @@ app.use('/api/leaderboards', leaderboardRoutes)
 
 // Admin routes
 app.use('/api/admin', adminRoutes)
+
+// Season routes (public /api/season/* and admin routes reuse same router)
+// Public: GET /api/season/current
+// Admin: GET/POST/PATCH /api/admin/seasons/*
+app.use('/api/season', seasonRoutes)
+app.use('/api/admin/seasons', seasonRoutes)
 
 // ==================== ERROR HANDLING ====================
 
