@@ -313,3 +313,203 @@ export async function sendTeamLockedEmail(
     html,
   })
 }
+
+/**
+ * Send payment reminder email
+ */
+export async function sendPaymentReminderEmail(
+  email: string,
+  username: string,
+  unpaidTeams: { name: string }[]
+): Promise<void> {
+  const teamList = unpaidTeams.map(t => `<li>${t.name}</li>`).join('')
+  const teamCount = unpaidTeams.length
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .warning {
+      background-color: #fff3cd;
+      border: 1px solid #ffc107;
+      color: #856404;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+    .button {
+      display: inline-block;
+      padding: 12px 24px;
+      background-color: #0066cc;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+    .footer {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+      font-size: 12px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Action Required: Complete Your Entry</h1>
+    <p>Hi ${username},</p>
+    <div class="warning">
+      <p><strong>You have ${teamCount} unpaid team${teamCount > 1 ? 's' : ''} waiting to be entered:</strong></p>
+      <ul>
+        ${teamList}
+      </ul>
+    </div>
+    <p>Complete your $100 payment to lock in your spot before the deadline.</p>
+    <a href="${FRONTEND_URL}/dashboard" class="button">Pay Now</a>
+    <p>Questions? Reply to this email.</p>
+    <div class="footer">
+      <p>Home Run Derby - hrderby.us</p>
+    </div>
+  </div>
+</body>
+</html>
+  `
+
+  await sendEmail({
+    to: email,
+    subject: 'Action Required: Complete Your Home Run Derby Entry',
+    html,
+  })
+}
+
+/**
+ * Send lock deadline reminder email
+ * Three variants based on user's team status
+ */
+export async function sendLockDeadlineReminderEmail(
+  email: string,
+  username: string,
+  lockDate: string,
+  teamStatus: {
+    type: 'no_teams' | 'has_unpaid' | 'all_paid'
+    unpaidTeams?: { name: string }[]
+    paidTeamCount?: number
+  }
+): Promise<void> {
+  let contentHtml = ''
+  let subject = ''
+
+  if (teamStatus.type === 'no_teams') {
+    subject = "Teams Lock Soon - Don't Miss Out!"
+    contentHtml = `
+      <p>The Home Run Derby draft closes on <strong>${lockDate}</strong>. You haven't created a team yet.</p>
+      <p>Don't miss your chance to compete for prizes!</p>
+      <a href="${FRONTEND_URL}/create-team" class="button">Create Your Team</a>
+    `
+  } else if (teamStatus.type === 'has_unpaid') {
+    const teamList = teamStatus.unpaidTeams?.map(t => `<li>${t.name}</li>`).join('') || ''
+    const count = teamStatus.unpaidTeams?.length || 0
+    subject = 'Teams Lock Soon - Complete Your Payment'
+    contentHtml = `
+      <div class="warning">
+        <p><strong>Teams lock on ${lockDate}.</strong> You have ${count} unpaid team${count > 1 ? 's' : ''}:</p>
+        <ul>
+          ${teamList}
+        </ul>
+      </div>
+      <p>Pay now to secure your entry before the deadline.</p>
+      <a href="${FRONTEND_URL}/dashboard" class="button">Complete Payment</a>
+    `
+  } else {
+    // all_paid
+    subject = "You're All Set for Home Run Derby!"
+    contentHtml = `
+      <div class="success">
+        <p><strong>Great news!</strong> Your ${teamStatus.paidTeamCount} team${teamStatus.paidTeamCount !== 1 ? 's are' : ' is'} paid and ready for the season.</p>
+      </div>
+      <p>Teams lock on <strong>${lockDate}</strong> - no action needed on your part.</p>
+      <a href="${FRONTEND_URL}/dashboard" class="button">View Your Teams</a>
+    `
+  }
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .warning {
+      background-color: #fff3cd;
+      border: 1px solid #ffc107;
+      color: #856404;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+    .success {
+      background-color: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+    .button {
+      display: inline-block;
+      padding: 12px 24px;
+      background-color: #0066cc;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+    .footer {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+      font-size: 12px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>${subject}</h1>
+    <p>Hi ${username},</p>
+    ${contentHtml}
+    <p>Good luck this season!</p>
+    <div class="footer">
+      <p>Home Run Derby - hrderby.us</p>
+    </div>
+  </div>
+</body>
+</html>
+  `
+
+  await sendEmail({
+    to: email,
+    subject: `${subject} - Home Run Derby`,
+    html,
+  })
+}

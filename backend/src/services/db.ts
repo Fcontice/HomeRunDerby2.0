@@ -1130,6 +1130,78 @@ export const leaderboardDb = {
   },
 }
 
+// ==================== REMINDER LOG OPERATIONS ====================
+
+export const reminderLogDb = {
+  async findMany(where: any = {}, options: any = {}) {
+    let query = supabaseAdmin.from('ReminderLog').select(`
+      *,
+      sentBy:User(id, username, email)
+    `)
+
+    // Apply filters
+    if (where.reminderType) query = query.eq('reminderType', where.reminderType)
+
+    // Apply ordering (default: most recent first)
+    if (options.orderBy) {
+      const field = Object.keys(options.orderBy)[0]
+      const direction = options.orderBy[field]
+      query = query.order(field, { ascending: direction === 'asc' })
+    } else {
+      query = query.order('sentAt', { ascending: false })
+    }
+
+    // Apply pagination
+    if (options.take) query = query.limit(options.take)
+
+    const { data, error } = await query
+    if (error) throw error
+    return data || []
+  },
+
+  async findFirst(where: any = {}) {
+    const results = await this.findMany(where, { take: 1 })
+    return results[0] || null
+  },
+
+  async create(data: any) {
+    const { id, ...cleanData } = data
+
+    const now = new Date().toISOString()
+    const insertData = {
+      ...(id ? { id } : {}),
+      ...cleanData,
+      sentAt: cleanData.sentAt || now,
+    }
+
+    const { data: reminderLog, error } = await supabaseAdmin
+      .from('ReminderLog')
+      .insert(insertData)
+      .select()
+      .single()
+
+    if (error) throw error
+    return reminderLog
+  },
+
+  // Get the most recent reminder of each type
+  async getLatestByType(reminderType: 'payment' | 'lock_deadline') {
+    const { data, error } = await supabaseAdmin
+      .from('ReminderLog')
+      .select(`
+        *,
+        sentBy:User(id, username, email)
+      `)
+      .eq('reminderType', reminderType)
+      .order('sentAt', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (error && error.code !== 'PGRST116') throw error
+    return data
+  },
+}
+
 // Export a db object that mimics Prisma's structure
 export const db = {
   user: userDb,
@@ -1139,6 +1211,7 @@ export const db = {
   playerSeasonStats: playerSeasonStatsDb,
   playerStats: playerStatsDb,
   leaderboard: leaderboardDb,
+  reminderLog: reminderLogDb,
 
   // Raw query support
   async $queryRaw(query: string, ...params: any[]) {

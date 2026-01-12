@@ -246,6 +246,17 @@ export interface NotificationResult {
   totalRecipients: number
 }
 
+export interface ReminderStatusItem {
+  sentAt: string
+  recipientCount: number
+  sentBy: string
+}
+
+export interface ReminderStatus {
+  payment: ReminderStatusItem | null
+  lock_deadline: ReminderStatusItem | null
+}
+
 // ==================== AUTH API ====================
 
 export const authApi = {
@@ -653,6 +664,30 @@ export const adminApi = {
    */
   verifyPassword: async (password: string): Promise<ApiResponse> => {
     const response = await api.post('/api/admin/verify-password', { password })
+    return response.data
+  },
+
+  /**
+   * Get reminder status (last sent time for each type)
+   */
+  getReminderStatus: async (): Promise<ApiResponse<ReminderStatus>> => {
+    const response = await api.get('/api/admin/reminders/status')
+    return response.data
+  },
+
+  /**
+   * Send payment reminder
+   */
+  sendPaymentReminder: async (statuses: ('draft' | 'pending')[]): Promise<ApiResponse<NotificationResult>> => {
+    const response = await api.post('/api/admin/reminders/payment', { statuses })
+    return response.data
+  },
+
+  /**
+   * Send lock deadline reminder
+   */
+  sendLockReminder: async (lockDate: string): Promise<ApiResponse<NotificationResult>> => {
+    const response = await api.post('/api/admin/reminders/lock-deadline', { lockDate })
     return response.data
   },
 }

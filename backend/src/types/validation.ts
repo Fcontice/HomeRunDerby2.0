@@ -125,6 +125,14 @@ export const endSeasonSchema = z.object({
   seasonYear: z.number().int().min(2020).max(2100),
 })
 
+export const sendPaymentReminderSchema = z.object({
+  statuses: z.array(z.enum(['draft', 'pending'])).min(1, 'At least one status is required'),
+})
+
+export const sendLockReminderSchema = z.object({
+  lockDate: z.string().min(1, 'Lock date is required'),
+})
+
 /**
  * Payment validation schemas
  */
@@ -152,3 +160,5 @@ export type VerifyPasswordInput = z.infer<typeof verifyPasswordSchema>
 export type UpdateTeamPaymentStatusInput = z.infer<typeof updateTeamPaymentStatusSchema>
 export type AdminSendNotificationInput = z.infer<typeof adminSendNotificationSchema>
 export type EndSeasonInput = z.infer<typeof endSeasonSchema>
+export type SendPaymentReminderInput = z.infer<typeof sendPaymentReminderSchema>
+export type SendLockReminderInput = z.infer<typeof sendLockReminderSchema>

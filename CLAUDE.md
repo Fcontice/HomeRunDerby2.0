@@ -310,8 +310,11 @@ Full admin dashboard for managing teams, users, and sending notifications. Acces
 - `POST /users/:id/password-reset` - Send password reset email
 - `DELETE /users/:id` - Soft delete user
 - `POST /notifications` - Send email notifications
-- `GET /notifications/recipient-counts` - Get counts for recipient groups
-- `POST /end-season` - End the current season (locks all teams)
+- `GET /recipient-counts` - Get counts for recipient groups
+- `GET /reminders/status` - Get last sent time for each reminder type
+- `POST /reminders/payment` - Send payment reminders to users with unpaid teams
+- `POST /reminders/lock-deadline` - Send personalized lock deadline reminders to all users
+- `POST /season/end` - End the current season (locks all teams)
 - `POST /verify-password` - Re-authenticate for destructive actions
 
 **Security Features:**
@@ -319,14 +322,14 @@ Full admin dashboard for managing teams, users, and sending notifications. Acces
 - Destructive actions require re-authentication:
   - Email/password users: Must enter password
   - OAuth users (Google): Auto-verified (authenticated via trusted provider)
-  - Actions requiring re-auth: Reject team, delete user, send notifications, end season
+  - Actions requiring re-auth: Reject team, delete user, send notifications, send reminders, end season
 
 **Frontend Components:**
 - `AdminLayout.tsx` - Sidebar navigation with role check, redirects non-admins
 - `AdminDashboard.tsx` - Stats cards, teams by status, quick actions, end season modal
 - `AdminTeams.tsx` - Team table with filters, status badges, approve/reject actions
 - `AdminUsers.tsx` - User table with verify email, password reset, delete actions
-- `AdminNotifications.tsx` - Email composer with recipient group selection
+- `AdminNotifications.tsx` - Quick reminders (payment/lock deadline) and custom email composer
 - `ReAuthModal.tsx` - Password verification modal for destructive actions
 - `StatsCard.tsx` - Reusable stats display card with variants
 
@@ -350,7 +353,7 @@ Full admin dashboard for managing teams, users, and sending notifications. Acces
 - **Payments**: Stripe integration with webhook processing fully functional.
 - **Python stats updater**: Robust retry logic with exponential backoff (3 attempts, 5min timeout)
 - **Health monitoring**: `/health` and `/health/python` endpoints for system checks
-- **Current status**: Phases 1-4 complete (~85% overall). Admin dashboard fully functional. Next: Automated stats scheduling, polish & testing.
+- **Current status**: Phases 1-4 complete (~90% overall). Admin dashboard with quick reminders fully functional. Next: Automated stats scheduling, polish & testing.
 
 ## Testing
 
@@ -376,6 +379,7 @@ npm run test        # (frontend or backend)
 
 **Available migrations:**
 - `add_payment_status_index.sql` - Adds index on Team.paymentStatus for admin queries
+- `add_reminder_log.sql` - Creates ReminderLog table for tracking sent reminders
 
 **Add a new page:**
 1. Create component in `frontend/src/pages/`

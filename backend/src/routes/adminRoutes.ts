@@ -17,6 +17,9 @@ import {
   endSeason,
   verifyPassword,
   getRecipientCounts,
+  getReminderStatus,
+  sendPaymentReminder,
+  sendLockDeadlineReminder,
 } from '../controllers/adminController.js'
 import { requireAuth, requireAdmin } from '../middleware/auth.js'
 
@@ -43,6 +46,11 @@ router.delete('/users/:id', deleteUser)
 // Notifications
 router.get('/recipient-counts', getRecipientCounts)
 router.post('/notifications', sendNotifications)
+
+// Reminders
+router.get('/reminders/status', getReminderStatus)
+router.post('/reminders/payment', sendPaymentReminder)
+router.post('/reminders/lock-deadline', sendLockDeadlineReminder)
 
 // Season control
 router.post('/season/end', endSeason)

@@ -24,6 +24,7 @@ model User {
   updatedAt               DateTime       @updatedAt
   deletedAt               DateTime?
   notifications           Notification[]
+  reminderLogs            ReminderLog[]
   teams                   Team[]
 
   @@index([email])
@@ -127,6 +128,19 @@ model Notification {
   @@index([sentAt])
 }
 
+model ReminderLog {
+  id             String       @id @default(dbgenerated("gen_random_uuid()"))
+  reminderType   ReminderType
+  sentAt         DateTime     @default(now())
+  sentById       String
+  recipientCount Int
+  metadata       Json?
+  sentBy         User         @relation(fields: [sentById], references: [id], onDelete: Cascade)
+
+  @@index([reminderType])
+  @@index([sentAt])
+}
+
 model PlayerSeasonStats {
   id         String    @id @default(dbgenerated("gen_random_uuid()"))
   playerId   String
@@ -176,4 +190,9 @@ enum LeaderboardType {
 enum NotificationType {
   email
   in_app
+}
+
+enum ReminderType {
+  payment
+  lock_deadline
 }

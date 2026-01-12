@@ -15,9 +15,15 @@ import {
   updateTeamPaymentStatusSchema,
   adminSendNotificationSchema,
   endSeasonSchema,
+  sendPaymentReminderSchema,
+  sendLockReminderSchema,
 } from '../types/validation.js'
 import { db } from '../services/db.js'
-import { sendEmail } from '../services/emailService.js'
+import {
+  sendEmail,
+  sendPaymentReminderEmail,
+  sendLockDeadlineReminderEmail,
+} from '../services/emailService.js'
 
 /**
  * GET /api/admin/stats
@@ -577,6 +583,188 @@ export async function getRecipientCounts(req: Request, res: Response, next: Next
         unpaid: unpaidCount,
         paid: paidCount,
       },
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+/**
+ * GET /api/admin/reminders/status
+ * Get the last sent time for each reminder type
+ */
+export async function getReminderStatus(req: Request, res: Response, next: NextFunction) {
+  try {
+    const paymentReminder = await db.reminderLog.getLatestByType('payment')
+    const lockReminder = await db.reminderLog.getLatestByType('lock_deadline')
+
+    res.json({
+      success: true,
+      data: {
+        payment: paymentReminder
+          ? {
+              sentAt: paymentReminder.sentAt,
+              recipientCount: paymentReminder.recipientCount,
+              sentBy: paymentReminder.sentBy?.username || 'Unknown',
+            }
+          : null,
+        lock_deadline: lockReminder
+          ? {
+              sentAt: lockReminder.sentAt,
+              recipientCount: lockReminder.recipientCount,
+              sentBy: lockReminder.sentBy?.username || 'Unknown',
+            }
+          : null,
+      },
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+/**
+ * POST /api/admin/reminders/payment
+ * Send payment reminder to users with unpaid teams
+ */
+export async function sendPaymentReminder(req: Request, res: Response, next: NextFunction) {
+  try {
+    const validation = sendPaymentReminderSchema.safeParse(req.body)
+    if (!validation.success) {
+      throw new ValidationError(validation.error.errors[0].message)
+    }
+
+    const { statuses } = validation.data
+    const adminId = req.user!.userId
+
+    // Get all verified users
+    const allUsers = await db.user.findMany({ deletedAt: null, emailVerified: true })
+
+    // Find users with teams matching the selected statuses
+    const recipients: { user: any; unpaidTeams: any[] }[] = []
+
+    for (const user of allUsers) {
+      const teams = await db.team.findMany({ userId: user.id, deletedAt: null })
+      const unpaidTeams = teams.filter((t: any) => statuses.includes(t.paymentStatus))
+
+      if (unpaidTeams.length > 0) {
+        recipients.push({ user, unpaidTeams })
+      }
+    }
+
+    if (recipients.length === 0) {
+      throw new ValidationError('No users found with teams matching the selected statuses')
+    }
+
+    // Send emails
+    let sentCount = 0
+    let failedCount = 0
+
+    for (const { user, unpaidTeams } of recipients) {
+      try {
+        await sendPaymentReminderEmail(
+          user.email,
+          user.username,
+          unpaidTeams.map((t: any) => ({ name: t.name }))
+        )
+        sentCount++
+      } catch (error) {
+        console.error(`Failed to send payment reminder to ${user.email}:`, error)
+        failedCount++
+      }
+    }
+
+    // Log the reminder
+    await db.reminderLog.create({
+      reminderType: 'payment',
+      sentById: adminId,
+      recipientCount: sentCount,
+      metadata: { statuses, failedCount },
+    })
+
+    res.json({
+      success: true,
+      message: `Sent ${sentCount} payment reminder${sentCount === 1 ? '' : 's'}${failedCount > 0 ? `, ${failedCount} failed` : ''}`,
+      data: { sentCount, failedCount, totalRecipients: recipients.length },
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+/**
+ * POST /api/admin/reminders/lock-deadline
+ * Send lock deadline reminder to all verified users
+ */
+export async function sendLockDeadlineReminder(req: Request, res: Response, next: NextFunction) {
+  try {
+    const validation = sendLockReminderSchema.safeParse(req.body)
+    if (!validation.success) {
+      throw new ValidationError(validation.error.errors[0].message)
+    }
+
+    const { lockDate } = validation.data
+    const adminId = req.user!.userId
+
+    // Get all verified users
+    const allUsers = await db.user.findMany({ deletedAt: null, emailVerified: true })
+
+    if (allUsers.length === 0) {
+      throw new ValidationError('No verified users found')
+    }
+
+    // Send personalized emails to each user
+    let sentCount = 0
+    let failedCount = 0
+
+    for (const user of allUsers) {
+      try {
+        const teams = await db.team.findMany({ userId: user.id, deletedAt: null })
+        const unpaidTeams = teams.filter(
+          (t: any) => t.paymentStatus === 'draft' || t.paymentStatus === 'pending'
+        )
+        const paidTeams = teams.filter((t: any) => t.paymentStatus === 'paid')
+
+        // Determine user's team status
+        let teamStatus: {
+          type: 'no_teams' | 'has_unpaid' | 'all_paid'
+          unpaidTeams?: { name: string }[]
+          paidTeamCount?: number
+        }
+
+        if (teams.length === 0) {
+          teamStatus = { type: 'no_teams' }
+        } else if (unpaidTeams.length > 0) {
+          teamStatus = {
+            type: 'has_unpaid',
+            unpaidTeams: unpaidTeams.map((t: any) => ({ name: t.name })),
+          }
+        } else {
+          teamStatus = {
+            type: 'all_paid',
+            paidTeamCount: paidTeams.length,
+          }
+        }
+
+        await sendLockDeadlineReminderEmail(user.email, user.username, lockDate, teamStatus)
+        sentCount++
+      } catch (error) {
+        console.error(`Failed to send lock reminder to ${user.email}:`, error)
+        failedCount++
+      }
+    }
+
+    // Log the reminder
+    await db.reminderLog.create({
+      reminderType: 'lock_deadline',
+      sentById: adminId,
+      recipientCount: sentCount,
+      metadata: { lockDate, failedCount },
+    })
+
+    res.json({
+      success: true,
+      message: `Sent ${sentCount} lock deadline reminder${sentCount === 1 ? '' : 's'}${failedCount > 0 ? `, ${failedCount} failed` : ''}`,
+      data: { sentCount, failedCount, totalRecipients: allUsers.length },
     })
   } catch (error) {
     next(error)
