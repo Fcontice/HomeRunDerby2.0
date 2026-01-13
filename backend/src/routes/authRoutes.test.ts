@@ -14,6 +14,32 @@ vi.mock('../services/db.js', () => ({
   },
 }))
 
+// Mock supabase admin to prevent real connections
+vi.mock('../config/supabase.js', () => ({
+  default: {
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        match: vi.fn(() => ({
+          is: vi.fn(() => ({
+            single: vi.fn(() => Promise.resolve({ data: null, error: null })),
+          })),
+        })),
+      })),
+    })),
+  },
+  supabaseAdmin: {
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        match: vi.fn(() => ({
+          is: vi.fn(() => ({
+            single: vi.fn(() => Promise.resolve({ data: null, error: null })),
+          })),
+        })),
+      })),
+    })),
+  },
+}))
+
 // Mock email service
 vi.mock('../services/emailService.js', () => ({
   sendVerificationEmail: vi.fn().mockResolvedValue(undefined),
@@ -56,7 +82,7 @@ describe('Auth Routes', () => {
         .post('/api/auth/register')
         .send({
           email: 'invalid-email',
-          password: 'password123',
+          password: 'Password123',
           username: 'testuser',
         })
 
@@ -82,7 +108,7 @@ describe('Auth Routes', () => {
         .post('/api/auth/register')
         .send({
           email: 'test@example.com',
-          password: 'password123',
+          password: 'Password123',
         })
 
       expect(response.status).toBe(400)
@@ -99,7 +125,7 @@ describe('Auth Routes', () => {
         .post('/api/auth/register')
         .send({
           email: 'test@example.com',
-          password: 'password123',
+          password: 'Password123',
           username: 'testuser',
         })
 
@@ -116,7 +142,7 @@ describe('Auth Routes', () => {
         .post('/api/auth/register')
         .send({
           email: 'test@example.com',
-          password: 'password123',
+          password: 'Password123',
           username: 'testuser',
         })
 
@@ -140,7 +166,7 @@ describe('Auth Routes', () => {
         .post('/api/auth/register')
         .send({
           email: 'test@example.com',
-          password: 'password123',
+          password: 'Password123',
           username: 'testuser',
         })
 
@@ -167,7 +193,7 @@ describe('Auth Routes', () => {
         .post('/api/auth/login')
         .send({
           email: 'nonexistent@example.com',
-          password: 'password123',
+          password: 'Password123',
         })
 
       expect(response.status).toBe(401)
@@ -187,7 +213,7 @@ describe('Auth Routes', () => {
         .post('/api/auth/login')
         .send({
           email: 'test@example.com',
-          password: 'password123',
+          password: 'Password123',
         })
 
       expect(response.status).toBe(401)
@@ -233,7 +259,7 @@ describe('Auth Routes', () => {
         .post('/api/auth/login')
         .send({
           email: 'test@example.com',
-          password: 'password123',
+          password: 'Password123',
         })
 
       expect(response.status).toBe(200)
@@ -334,7 +360,7 @@ describe('Auth Routes', () => {
 
       const response = await request(app)
         .post('/api/auth/reset-password')
-        .send({ token: 'invalid-token', password: 'newpassword123' })
+        .send({ token: 'invalid-token', password: 'newPassword123' })
 
       expect(response.status).toBe(400)
       expect(response.body.error.message).toContain('Invalid or expired')
@@ -348,7 +374,7 @@ describe('Auth Routes', () => {
 
       const response = await request(app)
         .post('/api/auth/reset-password')
-        .send({ token: 'valid-token', password: 'newpassword123' })
+        .send({ token: 'valid-token', password: 'newPassword123' })
 
       expect(response.status).toBe(200)
       expect(response.body.success).toBe(true)

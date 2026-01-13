@@ -98,3 +98,60 @@ async function validateData() {
       console.log(`   ⚠️  Mismatch: ${players.length} players vs ${seasonStats.length} stats records`)
     }
 
+    // HR distribution stats
+    const hrsList = players.map(p => p.hrsPreviousSeason)
+    const minHrs = Math.min(...hrsList)
+    const maxHrs = Math.max(...hrsList)
+    const avgHrs = hrsList.reduce((a, b) => a + b, 0) / hrsList.length
+
+    console.log(`\n📈 HR Distribution:`)
+    console.log(`   Min: ${minHrs}`)
+    console.log(`   Max: ${maxHrs}`)
+    console.log(`   Avg: ${avgHrs.toFixed(2)}`)
+
+    // Team distribution
+    const teamCounts: Record<string, number> = {}
+    players.forEach(p => {
+      teamCounts[p.teamAbbr] = (teamCounts[p.teamAbbr] || 0) + 1
+    })
+    const topTeams = Object.entries(teamCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+
+    console.log(`\n🏟️  Top 5 Teams by Player Count:`)
+    topTeams.forEach(([team, count]) => {
+      console.log(`   ${team}: ${count} players`)
+    })
+
+    // Check for duplicate mlbIds
+    const mlbIdCounts: Record<string, number> = {}
+    players.forEach(p => {
+      mlbIdCounts[p.mlbId] = (mlbIdCounts[p.mlbId] || 0) + 1
+    })
+    const duplicates = Object.entries(mlbIdCounts).filter(([_, count]) => count > 1)
+    console.log(`\n🔍 Duplicate mlbIds: ${duplicates.length}`)
+    if (duplicates.length > 0) {
+      hasIssues = true
+      console.log(`   ❌ Found duplicates:`, duplicates.map(([id]) => id))
+    } else {
+      console.log(`   ✅ No duplicate mlbIds`)
+    }
+
+    // Summary
+    console.log(`\n${'='.repeat(60)}`)
+    if (hasIssues) {
+      console.log(`\n⚠️  Validation completed with issues. Please review above.`)
+      process.exit(1)
+    } else {
+      console.log(`\n✅ Validation passed! All checks successful.`)
+      process.exit(0)
+    }
+  } catch (error) {
+    console.error('\n❌ Validation failed with error:')
+    console.error(error)
+    process.exit(1)
+  }
+}
+
+// Run validation
+validateData()

@@ -103,7 +103,9 @@
       "Bash(cmd.exe /c \"npm install --save-dev supertest @types/supertest msw\")",
       "Bash(powershell.exe -Command \"Set-Location ''C:\\\\Users\\\\conti\\\\Desktop\\\\HRD2.0\\\\backend''; npm install --save-dev supertest @types/supertest msw 2>&1\")",
       "Bash(npx vitest:*)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Skill(superpowers:systematic-debugging)",
+      "Bash(export PATH=\"$PATH:/c/Program Files/nodejs:/c/Users/conti/AppData/Roaming/npm\")"
     ]
   },
   "enableAllProjectMcpServers": true,

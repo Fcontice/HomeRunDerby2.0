@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import request from 'supertest'
 import express from 'express'
-import jwt from 'jsonwebtoken'
+
+// Store mock user for tests
+let mockUser: any = null
 
 // Mock the db service
 vi.mock('../services/db.js', () => ({
@@ -27,29 +29,71 @@ vi.mock('../services/db.js', () => ({
     },
     seasonConfig: {
       findFirst: vi.fn(),
+      findCurrent: vi.fn(),
     },
   },
+}))
+
+// Mock supabase admin to prevent real connections
+vi.mock('../config/supabase.js', () => ({
+  default: {
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        match: vi.fn(() => ({
+          is: vi.fn(() => ({
+            single: vi.fn(() => Promise.resolve({ data: null, error: null })),
+          })),
+        })),
+      })),
+    })),
+  },
+  supabaseAdmin: {
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        match: vi.fn(() => ({
+          is: vi.fn(() => ({
+            single: vi.fn(() => Promise.resolve({ data: null, error: null })),
+          })),
+        })),
+      })),
+    })),
+  },
+}))
+
+// Mock JWT utils to allow test authentication
+vi.mock('../utils/jwt.js', () => ({
+  verifyToken: vi.fn((token: string) => {
+    // Return the mockUser if set, otherwise throw
+    if (mockUser) {
+      return mockUser
+    }
+    throw new Error('Invalid or expired token')
+  }),
+  generateAccessToken: vi.fn().mockReturnValue('mock-access-token'),
+  generateRefreshToken: vi.fn().mockReturnValue('mock-refresh-token'),
 }))
 
 import teamRoutes from './teamRoutes.js'
 import { db } from '../services/db.js'
 import { errorHandler } from '../middleware/errorHandler.js'
 
-// Create test app with mock auth middleware
+// Create test app
 const app = express()
 app.use(express.json())
-
-// Mock auth middleware
-let mockUser: any = null
-app.use((req: any, res, next) => {
-  if (mockUser) {
-    req.user = mockUser
-  }
-  next()
-})
-
 app.use('/api/teams', teamRoutes)
 app.use(errorHandler)
+
+// Valid UUIDs for testing
+const PLAYER_IDS = [
+  '11111111-1111-1111-1111-111111111111',
+  '22222222-2222-2222-2222-222222222222',
+  '33333333-3333-3333-3333-333333333333',
+  '44444444-4444-4444-4444-444444444444',
+  '55555555-5555-5555-5555-555555555555',
+  '66666666-6666-6666-6666-666666666666',
+  '77777777-7777-7777-7777-777777777777',
+  '88888888-8888-8888-8888-888888888888',
+]
 
 describe('Team Routes', () => {
   beforeEach(() => {
@@ -57,7 +101,7 @@ describe('Team Routes', () => {
     mockUser = null
 
     // Default: registration phase active
-    vi.mocked(db.seasonConfig.findFirst).mockResolvedValue({
+    vi.mocked(db.seasonConfig.findCurrent).mockResolvedValue({
       phase: 'registration',
       seasonYear: 2026,
       isCurrentSeason: true,
@@ -107,7 +151,9 @@ describe('Team Routes', () => {
         { id: 'team-2', name: 'Team 2', userId: 'user-123' },
       ] as any)
 
-      const response = await request(app).get('/api/teams/my-teams')
+      const response = await request(app)
+        .get('/api/teams/my-teams')
+        .set('Authorization', 'Bearer mock-token')
 
       expect(response.status).toBe(200)
       expect(response.body.success).toBe(true)
@@ -119,7 +165,9 @@ describe('Team Routes', () => {
 
       vi.mocked(db.team.findMany).mockResolvedValue([])
 
-      await request(app).get('/api/teams/my-teams?seasonYear=2026')
+      await request(app)
+        .get('/api/teams/my-teams?seasonYear=2026')
+        .set('Authorization', 'Bearer mock-token')
 
       expect(db.team.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -138,7 +186,7 @@ describe('Team Routes', () => {
         .send({
           name: 'My Team',
           seasonYear: 2026,
-          playerIds: ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'],
+          playerIds: PLAYER_IDS,
         })
 
       expect(response.status).toBe(401)
@@ -147,17 +195,18 @@ describe('Team Routes', () => {
     it('should return 403 during off_season phase', async () => {
       mockUser = { userId: 'user-123', email: 'test@example.com', role: 'user' }
 
-      vi.mocked(db.seasonConfig.findFirst).mockResolvedValue({
+      vi.mocked(db.seasonConfig.findCurrent).mockResolvedValue({
         phase: 'off_season',
         seasonYear: 2026,
       } as any)
 
       const response = await request(app)
         .post('/api/teams')
+        .set('Authorization', 'Bearer mock-token')
         .send({
           name: 'My Team',
           seasonYear: 2026,
-          playerIds: ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'],
+          playerIds: PLAYER_IDS,
         })
 
       expect(response.status).toBe(403)
@@ -173,10 +222,11 @@ describe('Team Routes', () => {
 
       const response = await request(app)
         .post('/api/teams')
+        .set('Authorization', 'Bearer mock-token')
         .send({
           name: '', // Empty name
           seasonYear: 2026,
-          playerIds: ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'],
+          playerIds: PLAYER_IDS,
         })
 
       expect(response.status).toBe(400)
@@ -192,10 +242,11 @@ describe('Team Routes', () => {
 
       const response = await request(app)
         .post('/api/teams')
+        .set('Authorization', 'Bearer mock-token')
         .send({
           name: 'My Team',
           seasonYear: 2026,
-          playerIds: ['p1', 'p2', 'p3'], // Only 3 players
+          playerIds: PLAYER_IDS.slice(0, 3), // Only 3 players
         })
 
       expect(response.status).toBe(400)
@@ -210,12 +261,15 @@ describe('Team Routes', () => {
         emailVerified: true,
       } as any)
 
+      const duplicatePlayerIds = [PLAYER_IDS[0], PLAYER_IDS[0], ...PLAYER_IDS.slice(2)]
+
       const response = await request(app)
         .post('/api/teams')
+        .set('Authorization', 'Bearer mock-token')
         .send({
           name: 'My Team',
           seasonYear: 2026,
-          playerIds: ['p1', 'p1', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'], // p1 duplicated
+          playerIds: duplicatePlayerIds, // First player duplicated
         })
 
       expect(response.status).toBe(400)
@@ -232,14 +286,14 @@ describe('Team Routes', () => {
 
       // Mock player stats for eligibility
       vi.mocked(db.playerSeasonStats.findMany).mockResolvedValue([
-        { playerId: 'p1', seasonYear: 2025, hrsTotal: 20 },
-        { playerId: 'p2', seasonYear: 2025, hrsTotal: 22 },
-        { playerId: 'p3', seasonYear: 2025, hrsTotal: 18 },
-        { playerId: 'p4', seasonYear: 2025, hrsTotal: 25 },
-        { playerId: 'p5', seasonYear: 2025, hrsTotal: 15 },
-        { playerId: 'p6', seasonYear: 2025, hrsTotal: 20 },
-        { playerId: 'p7', seasonYear: 2025, hrsTotal: 22 },
-        { playerId: 'p8', seasonYear: 2025, hrsTotal: 18 }, // Total: 160, under 172
+        { playerId: PLAYER_IDS[0], seasonYear: 2025, hrsTotal: 20 },
+        { playerId: PLAYER_IDS[1], seasonYear: 2025, hrsTotal: 22 },
+        { playerId: PLAYER_IDS[2], seasonYear: 2025, hrsTotal: 18 },
+        { playerId: PLAYER_IDS[3], seasonYear: 2025, hrsTotal: 25 },
+        { playerId: PLAYER_IDS[4], seasonYear: 2025, hrsTotal: 15 },
+        { playerId: PLAYER_IDS[5], seasonYear: 2025, hrsTotal: 20 },
+        { playerId: PLAYER_IDS[6], seasonYear: 2025, hrsTotal: 22 },
+        { playerId: PLAYER_IDS[7], seasonYear: 2025, hrsTotal: 18 }, // Total: 160, under 172
       ] as any)
 
       vi.mocked(db.team.create).mockResolvedValue({
@@ -253,10 +307,11 @@ describe('Team Routes', () => {
 
       const response = await request(app)
         .post('/api/teams')
+        .set('Authorization', 'Bearer mock-token')
         .send({
           name: 'My Team',
           seasonYear: 2026,
-          playerIds: ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'],
+          playerIds: PLAYER_IDS,
         })
 
       expect(response.status).toBe(201)
@@ -274,22 +329,23 @@ describe('Team Routes', () => {
 
       // Mock player stats with high HR totals
       vi.mocked(db.playerSeasonStats.findMany).mockResolvedValue([
-        { playerId: 'p1', seasonYear: 2025, hrsTotal: 40 },
-        { playerId: 'p2', seasonYear: 2025, hrsTotal: 35 },
-        { playerId: 'p3', seasonYear: 2025, hrsTotal: 30 },
-        { playerId: 'p4', seasonYear: 2025, hrsTotal: 25 },
-        { playerId: 'p5', seasonYear: 2025, hrsTotal: 20 },
-        { playerId: 'p6', seasonYear: 2025, hrsTotal: 15 },
-        { playerId: 'p7', seasonYear: 2025, hrsTotal: 12 },
-        { playerId: 'p8', seasonYear: 2025, hrsTotal: 10 }, // Total: 187, exceeds 172
+        { playerId: PLAYER_IDS[0], seasonYear: 2025, hrsTotal: 40 },
+        { playerId: PLAYER_IDS[1], seasonYear: 2025, hrsTotal: 35 },
+        { playerId: PLAYER_IDS[2], seasonYear: 2025, hrsTotal: 30 },
+        { playerId: PLAYER_IDS[3], seasonYear: 2025, hrsTotal: 25 },
+        { playerId: PLAYER_IDS[4], seasonYear: 2025, hrsTotal: 20 },
+        { playerId: PLAYER_IDS[5], seasonYear: 2025, hrsTotal: 15 },
+        { playerId: PLAYER_IDS[6], seasonYear: 2025, hrsTotal: 12 },
+        { playerId: PLAYER_IDS[7], seasonYear: 2025, hrsTotal: 10 }, // Total: 187, exceeds 172
       ] as any)
 
       const response = await request(app)
         .post('/api/teams')
+        .set('Authorization', 'Bearer mock-token')
         .send({
           name: 'My Team',
           seasonYear: 2026,
-          playerIds: ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'],
+          playerIds: PLAYER_IDS,
         })
 
       expect(response.status).toBe(400)
@@ -317,6 +373,7 @@ describe('Team Routes', () => {
 
       const response = await request(app)
         .patch('/api/teams/team-123')
+        .set('Authorization', 'Bearer mock-token')
         .send({ name: 'Updated Name' })
 
       expect(response.status).toBe(403)
@@ -333,6 +390,7 @@ describe('Team Routes', () => {
 
       const response = await request(app)
         .patch('/api/teams/team-123')
+        .set('Authorization', 'Bearer mock-token')
         .send({ name: 'Updated Name' })
 
       expect(response.status).toBe(403)
@@ -357,6 +415,7 @@ describe('Team Routes', () => {
 
       const response = await request(app)
         .patch('/api/teams/team-123')
+        .set('Authorization', 'Bearer mock-token')
         .send({ name: 'Updated Name' })
 
       expect(response.status).toBe(200)
@@ -380,7 +439,9 @@ describe('Team Routes', () => {
         entryStatus: 'draft',
       } as any)
 
-      const response = await request(app).delete('/api/teams/team-123')
+      const response = await request(app)
+        .delete('/api/teams/team-123')
+        .set('Authorization', 'Bearer mock-token')
 
       expect(response.status).toBe(403)
     })
@@ -394,7 +455,9 @@ describe('Team Routes', () => {
         entryStatus: 'locked',
       } as any)
 
-      const response = await request(app).delete('/api/teams/team-123')
+      const response = await request(app)
+        .delete('/api/teams/team-123')
+        .set('Authorization', 'Bearer mock-token')
 
       expect(response.status).toBe(403)
     })
@@ -410,7 +473,9 @@ describe('Team Routes', () => {
 
       vi.mocked(db.team.delete).mockResolvedValue({} as any)
 
-      const response = await request(app).delete('/api/teams/team-123')
+      const response = await request(app)
+        .delete('/api/teams/team-123')
+        .set('Authorization', 'Bearer mock-token')
 
       expect(response.status).toBe(200)
       expect(response.body.success).toBe(true)

@@ -63,7 +63,6 @@ export default function AdminTeams() {
   const [showReAuth, setShowReAuth] = useState(false)
   const [pendingAction, setPendingAction] = useState<{ teamId: string; status: string } | null>(null)
   const [selectedTeam, setSelectedTeam] = useState<AdminTeam | null>(null)
-  const [actionLoading, setActionLoading] = useState(false)
 
   useEffect(() => {
     loadTeams()
@@ -109,7 +108,6 @@ export default function AdminTeams() {
   }
 
   const executeStatusChange = async (teamId: string, newStatus: string) => {
-    setActionLoading(true)
     try {
       const result = await adminApi.updateTeamStatus(teamId, newStatus)
       if (result.success) {
@@ -117,8 +115,6 @@ export default function AdminTeams() {
       }
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Failed to update status')
-    } finally {
-      setActionLoading(false)
     }
   }
 

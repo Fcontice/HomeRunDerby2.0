@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '../test/testUtils'
 import userEvent from '@testing-library/user-event'
 import Dashboard from './Dashboard'
 import { TEST_USER, TEST_ADMIN, TEST_SEASON } from '../test/testUtils'
+import { SeasonConfig, User } from '../services/api'
 
 // Mock useNavigate
 const mockNavigate = vi.fn()
@@ -16,7 +17,7 @@ vi.mock('react-router-dom', async () => {
 
 // Mock useAuth
 const mockLogout = vi.fn()
-let mockUser = TEST_USER
+let mockUser: User = TEST_USER
 vi.mock('../contexts/AuthContext', () => ({
   useAuth: () => ({
     user: mockUser,
@@ -26,7 +27,7 @@ vi.mock('../contexts/AuthContext', () => ({
 }))
 
 // Mock useSeason
-let mockSeason = TEST_SEASON
+let mockSeason: SeasonConfig = TEST_SEASON
 vi.mock('../contexts/SeasonContext', () => ({
   useSeason: () => ({
     season: mockSeason,
@@ -44,7 +45,7 @@ describe('Dashboard Page', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockUser = TEST_USER
-    mockSeason = TEST_SEASON
+    mockSeason = TEST_SEASON as SeasonConfig
   })
 
   describe('Rendering', () => {

@@ -448,10 +448,43 @@ const { season, loading } = useSeason()
 
 ## Testing
 
-Vitest configured but test coverage is minimal. Run tests with:
+Both frontend and backend use Vitest. For comprehensive testing documentation, see **[docs/TESTING.md](docs/TESTING.md)**.
+
+### Quick Commands
+
 ```bash
-npm run test        # (frontend or backend)
+# Frontend tests
+cd frontend && npm test              # Run all tests
+cd frontend && npm run test:watch    # Watch mode
+cd frontend && npm run test:coverage # Coverage report
+
+# Backend tests
+cd backend && npm test               # Run all tests
+cd backend && npm run test:watch     # Watch mode
+cd backend && npm run test:coverage  # Coverage report
 ```
+
+### Test Files
+
+**Frontend** (`frontend/src/`):
+- `contexts/AuthContext.test.tsx` - Auth state management
+- `pages/Login.test.tsx` - Login form and validation
+- `pages/Dashboard.test.tsx` - Dashboard rendering
+
+**Backend** (`backend/src/`):
+- `routes/healthRoutes.test.ts` - Health endpoints
+- `routes/authRoutes.test.ts` - Auth endpoints
+- `routes/playerRoutes.test.ts` - Player API
+- `routes/teamRoutes.test.ts` - Team CRUD
+- `services/scoringService.test.ts` - Best 7 of 8 scoring
+- `middleware/seasonGuard.test.ts` - Phase protection
+
+### Test Utilities
+
+- **Frontend**: `src/test/testUtils.tsx` - Custom render, test fixtures
+- **Frontend**: `src/test/mocks/api.ts` - API mock implementations
+- **Backend**: `src/test/testUtils.ts` - JWT generation, mock req/res
+- **Backend**: `src/test/mocks/db.ts` - Database mock implementations
 
 ## Quick Reference
 
@@ -506,6 +539,16 @@ npm run test        # (frontend or backend)
 4. Create new season: Click "New Season" button in admin dashboard
 5. Phase-protected routes use `requirePhase(['registration'])` middleware
 6. Frontend uses `usePhaseCheck(['registration'])` hook for UI state
+
+**Work with tests:**
+1. Run frontend tests: `cd frontend && npm test`
+2. Run backend tests: `cd backend && npm test`
+3. Watch mode: `npm run test:watch` (in either directory)
+4. Coverage: `npm run test:coverage` (generates HTML report in `coverage/`)
+5. Frontend test utils: `src/test/testUtils.tsx` for custom render and fixtures
+6. Backend test utils: `src/test/testUtils.ts` for JWT generation and mock helpers
+7. Mock API calls: Use `vi.hoisted()` for proper mock hoisting with `vi.mock()`
+8. Full documentation: See `docs/TESTING.md`
 
 ## Deployment
 

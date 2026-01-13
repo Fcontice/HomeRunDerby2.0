@@ -232,6 +232,8 @@ export interface AdminUser {
   createdAt: string
   teamCount: number
   paidTeamCount: number
+  lastLoginAt?: string | null
+  googleId?: string | null
 }
 
 export interface RecipientCounts {

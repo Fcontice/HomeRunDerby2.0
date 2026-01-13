@@ -133,7 +133,6 @@ export default function SeasonCard() {
     })
   }
 
-  const currentSeason = seasons.find((s) => s.isCurrentSeason)
 
   return (
     <>

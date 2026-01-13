@@ -2,6 +2,7 @@ import React, { ReactElement } from 'react'
 import { render, RenderOptions } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { SeasonConfig, SeasonPhase } from '../services/api'
 
 // Create a fresh QueryClient for each test
 function createTestQueryClient() {
@@ -69,10 +70,10 @@ export const TEST_ADMIN = {
   createdAt: new Date().toISOString(),
 }
 
-export const TEST_SEASON = {
+export const TEST_SEASON: SeasonConfig = {
   id: 'season-2026',
   seasonYear: 2026,
-  phase: 'registration' as const,
+  phase: 'registration' as SeasonPhase,
   registrationOpenDate: '2026-03-01',
   registrationCloseDate: '2026-03-25',
   seasonStartDate: '2026-03-28',
