@@ -26,9 +26,47 @@ const PORT = process.env.PORT || 5000
 app.use(helmet())
 
 // CORS configuration
+const allowedOrigins: string[] = []
+
+// Always allow the configured frontend URL
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL)
+}
+
+// Development: allow localhost
+if (process.env.NODE_ENV !== 'production') {
+  allowedOrigins.push('http://localhost:5173')
+  allowedOrigins.push('http://localhost:3000')
+}
+
+// Production: add additional domains if needed
+if (process.env.NODE_ENV === 'production') {
+  // Add custom domain if different from FRONTEND_URL
+  if (process.env.CUSTOM_DOMAIN) {
+    allowedOrigins.push(process.env.CUSTOM_DOMAIN)
+  }
+}
+
+// Fallback if no origins configured
+if (allowedOrigins.length === 0) {
+  allowedOrigins.push('http://localhost:5173')
+}
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, etc.)
+      if (!origin) {
+        return callback(null, true)
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true)
+      } else {
+        console.warn(`CORS blocked origin: ${origin}`)
+        callback(new Error('Not allowed by CORS'))
+      }
+    },
     credentials: true,
   })
 )
@@ -117,7 +155,7 @@ app.use(errorHandler)
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`)
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`)
-  console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`)
+  console.log(`🌐 Allowed Origins: ${allowedOrigins.join(', ')}`)
   console.log(`🔐 JWT Secret: ${process.env.JWT_SECRET ? '✓ Set' : '⚠ Not set (using default)'}`)
   console.log(
     `📧 Resend API: ${process.env.RESEND_API_KEY ? '✓ Configured' : '⚠ Not configured'}`

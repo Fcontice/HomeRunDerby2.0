@@ -97,7 +97,13 @@
       "Bash(xargs cat:*)",
       "mcp__plugin_supabase_supabase__apply_migration",
       "mcp__plugin_supabase_supabase__generate_typescript_types",
-      "Bash(npm ls:*)"
+      "Bash(npm ls:*)",
+      "Bash(/c/Program Files/nodejs/npm install --save-dev supertest @types/supertest msw)",
+      "Bash(cmd.exe /c \"cd /d C:\\\\Users\\\\conti\\\\Desktop\\\\HRD2.0\\\\backend && npm install --save-dev supertest @types/supertest msw\")",
+      "Bash(cmd.exe /c \"npm install --save-dev supertest @types/supertest msw\")",
+      "Bash(powershell.exe -Command \"Set-Location ''C:\\\\Users\\\\conti\\\\Desktop\\\\HRD2.0\\\\backend''; npm install --save-dev supertest @types/supertest msw 2>&1\")",
+      "Bash(npx vitest:*)",
+      "Bash(npm test:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

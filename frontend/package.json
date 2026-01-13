@@ -8,7 +8,10 @@
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "format": "prettier --write \"src/**/*.{ts,tsx,json,css}\""
+    "format": "prettier --write \"src/**/*.{ts,tsx,json,css}\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -34,8 +37,12 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.4.0",
+    "@testing-library/react": "^14.2.0",
+    "@testing-library/user-event": "^14.5.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
+    "jsdom": "^24.0.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
     "@vitejs/plugin-react": "^4.3.0",
