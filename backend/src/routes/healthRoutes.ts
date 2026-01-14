@@ -19,7 +19,7 @@ const __dirname = path.dirname(__filename)
  * - Python dependencies (MLB-StatsAPI, supabase)
  * - Database connectivity
  */
-router.get('/python', async (req, res) => {
+router.get('/python', async (_req, res) => {
   try {
     const testScriptPath = path.join(
       __dirname,
@@ -58,7 +58,7 @@ router.get('/python', async (req, res) => {
  *
  * Returns basic API health status
  */
-router.get('/', async (req, res) => {
+router.get('/', async (_req, res) => {
   res.json({
     success: true,
     message: 'API is healthy',

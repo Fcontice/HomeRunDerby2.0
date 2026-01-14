@@ -17,7 +17,7 @@ import { db } from '../services/db.js'
  * Get the current season configuration (public endpoint)
  */
 export async function getCurrentSeason(
-  req: Request,
+  _req: Request,
   res: Response,
   next: NextFunction
 ) {
@@ -25,11 +25,12 @@ export async function getCurrentSeason(
     const season = await db.seasonConfig.findCurrent()
 
     if (!season) {
-      return res.json({
+      res.json({
         success: true,
         data: null,
         message: 'No current season configured',
       })
+      return
     }
 
     res.json({
@@ -46,7 +47,7 @@ export async function getCurrentSeason(
  * Get all season configurations (admin only)
  */
 export async function getAllSeasons(
-  req: Request,
+  _req: Request,
   res: Response,
   next: NextFunction
 ) {

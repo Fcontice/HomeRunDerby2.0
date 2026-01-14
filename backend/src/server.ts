@@ -110,7 +110,7 @@ app.use('/health', healthRoutes)
 // ==================== API ROUTES ====================
 
 // Welcome endpoint
-app.get('/api', (req, res) => {
+app.get('/api', (_req, res) => {
   res.json({
     success: true,
     message: 'Welcome to Home Run Derby 2.0 API',

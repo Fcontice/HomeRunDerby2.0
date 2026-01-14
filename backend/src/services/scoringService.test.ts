@@ -42,14 +42,14 @@ describe('Scoring Service', () => {
 
       // Mock player stats - p8 has lowest with 5 HRs
       vi.mocked(db.playerStats.getLatest)
-        .mockResolvedValueOnce({ hrsTotal: 20, hrsRegularSeason: 18, hrsPostseason: 2 }) // p1
-        .mockResolvedValueOnce({ hrsTotal: 18, hrsRegularSeason: 16, hrsPostseason: 2 }) // p2
-        .mockResolvedValueOnce({ hrsTotal: 15, hrsRegularSeason: 13, hrsPostseason: 2 }) // p3
-        .mockResolvedValueOnce({ hrsTotal: 12, hrsRegularSeason: 10, hrsPostseason: 2 }) // p4
-        .mockResolvedValueOnce({ hrsTotal: 10, hrsRegularSeason: 8, hrsPostseason: 2 })  // p5
-        .mockResolvedValueOnce({ hrsTotal: 8, hrsRegularSeason: 6, hrsPostseason: 2 })   // p6
-        .mockResolvedValueOnce({ hrsTotal: 6, hrsRegularSeason: 4, hrsPostseason: 2 })   // p7
-        .mockResolvedValueOnce({ hrsTotal: 5, hrsRegularSeason: 3, hrsPostseason: 2 })   // p8 - excluded
+        .mockResolvedValueOnce({ hrsTotal: 20, hrsRegularSeason: 18, hrsPostseason: 2 } as any) // p1
+        .mockResolvedValueOnce({ hrsTotal: 18, hrsRegularSeason: 16, hrsPostseason: 2 } as any) // p2
+        .mockResolvedValueOnce({ hrsTotal: 15, hrsRegularSeason: 13, hrsPostseason: 2 } as any) // p3
+        .mockResolvedValueOnce({ hrsTotal: 12, hrsRegularSeason: 10, hrsPostseason: 2 } as any) // p4
+        .mockResolvedValueOnce({ hrsTotal: 10, hrsRegularSeason: 8, hrsPostseason: 2 } as any)  // p5
+        .mockResolvedValueOnce({ hrsTotal: 8, hrsRegularSeason: 6, hrsPostseason: 2 } as any)   // p6
+        .mockResolvedValueOnce({ hrsTotal: 6, hrsRegularSeason: 4, hrsPostseason: 2 } as any)   // p7
+        .mockResolvedValueOnce({ hrsTotal: 5, hrsRegularSeason: 3, hrsPostseason: 2 } as any)   // p8 - excluded
 
       const result = await calculateTeamScore('team-123', 2026)
 
@@ -70,8 +70,8 @@ describe('Scoring Service', () => {
       } as any)
 
       vi.mocked(db.playerStats.getLatest)
-        .mockResolvedValueOnce({ hrsTotal: 10, hrsRegularSeason: 10, hrsPostseason: 0 })
-        .mockResolvedValueOnce({ hrsTotal: 8, hrsRegularSeason: 8, hrsPostseason: 0 })
+        .mockResolvedValueOnce({ hrsTotal: 10, hrsRegularSeason: 10, hrsPostseason: 0 } as any)
+        .mockResolvedValueOnce({ hrsTotal: 8, hrsRegularSeason: 8, hrsPostseason: 0 } as any)
 
       const result = await calculateTeamScore('team-123', 2026)
 
@@ -91,7 +91,7 @@ describe('Scoring Service', () => {
       } as any)
 
       vi.mocked(db.playerStats.getLatest)
-        .mockResolvedValueOnce({ hrsTotal: 10, hrsRegularSeason: 10, hrsPostseason: 0 })
+        .mockResolvedValueOnce({ hrsTotal: 10, hrsRegularSeason: 10, hrsPostseason: 0 } as any)
         .mockResolvedValueOnce(null) // No stats for p2
 
       const result = await calculateTeamScore('team-123', 2026)
@@ -129,7 +129,7 @@ describe('Scoring Service', () => {
         hrsTotal: 25,
         hrsRegularSeason: 20,
         hrsPostseason: 5,
-      })
+      } as any)
 
       const result = await calculateTeamScore('team-123', 2026, false)
 
@@ -149,9 +149,9 @@ describe('Scoring Service', () => {
       } as any)
 
       vi.mocked(db.playerStats.getLatest)
-        .mockResolvedValueOnce({ hrsTotal: 5, hrsRegularSeason: 5, hrsPostseason: 0 })  // p1 - lowest
-        .mockResolvedValueOnce({ hrsTotal: 15, hrsRegularSeason: 15, hrsPostseason: 0 }) // p2 - highest
-        .mockResolvedValueOnce({ hrsTotal: 10, hrsRegularSeason: 10, hrsPostseason: 0 }) // p3 - middle
+        .mockResolvedValueOnce({ hrsTotal: 5, hrsRegularSeason: 5, hrsPostseason: 0 } as any)  // p1 - lowest
+        .mockResolvedValueOnce({ hrsTotal: 15, hrsRegularSeason: 15, hrsPostseason: 0 } as any) // p2 - highest
+        .mockResolvedValueOnce({ hrsTotal: 10, hrsRegularSeason: 10, hrsPostseason: 0 } as any) // p3 - middle
 
       const result = await calculateTeamScore('team-123', 2026)
 
@@ -183,8 +183,8 @@ describe('Scoring Service', () => {
         } as any)
 
       vi.mocked(db.playerStats.getLatest)
-        .mockResolvedValueOnce({ hrsTotal: 20, hrsRegularSeason: 20, hrsPostseason: 0 })
-        .mockResolvedValueOnce({ hrsTotal: 15, hrsRegularSeason: 15, hrsPostseason: 0 })
+        .mockResolvedValueOnce({ hrsTotal: 20, hrsRegularSeason: 20, hrsPostseason: 0 } as any)
+        .mockResolvedValueOnce({ hrsTotal: 15, hrsRegularSeason: 15, hrsPostseason: 0 } as any)
 
       const results = await calculateAllTeamScores(2026)
 
@@ -235,9 +235,9 @@ describe('Scoring Service', () => {
         } as any)
 
       vi.mocked(db.playerStats.getLatest)
-        .mockResolvedValueOnce({ hrsTotal: 30, hrsRegularSeason: 30, hrsPostseason: 0 }) // team-1: 1st
-        .mockResolvedValueOnce({ hrsTotal: 20, hrsRegularSeason: 20, hrsPostseason: 0 }) // team-2: 2nd
-        .mockResolvedValueOnce({ hrsTotal: 10, hrsRegularSeason: 10, hrsPostseason: 0 }) // team-3: 3rd
+        .mockResolvedValueOnce({ hrsTotal: 30, hrsRegularSeason: 30, hrsPostseason: 0 } as any) // team-1: 1st
+        .mockResolvedValueOnce({ hrsTotal: 20, hrsRegularSeason: 20, hrsPostseason: 0 } as any) // team-2: 2nd
+        .mockResolvedValueOnce({ hrsTotal: 10, hrsRegularSeason: 10, hrsPostseason: 0 } as any) // team-3: 3rd
 
       const rank = await getTeamRank('team-2', 2026)
 

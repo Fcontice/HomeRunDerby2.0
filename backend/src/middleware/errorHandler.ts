@@ -1,7 +1,15 @@
 import { Request, Response, NextFunction } from 'express'
 import { AppError } from '../utils/errors.js'
 import { ZodError } from 'zod'
-import { Prisma } from '@prisma/client'
+
+/**
+ * PostgreSQL/Supabase error interface
+ */
+interface PostgrestError {
+  code?: string
+  message?: string
+  details?: string
+}
 
 /**
  * Global error handling middleware
@@ -9,10 +17,10 @@ import { Prisma } from '@prisma/client'
  */
 export function errorHandler(
   err: Error,
-  req: Request,
+  _req: Request,
   res: Response,
-  next: NextFunction
-) {
+  _next: NextFunction
+): void {
   // Log error for debugging (in production, use proper logging service)
   console.error('Error:', {
     name: err.name,
@@ -22,7 +30,7 @@ export function errorHandler(
 
   // Handle AppError instances
   if (err instanceof AppError) {
-    return res.status(err.statusCode).json({
+    res.status(err.statusCode).json({
       success: false,
       error: {
         code: err.code,
@@ -30,11 +38,12 @@ export function errorHandler(
         details: err.details,
       },
     })
+    return
   }
 
   // Handle Zod validation errors
   if (err instanceof ZodError) {
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       error: {
         code: 'VALIDATION_ERROR',
@@ -45,64 +54,82 @@ export function errorHandler(
         })),
       },
     })
+    return
   }
 
-  // Handle Prisma errors
-  if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    // Unique constraint violation
-    if (err.code === 'P2002') {
-      const target = (err.meta?.target as string[]) || []
-      return res.status(409).json({
+  // Handle PostgreSQL/Supabase errors (via code property)
+  const pgError = err as unknown as PostgrestError
+  if (pgError && typeof pgError === 'object' && 'code' in pgError && typeof pgError.code === 'string') {
+    // Unique constraint violation (PostgreSQL error code 23505)
+    if (pgError.code === '23505') {
+      res.status(409).json({
         success: false,
         error: {
           code: 'CONFLICT',
-          message: `${target.join(', ')} already exists`,
+          message: 'Record already exists',
         },
       })
+      return
     }
 
-    // Record not found
-    if (err.code === 'P2025') {
-      return res.status(404).json({
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: 'Record not found',
-        },
-      })
-    }
-
-    // Foreign key constraint violation
-    if (err.code === 'P2003') {
-      return res.status(400).json({
+    // Foreign key constraint violation (PostgreSQL error code 23503)
+    if (pgError.code === '23503') {
+      res.status(400).json({
         success: false,
         error: {
           code: 'VALIDATION_ERROR',
           message: 'Invalid reference to related record',
         },
       })
+      return
+    }
+
+    // Not null violation (PostgreSQL error code 23502)
+    if (pgError.code === '23502') {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Required field is missing',
+        },
+      })
+      return
+    }
+
+    // Record not found (Supabase PGRST116)
+    if (pgError.code === 'PGRST116') {
+      res.status(404).json({
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Record not found',
+        },
+      })
+      return
     }
   }
 
   // Handle JWT errors
   if (err.name === 'JsonWebTokenError') {
-    return res.status(401).json({
+    res.status(401).json({
       success: false,
       error: {
         code: 'AUTH_REQUIRED',
         message: 'Invalid token',
       },
     })
+    return
   }
 
   if (err.name === 'TokenExpiredError') {
-    return res.status(401).json({
+    res.status(401).json({
       success: false,
       error: {
         code: 'AUTH_REQUIRED',
         message: 'Token expired',
       },
     })
+    return
   }
 
   // Default to 500 Internal Server Error
@@ -121,7 +148,7 @@ export function errorHandler(
 /**
  * 404 Not Found handler for undefined routes
  */
-export function notFoundHandler(req: Request, res: Response) {
+export function notFoundHandler(req: Request, res: Response): void {
   res.status(404).json({
     success: false,
     error: {
@@ -135,9 +162,9 @@ export function notFoundHandler(req: Request, res: Response) {
  * Async error wrapper to catch errors in async route handlers
  */
 export function asyncHandler(
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
-) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>
+): (req: Request, res: Response, next: NextFunction) => void {
+  return (req: Request, res: Response, next: NextFunction): void => {
     Promise.resolve(fn(req, res, next)).catch(next)
   }
 }

@@ -62,7 +62,7 @@ vi.mock('../config/supabase.js', () => ({
 
 // Mock JWT utils to allow test authentication
 vi.mock('../utils/jwt.js', () => ({
-  verifyToken: vi.fn((token: string) => {
+  verifyToken: vi.fn((_token: string) => {
     // Return the mockUser if set, otherwise throw
     if (mockUser) {
       return mockUser

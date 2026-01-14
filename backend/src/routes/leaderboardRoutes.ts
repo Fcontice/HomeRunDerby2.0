@@ -11,7 +11,7 @@ import {
   getTeamRanking,
   getLeagueStats,
 } from '../controllers/leaderboardController.js'
-import { requireAdmin, optionalAuth } from '../middleware/auth.js'
+import { requireAdmin } from '../middleware/auth.js'
 
 const router = Router()
 

@@ -1,6 +1,6 @@
 import passport from 'passport'
 import { Strategy as LocalStrategy } from 'passport-local'
-import { Strategy as GoogleStrategy } from 'passport-google-oauth20'
+import { Strategy as GoogleStrategy, VerifyCallback } from 'passport-google-oauth20'
 import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt'
 import { comparePassword } from '../utils/password.js'
 import { JwtPayload } from '../utils/jwt.js'
@@ -80,7 +80,7 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
         clientSecret: GOOGLE_CLIENT_SECRET,
         callbackURL: `${BACKEND_URL}/api/auth/google/callback`,
       },
-      async (accessToken, refreshToken, profile, done) => {
+      async (_accessToken: string, _refreshToken: string, profile, done: VerifyCallback) => {
         try {
           const email = profile.emails?.[0]?.value
 

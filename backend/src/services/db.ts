@@ -4,11 +4,24 @@
  */
 
 import supabaseAdmin from '../config/supabase.js'
+import type {
+  User,
+  Team,
+  Player,
+  TeamPlayer,
+  PlayerSeasonStats,
+  PlayerStats,
+  Leaderboard,
+  ReminderLog,
+  SeasonConfig,
+  AggregateResult,
+  GroupByResult,
+} from '../types/entities.js'
 
 // ==================== USER OPERATIONS ====================
 
 export const userDb = {
-  async findUnique(where: { id?: string; email?: string; username?: string }) {
+  async findUnique(where: { id?: string; email?: string; username?: string }): Promise<User | null> {
     const { data, error } = await supabaseAdmin
       .from('User')
       .select('*')
@@ -17,10 +30,10 @@ export const userDb = {
       .single()
 
     if (error && error.code !== 'PGRST116') throw error // PGRST116 = not found
-    return data
+    return data as User | null
   },
 
-  async findFirst(where: any) {
+  async findFirst(where: Record<string, unknown>): Promise<User | null> {
     let query = supabaseAdmin
       .from('User')
       .select('*')
@@ -29,14 +42,14 @@ export const userDb = {
     // Handle complex where conditions
     Object.entries(where).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
-        if (typeof value === 'object' && 'gt' in value) {
-          query = query.gt(key, value.gt)
-        } else if (typeof value === 'object' && 'gte' in value) {
-          query = query.gte(key, value.gte)
-        } else if (typeof value === 'object' && 'lt' in value) {
-          query = query.lt(key, value.lt)
-        } else if (typeof value === 'object' && 'lte' in value) {
-          query = query.lte(key, value.lte)
+        if (typeof value === 'object' && value !== null && 'gt' in value) {
+          query = query.gt(key, (value as { gt: unknown }).gt)
+        } else if (typeof value === 'object' && value !== null && 'gte' in value) {
+          query = query.gte(key, (value as { gte: unknown }).gte)
+        } else if (typeof value === 'object' && value !== null && 'lt' in value) {
+          query = query.lt(key, (value as { lt: unknown }).lt)
+        } else if (typeof value === 'object' && value !== null && 'lte' in value) {
+          query = query.lte(key, (value as { lte: unknown }).lte)
         } else {
           query = query.eq(key, value)
         }
@@ -46,20 +59,20 @@ export const userDb = {
     const { data, error } = await query.limit(1).single()
 
     if (error && error.code !== 'PGRST116') throw error
-    return data
+    return data as User | null
   },
 
-  async create(data: any) {
+  async create(data: Partial<User>): Promise<User> {
     // Filter out null/undefined id to let database generate it
-    const { id, ...cleanData } = data
+    const { id, ...cleanData } = data as Record<string, unknown>
 
     // Add timestamps
     const now = new Date().toISOString()
     const insertData = {
       ...(id ? { id } : {}),
       ...cleanData,
-      createdAt: cleanData.createdAt || now,
-      updatedAt: cleanData.updatedAt || now
+      createdAt: (cleanData.createdAt as string) || now,
+      updatedAt: (cleanData.updatedAt as string) || now
     }
 
     const { data: user, error } = await supabaseAdmin
@@ -69,10 +82,10 @@ export const userDb = {
       .single()
 
     if (error) throw error
-    return user
+    return user as User
   },
 
-  async update(where: { id: string }, data: any) {
+  async update(where: { id: string }, data: Partial<User>): Promise<User> {
     // Add updatedAt timestamp
     const updateData = {
       ...data,
@@ -87,10 +100,10 @@ export const userDb = {
       .single()
 
     if (error) throw error
-    return user
+    return user as User
   },
 
-  async delete(where: { id: string }) {
+  async delete(where: { id: string }): Promise<void> {
     const { error } = await supabaseAdmin
       .from('User')
       .update({ deletedAt: new Date().toISOString() })
@@ -99,7 +112,7 @@ export const userDb = {
     if (error) throw error
   },
 
-  async findMany(where: any = {}) {
+  async findMany(where: Record<string, unknown> = {}): Promise<User[]> {
     let query = supabaseAdmin
       .from('User')
       .select('*')
@@ -108,38 +121,34 @@ export const userDb = {
     // Apply filters
     Object.entries(where).forEach(([key, value]) => {
       if (value !== undefined && value !== null && key !== 'deletedAt') {
-        if (typeof value === 'boolean') {
-          query = query.eq(key, value)
-        } else {
-          query = query.eq(key, value)
-        }
+        query = query.eq(key, value)
       }
     })
 
     const { data, error } = await query.order('createdAt', { ascending: false })
 
     if (error) throw error
-    return data || []
+    return (data || []) as User[]
   }
 }
 
 // ==================== PLAYER OPERATIONS ====================
 
 export const playerDb = {
-  async findMany(where: any = {}, options: any = {}) {
+  async findMany(where: Record<string, unknown> = {}, options: Record<string, unknown> = {}): Promise<Player[]> {
     let query = supabaseAdmin.from('Player').select('*')
 
     // Apply filters
     Object.entries(where).forEach(([key, value]) => {
       if (value !== undefined) {
-        if (typeof value === 'object' && 'in' in value) {
-          query = query.in(key, value.in)
-        } else if (typeof value === 'object' && 'gte' in value) {
-          query = query.gte(key, value.gte)
-        } else if (typeof value === 'object' && 'lte' in value) {
-          query = query.lte(key, value.lte)
-        } else if (typeof value === 'object' && 'contains' in value) {
-          query = query.ilike(key, `%${value.contains}%`)
+        if (typeof value === 'object' && value !== null && 'in' in value) {
+          query = query.in(key, (value as { in: unknown[] }).in)
+        } else if (typeof value === 'object' && value !== null && 'gte' in value) {
+          query = query.gte(key, (value as { gte: unknown }).gte)
+        } else if (typeof value === 'object' && value !== null && 'lte' in value) {
+          query = query.lte(key, (value as { lte: unknown }).lte)
+        } else if (typeof value === 'object' && value !== null && 'contains' in value) {
+          query = query.ilike(key, `%${(value as { contains: string }).contains}%`)
         } else {
           query = query.eq(key, value)
         }
@@ -148,22 +157,23 @@ export const playerDb = {
 
     // Apply ordering
     if (options.orderBy) {
-      const field = Object.keys(options.orderBy)[0]
-      const direction = options.orderBy[field]
+      const orderBy = options.orderBy as Record<string, string>
+      const field = Object.keys(orderBy)[0]
+      const direction = orderBy[field]
       query = query.order(field, { ascending: direction === 'asc' })
     }
 
     // Apply pagination
-    if (options.take) query = query.limit(options.take)
-    if (options.skip) query = query.range(options.skip, options.skip + (options.take || 100) - 1)
+    if (options.take) query = query.limit(options.take as number)
+    if (options.skip) query = query.range(options.skip as number, (options.skip as number) + ((options.take as number) || 100) - 1)
 
     const { data, error } = await query
 
     if (error) throw error
-    return data || []
+    return (data || []) as Player[]
   },
 
-  async findUnique(where: { id: string }, include: any = {}) {
+  async findUnique(where: { id: string }, include: Record<string, boolean> = {}): Promise<Player | null> {
     let selectQuery = '*'
 
     if (include?.teamPlayers) {
@@ -189,20 +199,20 @@ export const playerDb = {
       .single()
 
     if (error && error.code !== 'PGRST116') throw error
-    return data
+    return data as Player | null
   },
 
-  async create(data: any) {
+  async create(data: Partial<Player>): Promise<Player> {
     // Filter out null/undefined id to let database generate it
-    const { id, ...cleanData } = data
+    const { id, ...cleanData } = data as Record<string, unknown>
 
     // Add timestamps
     const now = new Date().toISOString()
     const insertData = {
       ...(id ? { id } : {}),
       ...cleanData,
-      createdAt: cleanData.createdAt || now,
-      updatedAt: cleanData.updatedAt || now
+      createdAt: (cleanData.createdAt as string) || now,
+      updatedAt: (cleanData.updatedAt as string) || now
     }
 
     const { data: player, error } = await supabaseAdmin
@@ -212,10 +222,10 @@ export const playerDb = {
       .single()
 
     if (error) throw error
-    return player
+    return player as Player
   },
 
-  async upsert(where: { mlbId: string }, create: any, update: any) {
+  async upsert(where: { mlbId: string }, create: Partial<Player>, update: Partial<Player>): Promise<Player> {
     // Check if exists
     const existing = await this.findFirst({ mlbId: where.mlbId })
 
@@ -226,7 +236,7 @@ export const playerDb = {
     }
   },
 
-  async update(where: { id: string }, data: any) {
+  async update(where: { id: string }, data: Partial<Player>): Promise<Player> {
     // Add updatedAt timestamp
     const updateData = {
       ...data,
@@ -241,10 +251,10 @@ export const playerDb = {
       .single()
 
     if (error) throw error
-    return player
+    return player as Player
   },
 
-  async findFirst(where: any) {
+  async findFirst(where: Record<string, unknown>): Promise<Player | null> {
     const { data, error } = await supabaseAdmin
       .from('Player')
       .select('*')
@@ -253,10 +263,10 @@ export const playerDb = {
       .single()
 
     if (error && error.code !== 'PGRST116') throw error
-    return data
+    return data as Player | null
   },
 
-  async count(where: any = {}) {
+  async count(where: Record<string, unknown> = {}): Promise<number> {
     let query = supabaseAdmin
       .from('Player')
       .select('*', { count: 'exact', head: true })
@@ -273,7 +283,13 @@ export const playerDb = {
     return count || 0
   },
 
-  async aggregate(options: any) {
+  async aggregate(options: {
+    where?: Record<string, unknown>
+    _count?: boolean
+    _avg?: Record<string, boolean>
+    _max?: Record<string, boolean>
+    _min?: Record<string, boolean>
+  }): Promise<AggregateResult> {
     const { where = {}, _count, _avg, _max, _min } = options
 
     let query = supabaseAdmin.from('Player').select('*')
@@ -281,10 +297,10 @@ export const playerDb = {
     // Apply where filters
     Object.entries(where).forEach(([key, value]) => {
       if (value !== undefined) {
-        if (typeof value === 'object' && 'gte' in value) {
-          query = query.gte(key, value.gte)
-        } else if (typeof value === 'object' && 'lte' in value) {
-          query = query.lte(key, value.lte)
+        if (typeof value === 'object' && value !== null && 'gte' in value) {
+          query = query.gte(key, (value as { gte: unknown }).gte)
+        } else if (typeof value === 'object' && value !== null && 'lte' in value) {
+          query = query.lte(key, (value as { lte: unknown }).lte)
         } else {
           query = query.eq(key, value)
         }
@@ -295,7 +311,7 @@ export const playerDb = {
 
     if (error) throw error
 
-    const result: any = {}
+    const result: AggregateResult = {}
 
     if (_count) {
       result._count = data.length
@@ -304,42 +320,47 @@ export const playerDb = {
     if (_avg) {
       result._avg = {}
       Object.keys(_avg).forEach(field => {
-        const values = data.map(p => p[field]).filter(v => v != null)
-        result._avg[field] = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : null
+        const values = data.map(p => p[field]).filter((v): v is number => v != null)
+        result._avg![field] = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : null
       })
     }
 
     if (_max) {
       result._max = {}
       Object.keys(_max).forEach(field => {
-        const values = data.map(p => p[field]).filter(v => v != null)
-        result._max[field] = values.length > 0 ? Math.max(...values) : null
+        const values = data.map(p => p[field]).filter((v): v is number => v != null)
+        result._max![field] = values.length > 0 ? Math.max(...values) : null
       })
     }
 
     if (_min) {
       result._min = {}
       Object.keys(_min).forEach(field => {
-        const values = data.map(p => p[field]).filter(v => v != null)
-        result._min[field] = values.length > 0 ? Math.min(...values) : null
+        const values = data.map(p => p[field]).filter((v): v is number => v != null)
+        result._min![field] = values.length > 0 ? Math.min(...values) : null
       })
     }
 
     return result
   },
 
-  async groupBy(options: any) {
-    const { by, where = {}, _count, orderBy } = options
+  async groupBy(options: {
+    by: string[]
+    where?: Record<string, unknown>
+    _count?: boolean
+    orderBy?: Record<string, unknown>
+  }): Promise<GroupByResult[]> {
+    const { by, where = {}, orderBy } = options
 
     let query = supabaseAdmin.from('Player').select('*')
 
     // Apply where filters
     Object.entries(where).forEach(([key, value]) => {
       if (value !== undefined) {
-        if (typeof value === 'object' && 'gte' in value) {
-          query = query.gte(key, value.gte)
-        } else if (typeof value === 'object' && 'lte' in value) {
-          query = query.lte(key, value.lte)
+        if (typeof value === 'object' && value !== null && 'gte' in value) {
+          query = query.gte(key, (value as { gte: unknown }).gte)
+        } else if (typeof value === 'object' && value !== null && 'lte' in value) {
+          query = query.lte(key, (value as { lte: unknown }).lte)
         } else {
           query = query.eq(key, value)
         }
@@ -351,29 +372,29 @@ export const playerDb = {
     if (error) throw error
 
     // Group the data
-    const groups: any = {}
+    const groups: Record<string, Record<string, unknown>> = {}
     const groupByField = by[0] // Assuming single field grouping for now
 
     data.forEach(item => {
-      const key = item[groupByField]
+      const key = item[groupByField] as string
       if (!groups[key]) {
         groups[key] = { [groupByField]: key, _count: 0 }
       }
-      groups[key]._count++
+      ;(groups[key]._count as number)++
     })
 
     let result = Object.values(groups)
 
     // Apply ordering if specified
-    if (orderBy && orderBy._count) {
-      const orderField = Object.keys(orderBy._count)[0]
-      const direction = orderBy._count[orderField]
+    if (orderBy && typeof orderBy === 'object' && '_count' in orderBy) {
+      const countOrder = orderBy._count as Record<string, string>
+      const direction = Object.values(countOrder)[0]
 
-      result.sort((a: any, b: any) => {
+      result.sort((a, b) => {
         if (direction === 'desc') {
-          return b._count - a._count
+          return (b._count as number) - (a._count as number)
         } else {
-          return a._count - b._count
+          return (a._count as number) - (b._count as number)
         }
       })
     }
@@ -385,7 +406,7 @@ export const playerDb = {
 // ==================== TEAM OPERATIONS ====================
 
 export const teamDb = {
-  async findMany(where: any = {}, options: any = {}) {
+  async findMany(where: Record<string, unknown> = {}, options: Record<string, unknown> = {}): Promise<Team[]> {
     let query = supabaseAdmin.from('Team').select(`
       *,
       teamPlayers:TeamPlayer(
@@ -396,8 +417,10 @@ export const teamDb = {
     `)
 
     // Filter by userId
-    if (where.userId) query = query.eq('userId', where.userId)
-    if (where.seasonYear) query = query.eq('seasonYear', where.seasonYear)
+    if (where.userId) query = query.eq('userId', where.userId as string)
+    if (where.seasonYear) query = query.eq('seasonYear', where.seasonYear as number)
+    if (where.paymentStatus) query = query.eq('paymentStatus', where.paymentStatus as string)
+    if (where.entryStatus) query = query.eq('entryStatus', where.entryStatus as string)
 
     // Handle deletedAt filter
     if (where.deletedAt === null || where.deletedAt === undefined) {
@@ -408,18 +431,19 @@ export const teamDb = {
 
     // Apply ordering
     if (options.orderBy) {
-      const field = Object.keys(options.orderBy)[0]
-      const direction = options.orderBy[field]
+      const orderBy = options.orderBy as Record<string, string>
+      const field = Object.keys(orderBy)[0]
+      const direction = orderBy[field]
       query = query.order(field, { ascending: direction === 'asc' })
     }
 
     const { data, error } = await query
 
     if (error) throw error
-    return data || []
+    return (data || []) as Team[]
   },
 
-  async findUnique(where: { id: string }, include: any = {}) {
+  async findUnique(where: { id: string }, include: { user?: boolean; teamPlayers?: boolean } = {}): Promise<Team | null> {
     let selectQuery = '*'
 
     if (include?.teamPlayers && include?.user) {
@@ -466,20 +490,20 @@ export const teamDb = {
       .single()
 
     if (error && error.code !== 'PGRST116') throw error
-    return data
+    return data as Team | null
   },
 
-  async create(data: any) {
+  async create(data: Omit<Partial<Team>, 'teamPlayers'> & { teamPlayers?: { create: Array<{ playerId: string; position: number }> } }): Promise<Team> {
     // Separate teamPlayers from team data
-    const { teamPlayers, id, ...teamData } = data
+    const { teamPlayers, id, ...teamData } = data as Omit<Partial<Team>, 'teamPlayers'> & { id?: string; teamPlayers?: { create: Array<{ playerId: string; position: number }> } }
 
     // Add timestamps
     const now = new Date().toISOString()
     const insertData = {
       ...(id ? { id } : {}),
       ...teamData,
-      createdAt: teamData.createdAt || now,
-      updatedAt: teamData.updatedAt || now
+      createdAt: (teamData.createdAt as string) || now,
+      updatedAt: (teamData.updatedAt as string) || now
     }
 
     // Create team
@@ -493,14 +517,13 @@ export const teamDb = {
 
     // Create team players if provided
     if (teamPlayers?.create) {
-      const players = teamPlayers.create.map((tp: any) => {
-        const { id: tpId, ...tpData } = tp
+      const players = teamPlayers.create.map((tp) => {
         const tpNow = new Date().toISOString()
         return {
-          ...(tpId ? { id: tpId } : {}),
           teamId: team.id,
-          ...tpData,
-          createdAt: tpData.createdAt || tpNow
+          playerId: tp.playerId,
+          position: tp.position,
+          createdAt: tpNow
         }
       })
 
@@ -512,10 +535,11 @@ export const teamDb = {
     }
 
     // Return team with players
-    return await this.findUnique({ id: team.id }, { teamPlayers: true })
+    const result = await this.findUnique({ id: team.id }, { teamPlayers: true })
+    return result as Team
   },
 
-  async update(where: { id: string }, data: any) {
+  async update(where: { id: string }, data: Partial<Team> & { teamPlayers?: { deleteMany?: object; create?: Array<{ playerId: string; position: number }> } }): Promise<Team> {
     const { teamPlayers, ...teamData } = data
 
     // Add updatedAt timestamp
@@ -525,7 +549,7 @@ export const teamDb = {
     }
 
     // Update team
-    const { data: team, error: teamError } = await supabaseAdmin
+    const { error: teamError } = await supabaseAdmin
       .from('Team')
       .update(updateData)
       .eq('id', where.id)
@@ -547,10 +571,11 @@ export const teamDb = {
       // Create new players
       if (teamPlayers.create) {
         const now = new Date().toISOString()
-        const players = teamPlayers.create.map((tp: any) => ({
-          ...tp,
+        const players = teamPlayers.create.map((tp) => ({
+          playerId: tp.playerId,
+          position: tp.position,
           teamId: where.id,
-          createdAt: tp.createdAt || now
+          createdAt: now
         }))
 
         await supabaseAdmin
@@ -559,10 +584,11 @@ export const teamDb = {
       }
     }
 
-    return await this.findUnique({ id: where.id }, { teamPlayers: true })
+    const result = await this.findUnique({ id: where.id }, { teamPlayers: true })
+    return result as Team
   },
 
-  async delete(where: { id: string }) {
+  async delete(where: { id: string }): Promise<void> {
     const { error } = await supabaseAdmin
       .from('Team')
       .update({ deletedAt: new Date().toISOString() })
@@ -575,7 +601,7 @@ export const teamDb = {
 // ==================== PLAYER SEASON STATS OPERATIONS ====================
 
 export const playerSeasonStatsDb = {
-  async findMany(where: any = {}, options: any = {}) {
+  async findMany(where: Record<string, unknown> = {}, options: Record<string, unknown> = {}): Promise<PlayerSeasonStats[]> {
     let query = supabaseAdmin.from('PlayerSeasonStats').select(`
       *,
       player:Player(
@@ -589,32 +615,33 @@ export const playerSeasonStatsDb = {
 
     // Apply filters
     if (where.seasonYear !== undefined) {
-      query = query.eq('seasonYear', where.seasonYear)
+      query = query.eq('seasonYear', where.seasonYear as number)
     }
     if (where.playerId) {
-      query = query.eq('playerId', where.playerId)
+      query = query.eq('playerId', where.playerId as string)
     }
-    if (where.hrsTotal?.gte) {
-      query = query.gte('hrsTotal', where.hrsTotal.gte)
+    if (where.hrsTotal && typeof where.hrsTotal === 'object' && 'gte' in where.hrsTotal) {
+      query = query.gte('hrsTotal', (where.hrsTotal as { gte: number }).gte)
     }
 
     // Apply ordering
     if (options.orderBy) {
-      const field = Object.keys(options.orderBy)[0]
-      const direction = options.orderBy[field]
+      const orderBy = options.orderBy as Record<string, string>
+      const field = Object.keys(orderBy)[0]
+      const direction = orderBy[field]
       query = query.order(field, { ascending: direction === 'asc' })
     }
 
     // Apply pagination
-    if (options.take) query = query.limit(options.take)
-    if (options.skip) query = query.range(options.skip, options.skip + (options.take || 100) - 1)
+    if (options.take) query = query.limit(options.take as number)
+    if (options.skip) query = query.range(options.skip as number, (options.skip as number) + ((options.take as number) || 100) - 1)
 
     const { data, error } = await query
     if (error) throw error
-    return data || []
+    return (data || []) as PlayerSeasonStats[]
   },
 
-  async findUnique(where: { playerId: string; seasonYear: number }) {
+  async findUnique(where: { playerId: string; seasonYear: number }): Promise<PlayerSeasonStats | null> {
     const { data, error } = await supabaseAdmin
       .from('PlayerSeasonStats')
       .select(`
@@ -626,20 +653,20 @@ export const playerSeasonStatsDb = {
       .single()
 
     if (error && error.code !== 'PGRST116') throw error
-    return data
+    return data as PlayerSeasonStats | null
   },
 
-  async create(data: any) {
+  async create(data: Partial<PlayerSeasonStats>): Promise<PlayerSeasonStats> {
     // Filter out null/undefined id to let database generate it
-    const { id, ...cleanData } = data
+    const { id, ...cleanData } = data as Record<string, unknown>
 
     // Add timestamps
     const now = new Date().toISOString()
     const insertData = {
       ...(id ? { id } : {}),
       ...cleanData,
-      createdAt: cleanData.createdAt || now,
-      updatedAt: cleanData.updatedAt || now
+      createdAt: (cleanData.createdAt as string) || now,
+      updatedAt: (cleanData.updatedAt as string) || now
     }
 
     const { data: stats, error } = await supabaseAdmin
@@ -649,10 +676,10 @@ export const playerSeasonStatsDb = {
       .single()
 
     if (error) throw error
-    return stats
+    return stats as PlayerSeasonStats
   },
 
-  async upsert(where: { playerId: string; seasonYear: number }, create: any, update: any) {
+  async upsert(where: { playerId: string; seasonYear: number }, create: Partial<PlayerSeasonStats>, update: Partial<PlayerSeasonStats>): Promise<PlayerSeasonStats> {
     // Check if exists
     const existing = await this.findUnique(where)
 
@@ -663,7 +690,7 @@ export const playerSeasonStatsDb = {
     }
   },
 
-  async update(where: { playerId: string; seasonYear: number }, data: any) {
+  async update(where: { playerId: string; seasonYear: number }, data: Partial<PlayerSeasonStats>): Promise<PlayerSeasonStats> {
     // Add updatedAt timestamp
     const updateData = {
       ...data,
@@ -679,11 +706,11 @@ export const playerSeasonStatsDb = {
       .single()
 
     if (error) throw error
-    return stats
+    return stats as PlayerSeasonStats
   },
 
   // Get all seasons for one player (for comparison)
-  async findByPlayer(playerId: string) {
+  async findByPlayer(playerId: string): Promise<PlayerSeasonStats[]> {
     const { data, error } = await supabaseAdmin
       .from('PlayerSeasonStats')
       .select('*')
@@ -691,12 +718,12 @@ export const playerSeasonStatsDb = {
       .order('seasonYear', { ascending: false })
 
     if (error) throw error
-    return data || []
+    return (data || []) as PlayerSeasonStats[]
   },
 
   // Get eligible players for a specific contest year
   // e.g., getEligibleForContest(2026) returns 2025 players with ≥10 HRs
-  async getEligibleForContest(contestYear: number) {
+  async getEligibleForContest(contestYear: number): Promise<PlayerSeasonStats[]> {
     const previousYear = contestYear - 1
 
     const { data, error } = await supabaseAdmin
@@ -710,16 +737,16 @@ export const playerSeasonStatsDb = {
       .order('hrsTotal', { ascending: false })
 
     if (error) throw error
-    return data || []
+    return (data || []) as PlayerSeasonStats[]
   },
 
-  async count(where: any = {}) {
+  async count(where: Record<string, unknown> = {}): Promise<number> {
     let query = supabaseAdmin
       .from('PlayerSeasonStats')
       .select('*', { count: 'exact', head: true })
 
     if (where.seasonYear !== undefined) {
-      query = query.eq('seasonYear', where.seasonYear)
+      query = query.eq('seasonYear', where.seasonYear as number)
     }
 
     const { count, error } = await query
@@ -728,20 +755,26 @@ export const playerSeasonStatsDb = {
     return count || 0
   },
 
-  async aggregate(options: any) {
+  async aggregate(options: {
+    where?: Record<string, unknown>
+    _count?: boolean
+    _avg?: Record<string, boolean>
+    _max?: Record<string, boolean>
+    _min?: Record<string, boolean>
+  }): Promise<AggregateResult> {
     const { where = {}, _count, _avg, _max, _min } = options
 
     let query = supabaseAdmin.from('PlayerSeasonStats').select('*')
 
     if (where.seasonYear !== undefined) {
-      query = query.eq('seasonYear', where.seasonYear)
+      query = query.eq('seasonYear', where.seasonYear as number)
     }
 
     const { data, error } = await query
 
     if (error) throw error
 
-    const result: any = {}
+    const result: AggregateResult = {}
 
     if (_count) {
       result._count = data.length
@@ -750,37 +783,42 @@ export const playerSeasonStatsDb = {
     if (_avg) {
       result._avg = {}
       Object.keys(_avg).forEach(field => {
-        const values = data.map(p => p[field]).filter(v => v != null)
-        result._avg[field] = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : null
+        const values = data.map(p => p[field]).filter((v): v is number => v != null)
+        result._avg![field] = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : null
       })
     }
 
     if (_max) {
       result._max = {}
       Object.keys(_max).forEach(field => {
-        const values = data.map(p => p[field]).filter(v => v != null)
-        result._max[field] = values.length > 0 ? Math.max(...values) : null
+        const values = data.map(p => p[field]).filter((v): v is number => v != null)
+        result._max![field] = values.length > 0 ? Math.max(...values) : null
       })
     }
 
     if (_min) {
       result._min = {}
       Object.keys(_min).forEach(field => {
-        const values = data.map(p => p[field]).filter(v => v != null)
-        result._min[field] = values.length > 0 ? Math.min(...values) : null
+        const values = data.map(p => p[field]).filter((v): v is number => v != null)
+        result._min![field] = values.length > 0 ? Math.min(...values) : null
       })
     }
 
     return result
   },
 
-  async groupBy(options: any) {
-    const { by, where = {}, _count, orderBy } = options
+  async groupBy(options: {
+    by: string[]
+    where?: Record<string, unknown>
+    _count?: boolean
+    orderBy?: Record<string, unknown>
+  }): Promise<GroupByResult[]> {
+    const { by, where = {}, orderBy } = options
 
     let query = supabaseAdmin.from('PlayerSeasonStats').select('*')
 
     if (where.seasonYear !== undefined) {
-      query = query.eq('seasonYear', where.seasonYear)
+      query = query.eq('seasonYear', where.seasonYear as number)
     }
 
     const { data, error } = await query
@@ -788,29 +826,29 @@ export const playerSeasonStatsDb = {
     if (error) throw error
 
     // Group the data
-    const groups: any = {}
+    const groups: Record<string, Record<string, unknown>> = {}
     const groupByField = by[0] // Assuming single field grouping
 
     data.forEach(item => {
-      const key = item[groupByField]
+      const key = item[groupByField] as string
       if (!groups[key]) {
         groups[key] = { [groupByField]: key, _count: 0 }
       }
-      groups[key]._count++
+      ;(groups[key]._count as number)++
     })
 
     let result = Object.values(groups)
 
     // Apply ordering if specified
-    if (orderBy && orderBy._count) {
-      const orderField = Object.keys(orderBy._count)[0]
-      const direction = orderBy._count[orderField]
+    if (orderBy && typeof orderBy === 'object' && '_count' in orderBy) {
+      const countOrder = orderBy._count as Record<string, string>
+      const direction = Object.values(countOrder)[0]
 
-      result.sort((a: any, b: any) => {
+      result.sort((a, b) => {
         if (direction === 'desc') {
-          return b._count - a._count
+          return (b._count as number) - (a._count as number)
         } else {
-          return a._count - b._count
+          return (a._count as number) - (b._count as number)
         }
       })
     }
@@ -822,7 +860,7 @@ export const playerSeasonStatsDb = {
 // ==================== TEAM PLAYER OPERATIONS ====================
 
 export const teamPlayerDb = {
-  async findMany(where: any = {}) {
+  async findMany(where: Record<string, unknown> = {}): Promise<TeamPlayer[]> {
     let query = supabaseAdmin.from('TeamPlayer').select('*')
 
     // Apply filters
@@ -835,10 +873,10 @@ export const teamPlayerDb = {
     const { data, error } = await query
 
     if (error) throw error
-    return data || []
+    return (data || []) as TeamPlayer[]
   },
 
-  async findUnique(where: { id: string }) {
+  async findUnique(where: { id: string }): Promise<TeamPlayer | null> {
     const { data, error } = await supabaseAdmin
       .from('TeamPlayer')
       .select('*')
@@ -846,19 +884,19 @@ export const teamPlayerDb = {
       .single()
 
     if (error && error.code !== 'PGRST116') throw error
-    return data
+    return data as TeamPlayer | null
   },
 
-  async create(data: any) {
+  async create(data: Partial<TeamPlayer>): Promise<TeamPlayer> {
     // Filter out null/undefined id to let database generate it
-    const { id, ...cleanData } = data
+    const { id, ...cleanData } = data as Record<string, unknown>
 
     // Add timestamps
     const now = new Date().toISOString()
     const insertData = {
       ...(id ? { id } : {}),
       ...cleanData,
-      createdAt: cleanData.createdAt || now
+      createdAt: (cleanData.createdAt as string) || now
     }
 
     const { data: teamPlayer, error } = await supabaseAdmin
@@ -868,10 +906,10 @@ export const teamPlayerDb = {
       .single()
 
     if (error) throw error
-    return teamPlayer
+    return teamPlayer as TeamPlayer
   },
 
-  async delete(where: { id: string } | { teamId: string }) {
+  async delete(where: { id: string } | { teamId: string }): Promise<void> {
     let query = supabaseAdmin.from('TeamPlayer').delete()
 
     if ('id' in where) {
@@ -885,7 +923,7 @@ export const teamPlayerDb = {
     if (error) throw error
   },
 
-  async count(where: any = {}) {
+  async count(where: Record<string, unknown> = {}): Promise<number> {
     let query = supabaseAdmin
       .from('TeamPlayer')
       .select('*', { count: 'exact', head: true })
@@ -906,42 +944,45 @@ export const teamPlayerDb = {
 // ==================== PLAYER STATS OPERATIONS ====================
 
 export const playerStatsDb = {
-  async findMany(where: any = {}, options: any = {}) {
+  async findMany(where: Record<string, unknown> = {}, options: Record<string, unknown> = {}): Promise<PlayerStats[]> {
     let query = supabaseAdmin.from('PlayerStats').select('*')
 
     // Apply filters
-    if (where.playerId) query = query.eq('playerId', where.playerId)
-    if (where.seasonYear) query = query.eq('seasonYear', where.seasonYear)
+    if (where.playerId) query = query.eq('playerId', where.playerId as string)
+    if (where.seasonYear) query = query.eq('seasonYear', where.seasonYear as number)
     if (where.date) {
-      if (typeof where.date === 'object') {
-        if (where.date.gte) query = query.gte('date', where.date.gte)
-        if (where.date.lte) query = query.lte('date', where.date.lte)
+      if (typeof where.date === 'object' && where.date !== null) {
+        const dateFilter = where.date as { gte?: string; lte?: string }
+        if (dateFilter.gte) query = query.gte('date', dateFilter.gte)
+        if (dateFilter.lte) query = query.lte('date', dateFilter.lte)
       } else {
-        query = query.eq('date', where.date)
+        query = query.eq('date', where.date as string)
       }
     }
 
     // Apply ordering
     if (options.orderBy) {
-      const field = Object.keys(options.orderBy)[0]
-      const direction = options.orderBy[field]
+      const orderBy = options.orderBy as Record<string, string>
+      const field = Object.keys(orderBy)[0]
+      const direction = orderBy[field]
       query = query.order(field, { ascending: direction === 'asc' })
     }
 
     // Apply pagination
-    if (options.take) query = query.limit(options.take)
-    if (options.skip) query = query.range(options.skip, options.skip + (options.take || 100) - 1)
+    if (options.take) query = query.limit(options.take as number)
+    if (options.skip) query = query.range(options.skip as number, (options.skip as number) + ((options.take as number) || 100) - 1)
 
     const { data, error } = await query
     if (error) throw error
-    return data || []
+    return (data || []) as PlayerStats[]
   },
 
-  async findFirst(where: any, options: any = {}) {
-    return (await this.findMany(where, { ...options, take: 1 }))[0] || null
+  async findFirst(where: Record<string, unknown>, options: Record<string, unknown> = {}): Promise<PlayerStats | null> {
+    const results = await this.findMany(where, { ...options, take: 1 })
+    return results[0] || null
   },
 
-  async findUnique(where: { playerId: string; seasonYear: number; date: string }) {
+  async findUnique(where: { playerId: string; seasonYear: number; date: string }): Promise<PlayerStats | null> {
     const { data, error } = await supabaseAdmin
       .from('PlayerStats')
       .select('*')
@@ -951,17 +992,17 @@ export const playerStatsDb = {
       .single()
 
     if (error && error.code !== 'PGRST116') throw error
-    return data
+    return data as PlayerStats | null
   },
 
-  async create(data: any) {
-    const { id, ...cleanData } = data
+  async create(data: Partial<PlayerStats>): Promise<PlayerStats> {
+    const { id, ...cleanData } = data as Record<string, unknown>
 
     const now = new Date().toISOString()
     const insertData = {
       ...(id ? { id } : {}),
       ...cleanData,
-      lastUpdated: cleanData.lastUpdated || now,
+      lastUpdated: (cleanData.lastUpdated as string) || now,
     }
 
     const { data: stats, error } = await supabaseAdmin
@@ -971,10 +1012,10 @@ export const playerStatsDb = {
       .single()
 
     if (error) throw error
-    return stats
+    return stats as PlayerStats
   },
 
-  async update(where: { playerId: string; seasonYear: number; date: string }, data: any) {
+  async update(where: { playerId: string; seasonYear: number; date: string }, data: Partial<PlayerStats>): Promise<PlayerStats> {
     const updateData = {
       ...data,
       lastUpdated: new Date().toISOString(),
@@ -990,14 +1031,14 @@ export const playerStatsDb = {
       .single()
 
     if (error) throw error
-    return stats
+    return stats as PlayerStats
   },
 
   async upsert(
     where: { playerId: string; seasonYear: number; date: string },
-    create: any,
-    update: any
-  ) {
+    create: Partial<PlayerStats>,
+    update: Partial<PlayerStats>
+  ): Promise<PlayerStats> {
     const existing = await this.findUnique(where)
 
     if (existing) {
@@ -1008,7 +1049,7 @@ export const playerStatsDb = {
   },
 
   // Get latest stats for a player
-  async getLatest(playerId: string, seasonYear: number) {
+  async getLatest(playerId: string, seasonYear: number): Promise<PlayerStats | null> {
     return await this.findFirst(
       { playerId, seasonYear },
       { orderBy: { date: 'desc' }, take: 1 }
@@ -1019,38 +1060,39 @@ export const playerStatsDb = {
 // ==================== LEADERBOARD OPERATIONS ====================
 
 export const leaderboardDb = {
-  async findMany(where: any = {}, options: any = {}) {
+  async findMany(where: Record<string, unknown> = {}, options: Record<string, unknown> = {}): Promise<Leaderboard[]> {
     let query = supabaseAdmin.from('Leaderboard').select('*')
 
     // Apply filters
-    if (where.teamId) query = query.eq('teamId', where.teamId)
-    if (where.leaderboardType) query = query.eq('leaderboardType', where.leaderboardType)
+    if (where.teamId) query = query.eq('teamId', where.teamId as string)
+    if (where.leaderboardType) query = query.eq('leaderboardType', where.leaderboardType as string)
     if (where.month !== undefined) {
       if (where.month === null) {
         query = query.is('month', null)
       } else {
-        query = query.eq('month', where.month)
+        query = query.eq('month', where.month as number)
       }
     }
-    if (where.seasonYear) query = query.eq('seasonYear', where.seasonYear)
+    if (where.seasonYear) query = query.eq('seasonYear', where.seasonYear as number)
 
     // Apply ordering
     if (options.orderBy) {
-      const field = Object.keys(options.orderBy)[0]
-      const direction = options.orderBy[field]
+      const orderBy = options.orderBy as Record<string, string>
+      const field = Object.keys(orderBy)[0]
+      const direction = orderBy[field]
       query = query.order(field, { ascending: direction === 'asc' })
     }
 
     // Apply pagination
-    if (options.take) query = query.limit(options.take)
-    if (options.skip) query = query.range(options.skip, options.skip + (options.take || 100) - 1)
+    if (options.take) query = query.limit(options.take as number)
+    if (options.skip) query = query.range(options.skip as number, (options.skip as number) + ((options.take as number) || 100) - 1)
 
     const { data, error } = await query
     if (error) throw error
-    return data || []
+    return (data || []) as Leaderboard[]
   },
 
-  async findUnique(where: { teamId: string; leaderboardType: string; month?: number | null }) {
+  async findUnique(where: { teamId: string; leaderboardType: string; month?: number | null }): Promise<Leaderboard | null> {
     let query = supabaseAdmin
       .from('Leaderboard')
       .select('*')
@@ -1068,17 +1110,17 @@ export const leaderboardDb = {
     const { data, error } = await query.single()
 
     if (error && error.code !== 'PGRST116') throw error
-    return data
+    return data as Leaderboard | null
   },
 
-  async create(data: any) {
-    const { id, ...cleanData } = data
+  async create(data: Partial<Leaderboard>): Promise<Leaderboard> {
+    const { id, ...cleanData } = data as Record<string, unknown>
 
     const now = new Date().toISOString()
     const insertData = {
       ...(id ? { id } : {}),
       ...cleanData,
-      calculatedAt: cleanData.calculatedAt || now,
+      calculatedAt: (cleanData.calculatedAt as string) || now,
     }
 
     const { data: leaderboard, error } = await supabaseAdmin
@@ -1088,10 +1130,10 @@ export const leaderboardDb = {
       .single()
 
     if (error) throw error
-    return leaderboard
+    return leaderboard as Leaderboard
   },
 
-  async delete(where: { teamId: string; leaderboardType: string; month?: number | null }) {
+  async delete(where: { teamId: string; leaderboardType: string; month?: number | null }): Promise<void> {
     let query = supabaseAdmin
       .from('Leaderboard')
       .delete()
@@ -1111,16 +1153,16 @@ export const leaderboardDb = {
     if (error) throw error
   },
 
-  async deleteMany(where: any = {}) {
+  async deleteMany(where: Record<string, unknown> = {}): Promise<void> {
     let query = supabaseAdmin.from('Leaderboard').delete()
 
-    if (where.leaderboardType) query = query.eq('leaderboardType', where.leaderboardType)
-    if (where.seasonYear) query = query.eq('seasonYear', where.seasonYear)
+    if (where.leaderboardType) query = query.eq('leaderboardType', where.leaderboardType as string)
+    if (where.seasonYear) query = query.eq('seasonYear', where.seasonYear as number)
     if (where.month !== undefined) {
       if (where.month === null) {
         query = query.is('month', null)
       } else {
-        query = query.eq('month', where.month)
+        query = query.eq('month', where.month as number)
       }
     }
 
@@ -1133,45 +1175,46 @@ export const leaderboardDb = {
 // ==================== REMINDER LOG OPERATIONS ====================
 
 export const reminderLogDb = {
-  async findMany(where: any = {}, options: any = {}) {
+  async findMany(where: Record<string, unknown> = {}, options: Record<string, unknown> = {}): Promise<ReminderLog[]> {
     let query = supabaseAdmin.from('ReminderLog').select(`
       *,
       sentBy:User(id, username, email)
     `)
 
     // Apply filters
-    if (where.reminderType) query = query.eq('reminderType', where.reminderType)
+    if (where.reminderType) query = query.eq('reminderType', where.reminderType as string)
 
     // Apply ordering (default: most recent first)
     if (options.orderBy) {
-      const field = Object.keys(options.orderBy)[0]
-      const direction = options.orderBy[field]
+      const orderBy = options.orderBy as Record<string, string>
+      const field = Object.keys(orderBy)[0]
+      const direction = orderBy[field]
       query = query.order(field, { ascending: direction === 'asc' })
     } else {
       query = query.order('sentAt', { ascending: false })
     }
 
     // Apply pagination
-    if (options.take) query = query.limit(options.take)
+    if (options.take) query = query.limit(options.take as number)
 
     const { data, error } = await query
     if (error) throw error
-    return data || []
+    return (data || []) as ReminderLog[]
   },
 
-  async findFirst(where: any = {}) {
+  async findFirst(where: Record<string, unknown> = {}): Promise<ReminderLog | null> {
     const results = await this.findMany(where, { take: 1 })
     return results[0] || null
   },
 
-  async create(data: any) {
-    const { id, ...cleanData } = data
+  async create(data: Partial<ReminderLog>): Promise<ReminderLog> {
+    const { id, ...cleanData } = data as Record<string, unknown>
 
     const now = new Date().toISOString()
     const insertData = {
       ...(id ? { id } : {}),
       ...cleanData,
-      sentAt: cleanData.sentAt || now,
+      sentAt: (cleanData.sentAt as string) || now,
     }
 
     const { data: reminderLog, error } = await supabaseAdmin
@@ -1181,11 +1224,11 @@ export const reminderLogDb = {
       .single()
 
     if (error) throw error
-    return reminderLog
+    return reminderLog as ReminderLog
   },
 
   // Get the most recent reminder of each type
-  async getLatestByType(reminderType: 'payment' | 'lock_deadline') {
+  async getLatestByType(reminderType: 'payment' | 'lock_deadline'): Promise<ReminderLog | null> {
     const { data, error } = await supabaseAdmin
       .from('ReminderLog')
       .select(`
@@ -1198,14 +1241,14 @@ export const reminderLogDb = {
       .single()
 
     if (error && error.code !== 'PGRST116') throw error
-    return data
+    return data as ReminderLog | null
   },
 }
 
 // ==================== SEASON CONFIG OPERATIONS ====================
 
 export const seasonConfigDb = {
-  async findCurrent() {
+  async findCurrent(): Promise<SeasonConfig | null> {
     const { data, error } = await supabaseAdmin
       .from('SeasonConfig')
       .select('*')
@@ -1213,10 +1256,10 @@ export const seasonConfigDb = {
       .single()
 
     if (error && error.code !== 'PGRST116') throw error
-    return data
+    return data as SeasonConfig | null
   },
 
-  async findByYear(year: number) {
+  async findByYear(year: number): Promise<SeasonConfig | null> {
     const { data, error } = await supabaseAdmin
       .from('SeasonConfig')
       .select('*')
@@ -1224,29 +1267,29 @@ export const seasonConfigDb = {
       .single()
 
     if (error && error.code !== 'PGRST116') throw error
-    return data
+    return data as SeasonConfig | null
   },
 
-  async findMany() {
+  async findMany(): Promise<SeasonConfig[]> {
     const { data, error } = await supabaseAdmin
       .from('SeasonConfig')
       .select('*')
       .order('seasonYear', { ascending: false })
 
     if (error) throw error
-    return data || []
+    return (data || []) as SeasonConfig[]
   },
 
-  async create(data: any) {
-    const { id, ...cleanData } = data
+  async create(data: Partial<SeasonConfig>): Promise<SeasonConfig> {
+    const { id, ...cleanData } = data as Record<string, unknown>
 
     const now = new Date().toISOString()
     const insertData = {
       ...(id ? { id } : {}),
       ...cleanData,
-      createdAt: cleanData.createdAt || now,
-      updatedAt: cleanData.updatedAt || now,
-      lastPhaseChange: cleanData.lastPhaseChange || now,
+      createdAt: (cleanData.createdAt as string) || now,
+      updatedAt: (cleanData.updatedAt as string) || now,
+      lastPhaseChange: (cleanData.lastPhaseChange as string) || now,
     }
 
     const { data: seasonConfig, error } = await supabaseAdmin
@@ -1256,10 +1299,10 @@ export const seasonConfigDb = {
       .single()
 
     if (error) throw error
-    return seasonConfig
+    return seasonConfig as SeasonConfig
   },
 
-  async updatePhase(year: number, phase: string, changedById: string) {
+  async updatePhase(year: number, phase: string, changedById: string): Promise<SeasonConfig> {
     const now = new Date().toISOString()
 
     const { data, error } = await supabaseAdmin
@@ -1275,10 +1318,10 @@ export const seasonConfigDb = {
       .single()
 
     if (error) throw error
-    return data
+    return data as SeasonConfig
   },
 
-  async update(year: number, data: any) {
+  async update(year: number, data: Partial<SeasonConfig>): Promise<SeasonConfig> {
     const updateData = {
       ...data,
       updatedAt: new Date().toISOString(),
@@ -1292,10 +1335,10 @@ export const seasonConfigDb = {
       .single()
 
     if (error) throw error
-    return updated
+    return updated as SeasonConfig
   },
 
-  async setCurrent(year: number) {
+  async setCurrent(year: number): Promise<SeasonConfig> {
     // Clear all current flags first
     await supabaseAdmin
       .from('SeasonConfig')
@@ -1311,7 +1354,7 @@ export const seasonConfigDb = {
       .single()
 
     if (error) throw error
-    return data
+    return data as SeasonConfig
   },
 }
 
@@ -1328,7 +1371,7 @@ export const db = {
   seasonConfig: seasonConfigDb,
 
   // Raw query support
-  async $queryRaw(query: string, ...params: any[]) {
+  async $queryRaw(query: string, ..._params: unknown[]) {
     const { data, error } = await supabaseAdmin.rpc('execute_sql', { query_text: query })
     if (error) throw error
     return data

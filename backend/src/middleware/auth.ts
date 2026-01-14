@@ -2,12 +2,10 @@ import { Request, Response, NextFunction } from 'express'
 import { verifyToken, JwtPayload } from '../utils/jwt.js'
 import { AuthenticationError, AuthorizationError } from '../utils/errors.js'
 
-// Extend Express Request type to include user
+// Extend Express User type to include our JWT fields
 declare global {
   namespace Express {
-    interface Request {
-      user?: JwtPayload
-    }
+    interface User extends JwtPayload {}
   }
 }
 
@@ -15,7 +13,7 @@ declare global {
  * Middleware to authenticate requests using JWT
  * Expects token in Authorization header as "Bearer <token>"
  */
-export function authenticate(req: Request, res: Response, next: NextFunction) {
+export function authenticate(req: Request, _res: Response, next: NextFunction): void {
   try {
     const authHeader = req.headers.authorization
 
@@ -42,13 +40,15 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
  * Middleware to check if authenticated user has admin role
  * Must be used after authenticate middleware
  */
-export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+export function requireAdmin(req: Request, _res: Response, next: NextFunction): void {
   if (!req.user) {
-    return next(new AuthenticationError())
+    next(new AuthenticationError())
+    return
   }
 
   if (req.user.role !== 'admin') {
-    return next(new AuthorizationError('Admin access required'))
+    next(new AuthorizationError('Admin access required'))
+    return
   }
 
   next()
@@ -60,9 +60,9 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
  */
 export function optionalAuthenticate(
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction
-) {
+): void {
   try {
     const authHeader = req.headers.authorization
 
@@ -71,7 +71,7 @@ export function optionalAuthenticate(
       const payload = verifyToken(token)
       req.user = payload
     }
-  } catch (error) {
+  } catch {
     // Silently ignore authentication errors for optional auth
   }
 
@@ -82,20 +82,22 @@ export function optionalAuthenticate(
  * Middleware to check if user owns the resource
  * Compares req.user.userId with req.params.userId (or specified param)
  */
-export function requireOwnership(paramName: string = 'userId') {
-  return (req: Request, res: Response, next: NextFunction) => {
+export function requireOwnership(paramName: string = 'userId'): (req: Request, res: Response, next: NextFunction) => void {
+  return (req: Request, _res: Response, next: NextFunction): void => {
     if (!req.user) {
-      return next(new AuthenticationError())
+      next(new AuthenticationError())
+      return
     }
 
     const resourceUserId = req.params[paramName]
 
     if (req.user.userId !== resourceUserId && req.user.role !== 'admin') {
-      return next(
+      next(
         new AuthorizationError(
           'You do not have permission to access this resource'
         )
       )
+      return
     }
 
     next()
@@ -108,10 +110,15 @@ export function requireOwnership(paramName: string = 'userId') {
 export const requireAuth = authenticate
 
 /**
+ * Alias for optionalAuthenticate
+ */
+export const optionalAuth = optionalAuthenticate
+
+/**
  * Middleware to check if authenticated user's email is verified
  * Must be used after authenticate middleware
  */
-export async function requireEmailVerified(req: Request, res: Response, next: NextFunction) {
+export function requireEmailVerified(_req: Request, _res: Response, next: NextFunction): void {
   // This check is now handled in the controller
   // But we keep the middleware for route-level protection
   next()

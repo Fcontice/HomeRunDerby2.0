@@ -39,13 +39,14 @@ export function requirePhase(allowedPhases: string[]) {
       const season = await db.seasonConfig.findCurrent()
 
       if (!season) {
-        return res.status(503).json({
+        res.status(503).json({
           success: false,
           error: {
             code: 'NO_SEASON',
             message: 'No active season configured. Please contact support.',
           },
         })
+        return
       }
 
       if (!allowedPhases.includes(season.phase)) {
@@ -68,7 +69,7 @@ export function requirePhase(allowedPhases: string[]) {
             message = `This action is not available during the ${season.phase} phase.`
         }
 
-        return res.status(403).json({
+        res.status(403).json({
           success: false,
           error: {
             code: 'PHASE_RESTRICTED',
@@ -77,6 +78,7 @@ export function requirePhase(allowedPhases: string[]) {
             allowedPhases,
           },
         })
+        return
       }
 
       // Attach season to request for downstream use
@@ -94,7 +96,7 @@ export function requirePhase(allowedPhases: string[]) {
  */
 export async function attachSeason(
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ) {
   try {

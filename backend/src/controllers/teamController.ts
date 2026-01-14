@@ -7,11 +7,11 @@ import { Request, Response, NextFunction } from 'express';
 import {
   ValidationError,
   NotFoundError,
-  AuthenticationError,
   AuthorizationError,
 } from '../utils/errors.js';
 import { createTeamSchema, updateTeamSchema } from '../types/validation.js';
 import { db } from '../services/db.js';
+// Entity types imported for reference, actual types inferred from db methods
 
 /**
  * POST /api/teams
@@ -60,7 +60,7 @@ export async function createTeam(req: Request, res: Response, next: NextFunction
     });
 
     // Filter to only the selected players
-    const selectedPlayerStats = playerSeasonStats.filter((stat: any) =>
+    const selectedPlayerStats = playerSeasonStats.filter((stat) =>
       playerIds.includes(stat.playerId)
     );
 
@@ -70,7 +70,7 @@ export async function createTeam(req: Request, res: Response, next: NextFunction
     }
 
     // Calculate total HRs from previous season
-    const totalHrs = selectedPlayerStats.reduce((sum: number, stat: any) => sum + stat.hrsTotal, 0);
+    const totalHrs = selectedPlayerStats.reduce((sum, stat) => sum + stat.hrsTotal, 0);
 
     // Validate HR limit (≤172)
     if (totalHrs > 172) {
@@ -143,7 +143,7 @@ export async function getMyTeams(req: Request, res: Response, next: NextFunction
     const userId = req.user!.userId;
     const { seasonYear } = req.query;
 
-    const where: any = {
+    const where: Record<string, unknown> = {
       userId,
       deletedAt: null,
     };
@@ -205,7 +205,7 @@ export async function updateTeam(req: Request, res: Response, next: NextFunction
     }
 
     // If updating players, validate
-    let updatedData: any = {};
+    const updatedData: Record<string, unknown> = {};
 
     if (name) {
       updatedData.name = name;
@@ -232,7 +232,7 @@ export async function updateTeam(req: Request, res: Response, next: NextFunction
       });
 
       // Filter to only the selected players
-      const selectedPlayerStats = playerSeasonStats.filter((stat: any) =>
+      const selectedPlayerStats = playerSeasonStats.filter((stat) =>
         playerIds.includes(stat.playerId)
       );
 
@@ -241,7 +241,7 @@ export async function updateTeam(req: Request, res: Response, next: NextFunction
       }
 
       // Calculate total HRs from previous season
-      const totalHrs = selectedPlayerStats.reduce((sum: number, stat: any) => sum + stat.hrsTotal, 0);
+      const totalHrs = selectedPlayerStats.reduce((sum, stat) => sum + stat.hrsTotal, 0);
 
       if (totalHrs > 172) {
         throw new ValidationError(

@@ -64,26 +64,26 @@ async function validateData() {
       console.log(`   ✅ All players have valid team abbreviations`)
     }
 
-    // Check eligibility
-    const ineligible = players.filter(p => !p.isEligible)
+    // Check eligibility via season stats
+    const ineligibleStats = seasonStats.filter(s => s.hrsTotal < 10)
     console.log(`\n⚾ Eligibility Status:`)
-    console.log(`   Ineligible players: ${ineligible.length}`)
-    if (ineligible.length > 0) {
+    console.log(`   Ineligible players: ${ineligibleStats.length}`)
+    if (ineligibleStats.length > 0) {
       hasIssues = true
-      console.log(`   ⚠️  Found ineligible players:`, ineligible.map(p => p.name))
+      console.log(`   ⚠️  Found ineligible players:`, ineligibleStats.map(s => s.playerId))
     } else {
       console.log(`   ✅ All players are eligible`)
     }
 
-    // Check HR threshold
-    const lowHrs = players.filter(p => p.hrsPreviousSeason < 10)
+    // Check HR threshold via season stats
+    const lowHrs = seasonStats.filter(s => s.hrsTotal < 10)
     console.log(`\n🏠 Home Run Threshold:`)
     console.log(`   Players with <10 HRs: ${lowHrs.length}`)
     if (lowHrs.length > 0) {
       hasIssues = true
       console.log(`   ⚠️  Players below threshold:`)
-      lowHrs.forEach(p => {
-        console.log(`      - ${p.name}: ${p.hrsPreviousSeason} HRs`)
+      lowHrs.forEach(s => {
+        console.log(`      - ${s.playerId}: ${s.hrsTotal} HRs`)
       })
     } else {
       console.log(`   ✅ All players meet 10+ HR threshold`)
@@ -98,8 +98,8 @@ async function validateData() {
       console.log(`   ⚠️  Mismatch: ${players.length} players vs ${seasonStats.length} stats records`)
     }
 
-    // HR distribution stats
-    const hrsList = players.map(p => p.hrsPreviousSeason)
+    // HR distribution stats from season stats
+    const hrsList = seasonStats.map(s => s.hrsTotal)
     const minHrs = Math.min(...hrsList)
     const maxHrs = Math.max(...hrsList)
     const avgHrs = hrsList.reduce((a, b) => a + b, 0) / hrsList.length

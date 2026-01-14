@@ -35,7 +35,8 @@ async function execWithRetry(
       const result = await execPromise(command, {
         ...options,
         timeout: 5 * 60 * 1000,  // 5 minute timeout
-      })
+        encoding: 'utf8',  // Ensure string output, not Buffer
+      }) as unknown as { stdout: string; stderr: string }
 
       console.log(`✅ Python script succeeded on attempt ${attempt}`)
       return result
@@ -229,7 +230,7 @@ export async function getPlayerStatsDateRange(
  *
  * If you need to revert to Baseball Savant, see git history for the original implementation.
  */
-export async function fetchCurrentSeasonStats(seasonYear: number = 2025): Promise<CurrentSeasonStats[]> {
+export async function fetchCurrentSeasonStats(_seasonYear: number = 2025): Promise<CurrentSeasonStats[]> {
   throw new Error(
     'fetchCurrentSeasonStats() has been deprecated. ' +
     'Use updatePlayerStats() which calls the Python MLB-StatsAPI script instead.'

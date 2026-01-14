@@ -19,6 +19,7 @@ import {
   sendLockReminderSchema,
 } from '../types/validation.js'
 import { db } from '../services/db.js'
+import type { Team, User } from '../types/entities.js'
 import {
   sendEmail,
   sendPaymentReminderEmail,
@@ -46,7 +47,7 @@ export async function getStats(req: Request, res: Response, next: NextFunction) 
       refunded: 0,
     }
 
-    teams.forEach((team: any) => {
+    teams.forEach((team) => {
       if (teamsByPaymentStatus.hasOwnProperty(team.paymentStatus)) {
         teamsByPaymentStatus[team.paymentStatus as keyof typeof teamsByPaymentStatus]++
       }
@@ -58,7 +59,7 @@ export async function getStats(req: Request, res: Response, next: NextFunction) 
       locked: 0,
     }
 
-    teams.forEach((team: any) => {
+    teams.forEach((team) => {
       if (teamsByEntryStatus.hasOwnProperty(team.entryStatus)) {
         teamsByEntryStatus[team.entryStatus as keyof typeof teamsByEntryStatus]++
       }
@@ -66,7 +67,7 @@ export async function getStats(req: Request, res: Response, next: NextFunction) 
 
     // Get user count
     const users = await db.user.findMany({ deletedAt: null })
-    const verifiedUsers = users.filter((u: any) => u.emailVerified)
+    const verifiedUsers = users.filter((u) => u.emailVerified)
 
     // Calculate revenue (paid teams * $100)
     const revenue = teamsByPaymentStatus.paid * 100
@@ -98,7 +99,7 @@ export async function getTeams(req: Request, res: Response, next: NextFunction) 
     const { paymentStatus, entryStatus, seasonYear, search } = req.query
 
     // Build where clause
-    const where: any = { deletedAt: null }
+    const where: Record<string, unknown> = { deletedAt: null }
     if (paymentStatus && paymentStatus !== 'all') {
       where.paymentStatus = paymentStatus
     }
@@ -118,7 +119,7 @@ export async function getTeams(req: Request, res: Response, next: NextFunction) 
     let filteredTeams = teams
     if (search) {
       const searchLower = (search as string).toLowerCase()
-      filteredTeams = teams.filter((team: any) => {
+      filteredTeams = teams.filter((team) => {
         const nameMatch = team.name?.toLowerCase().includes(searchLower)
         const userMatch = team.user?.username?.toLowerCase().includes(searchLower) ||
                          team.user?.email?.toLowerCase().includes(searchLower)
@@ -182,7 +183,7 @@ export async function updateTeamStatus(req: Request, res: Response, next: NextFu
     }
 
     // Update payment status and entry status if needed
-    const updateData: any = { paymentStatus }
+    const updateData: Record<string, unknown> = { paymentStatus }
 
     // If approving (paid), also set entry status to entered
     if (paymentStatus === 'paid' && team.entryStatus === 'draft') {
@@ -216,20 +217,20 @@ export async function getUsers(req: Request, res: Response, next: NextFunction) 
 
     // Filter by verified status
     if (verified === 'true') {
-      users = users.filter((u: any) => u.emailVerified === true)
+      users = users.filter((u) => u.emailVerified === true)
     } else if (verified === 'false') {
-      users = users.filter((u: any) => u.emailVerified === false)
+      users = users.filter((u) => u.emailVerified === false)
     }
 
     // Filter by role
     if (role && role !== 'all') {
-      users = users.filter((u: any) => u.role === role)
+      users = users.filter((u) => u.role === role)
     }
 
     // Filter by search
     if (search) {
       const searchLower = (search as string).toLowerCase()
-      users = users.filter((u: any) =>
+      users = users.filter((u) =>
         u.username?.toLowerCase().includes(searchLower) ||
         u.email?.toLowerCase().includes(searchLower)
       )
@@ -237,9 +238,9 @@ export async function getUsers(req: Request, res: Response, next: NextFunction) 
 
     // Get team counts for each user
     const usersWithTeamCount = await Promise.all(
-      users.map(async (user: any) => {
+      users.map(async (user) => {
         const teams = await db.team.findMany({ userId: user.id, deletedAt: null })
-        const paidTeams = teams.filter((t: any) => t.paymentStatus === 'paid')
+        const paidTeams = teams.filter((t) => t.paymentStatus === 'paid')
         return {
           ...user,
           teamCount: teams.length,
@@ -271,10 +272,11 @@ export async function verifyUserEmail(req: Request, res: Response, next: NextFun
     }
 
     if (user.emailVerified) {
-      return res.json({
+      res.json({
         success: true,
         message: 'User email is already verified',
       })
+      return
     }
 
     await db.user.update({ id }, { emailVerified: true })
@@ -339,7 +341,7 @@ export async function deleteUser(req: Request, res: Response, next: NextFunction
 
     // Check if user has paid teams
     const teams = await db.team.findMany({ userId: id, deletedAt: null })
-    const paidTeams = teams.filter((t: any) => t.paymentStatus === 'paid')
+    const paidTeams = teams.filter((t) => t.paymentStatus === 'paid')
 
     if (paidTeams.length > 0) {
       throw new ValidationError('Cannot delete user with paid teams')
@@ -369,7 +371,7 @@ export async function sendNotifications(req: Request, res: Response, next: NextF
 
     const { recipientGroup, userEmail, subject, body } = validation.data
 
-    let recipients: any[] = []
+    let recipients: User[] = []
 
     if (userEmail) {
       // Send to specific user
@@ -389,25 +391,25 @@ export async function sendNotifications(req: Request, res: Response, next: NextF
         const usersWithUnpaidTeams = new Set<string>()
         for (const user of allUsers) {
           const teams = await db.team.findMany({ userId: user.id, deletedAt: null })
-          const hasUnpaid = teams.some((t: any) =>
+          const hasUnpaid = teams.some((t) =>
             t.paymentStatus === 'draft' || t.paymentStatus === 'pending'
           )
           if (hasUnpaid) {
             usersWithUnpaidTeams.add(user.id)
           }
         }
-        recipients = allUsers.filter((u: any) => usersWithUnpaidTeams.has(u.id))
+        recipients = allUsers.filter((u) => usersWithUnpaidTeams.has(u.id))
       } else if (recipientGroup === 'paid') {
         // Users with paid teams
         const usersWithPaidTeams = new Set<string>()
         for (const user of allUsers) {
           const teams = await db.team.findMany({ userId: user.id, deletedAt: null })
-          const hasPaid = teams.some((t: any) => t.paymentStatus === 'paid')
+          const hasPaid = teams.some((t) => t.paymentStatus === 'paid')
           if (hasPaid) {
             usersWithPaidTeams.add(user.id)
           }
         }
-        recipients = allUsers.filter((u: any) => usersWithPaidTeams.has(u.id))
+        recipients = allUsers.filter((u) => usersWithPaidTeams.has(u.id))
       }
     }
 
@@ -524,7 +526,7 @@ export async function verifyPassword(req: Request, res: Response, next: NextFunc
     }
 
     // OAuth users bypass password verification (authenticated via Google)
-    if (user.authProvider === 'google' || !user.password) {
+    if (user.authProvider === 'google' || !user.passwordHash) {
       res.json({
         success: true,
         message: 'Identity verified via OAuth',
@@ -539,7 +541,7 @@ export async function verifyPassword(req: Request, res: Response, next: NextFunc
     }
 
     const { password } = validation.data
-    const isValid = await compare(password, user.password)
+    const isValid = await compare(password, user.passwordHash)
     if (!isValid) {
       throw new AuthenticationError('Invalid password')
     }
@@ -557,7 +559,7 @@ export async function verifyPassword(req: Request, res: Response, next: NextFunc
  * GET /api/admin/recipient-counts
  * Get counts for notification recipient groups
  */
-export async function getRecipientCounts(req: Request, res: Response, next: NextFunction) {
+export async function getRecipientCounts(_req: Request, res: Response, next: NextFunction) {
   try {
     // Get all verified users
     const allUsers = await db.user.findMany({ deletedAt: null, emailVerified: true })
@@ -567,10 +569,10 @@ export async function getRecipientCounts(req: Request, res: Response, next: Next
 
     for (const user of allUsers) {
       const teams = await db.team.findMany({ userId: user.id, deletedAt: null })
-      const hasUnpaid = teams.some((t: any) =>
+      const hasUnpaid = teams.some((t) =>
         t.paymentStatus === 'draft' || t.paymentStatus === 'pending'
       )
-      const hasPaid = teams.some((t: any) => t.paymentStatus === 'paid')
+      const hasPaid = teams.some((t) => t.paymentStatus === 'paid')
 
       if (hasUnpaid) unpaidCount++
       if (hasPaid) paidCount++
@@ -593,7 +595,7 @@ export async function getRecipientCounts(req: Request, res: Response, next: Next
  * GET /api/admin/reminders/status
  * Get the last sent time for each reminder type
  */
-export async function getReminderStatus(req: Request, res: Response, next: NextFunction) {
+export async function getReminderStatus(_req: Request, res: Response, next: NextFunction) {
   try {
     const paymentReminder = await db.reminderLog.getLatestByType('payment')
     const lockReminder = await db.reminderLog.getLatestByType('lock_deadline')
@@ -640,11 +642,11 @@ export async function sendPaymentReminder(req: Request, res: Response, next: Nex
     const allUsers = await db.user.findMany({ deletedAt: null, emailVerified: true })
 
     // Find users with teams matching the selected statuses
-    const recipients: { user: any; unpaidTeams: any[] }[] = []
+    const recipients: { user: User; unpaidTeams: Team[] }[] = []
 
     for (const user of allUsers) {
       const teams = await db.team.findMany({ userId: user.id, deletedAt: null })
-      const unpaidTeams = teams.filter((t: any) => statuses.includes(t.paymentStatus))
+      const unpaidTeams = teams.filter((t) => (statuses as string[]).includes(t.paymentStatus))
 
       if (unpaidTeams.length > 0) {
         recipients.push({ user, unpaidTeams })
@@ -664,7 +666,7 @@ export async function sendPaymentReminder(req: Request, res: Response, next: Nex
         await sendPaymentReminderEmail(
           user.email,
           user.username,
-          unpaidTeams.map((t: any) => ({ name: t.name }))
+          unpaidTeams.map((t) => ({ name: t.name }))
         )
         sentCount++
       } catch (error) {
@@ -720,9 +722,9 @@ export async function sendLockDeadlineReminder(req: Request, res: Response, next
       try {
         const teams = await db.team.findMany({ userId: user.id, deletedAt: null })
         const unpaidTeams = teams.filter(
-          (t: any) => t.paymentStatus === 'draft' || t.paymentStatus === 'pending'
+          (t) => t.paymentStatus === 'draft' || t.paymentStatus === 'pending'
         )
-        const paidTeams = teams.filter((t: any) => t.paymentStatus === 'paid')
+        const paidTeams = teams.filter((t) => t.paymentStatus === 'paid')
 
         // Determine user's team status
         let teamStatus: {
@@ -736,7 +738,7 @@ export async function sendLockDeadlineReminder(req: Request, res: Response, next
         } else if (unpaidTeams.length > 0) {
           teamStatus = {
             type: 'has_unpaid',
-            unpaidTeams: unpaidTeams.map((t: any) => ({ name: t.name })),
+            unpaidTeams: unpaidTeams.map((t) => ({ name: t.name })),
           }
         } else {
           teamStatus = {

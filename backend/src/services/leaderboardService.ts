@@ -4,7 +4,7 @@
  */
 
 import { db } from './db.js'
-import { calculateAllTeamScores, calculateMonthlyScores, TeamScore, PlayerScore } from './scoringService.js'
+import { calculateAllTeamScores, calculateMonthlyScores, PlayerScore } from './scoringService.js'
 
 export type LeaderboardType = 'overall' | 'monthly' | 'allstar'
 

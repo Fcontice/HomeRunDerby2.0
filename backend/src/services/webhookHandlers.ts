@@ -5,7 +5,7 @@
 
 import { db } from './db.js';
 import { sendPaymentConfirmationEmail } from './emailService.js';
-import { PaymentError, NotFoundError } from '../utils/errors.js';
+import { NotFoundError } from '../utils/errors.js';
 
 /**
  * Handle successful payment webhook

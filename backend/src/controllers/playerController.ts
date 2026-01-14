@@ -7,6 +7,7 @@ import { Request, Response, NextFunction } from 'express';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { db } from '../services/db.js';
 import { supabaseAdmin } from '../config/supabase.js';
+// Entity types imported for reference, actual types inferred from db methods
 
 /**
  * GET /api/players
@@ -37,7 +38,7 @@ export async function getPlayers(req: Request, res: Response, next: NextFunction
     } = req.query;
 
     // Build where clause for PlayerSeasonStats
-    const where: any = {
+    const where: Record<string, unknown> = {
       seasonYear: parseInt(seasonYear as string),
       hrsTotal: {
         gte: parseInt(minHrs as string),
@@ -45,7 +46,7 @@ export async function getPlayers(req: Request, res: Response, next: NextFunction
     };
 
     if (maxHrs) {
-      where.hrsTotal.lte = parseInt(maxHrs as string);
+      (where.hrsTotal as Record<string, number>).lte = parseInt(maxHrs as string);
     }
 
     if (team) {
@@ -53,7 +54,7 @@ export async function getPlayers(req: Request, res: Response, next: NextFunction
     }
 
     // Build orderBy clause
-    let orderBy: any = {};
+    let orderBy: Record<string, unknown> = {};
     if (sortBy === 'name') {
       orderBy = { player: { name: sortOrder } };
     } else if (sortBy === 'team') {
@@ -72,7 +73,7 @@ export async function getPlayers(req: Request, res: Response, next: NextFunction
     // Apply name search filter if provided (post-query since we need to search on joined player)
     if (search) {
       const searchLower = (search as string).toLowerCase();
-      playerSeasonStats = playerSeasonStats.filter((stat: any) =>
+      playerSeasonStats = playerSeasonStats.filter((stat) =>
         stat.player?.name?.toLowerCase().includes(searchLower)
       );
     }
@@ -80,7 +81,7 @@ export async function getPlayers(req: Request, res: Response, next: NextFunction
     const totalCount = await db.playerSeasonStats.count(where);
 
     // Transform data to match expected response format
-    const players = playerSeasonStats.map((stat: any) => ({
+    const players = playerSeasonStats.map((stat) => ({
       id: stat.player?.id,
       mlbId: stat.player?.mlbId,
       name: stat.player?.name,
@@ -131,7 +132,7 @@ export async function getPlayerById(req: Request, res: Response, next: NextFunct
 
     // Get latest season stats for eligibility display
     const latestSeasonStats = seasonHistory.length > 0
-      ? seasonHistory.sort((a: any, b: any) => b.seasonYear - a.seasonYear)[0]
+      ? seasonHistory.sort((a, b) => b.seasonYear - a.seasonYear)[0]
       : null;
 
     // Count how many teams (paid or locked) have drafted this player
@@ -139,7 +140,7 @@ export async function getPlayerById(req: Request, res: Response, next: NextFunct
 
     let draftCount = 0;
     if (teamPlayers.length > 0) {
-      const teamIds = teamPlayers.map((tp: any) => tp.teamId);
+      const teamIds = teamPlayers.map((tp) => tp.teamId);
 
       // Use Supabase client directly since teamDb.findMany doesn't support these filters
       const { data: teams, error: teamsError } = await supabaseAdmin
@@ -208,11 +209,11 @@ export async function searchPlayers(req: Request, res: Response, next: NextFunct
     // Filter by player name (post-query since we need to search on joined player)
     const searchLower = (q as string).toLowerCase();
     const filteredStats = playerSeasonStats
-      .filter((stat: any) => stat.player?.name?.toLowerCase().includes(searchLower))
+      .filter((stat) => stat.player?.name?.toLowerCase().includes(searchLower))
       .slice(0, parseInt(limit as string));
 
     // Transform to expected format
-    const players = filteredStats.map((stat: any) => ({
+    const players = filteredStats.map((stat) => ({
       id: stat.player?.id,
       mlbId: stat.player?.mlbId,
       name: stat.player?.name,
@@ -277,10 +278,10 @@ export async function getPlayerStats(req: Request, res: Response, next: NextFunc
       success: true,
       data: {
         totalPlayers: stats._count,
-        averageHRs: Math.round((stats._avg.hrsTotal || 0) * 10) / 10,
-        maxHRs: stats._max.hrsTotal,
-        minHRs: stats._min.hrsTotal,
-        teamDistribution: teamDistribution.map((t: any) => ({
+        averageHRs: Math.round((stats._avg?.hrsTotal || 0) * 10) / 10,
+        maxHRs: stats._max?.hrsTotal,
+        minHRs: stats._min?.hrsTotal,
+        teamDistribution: teamDistribution.map((t) => ({
           team: t.teamAbbr,
           count: t._count,
         })),

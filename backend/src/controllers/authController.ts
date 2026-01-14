@@ -198,18 +198,20 @@ export async function forgotPassword(req: Request, res: Response) {
 
   // Don't reveal if email exists for security
   if (!user || user.deletedAt) {
-    return res.json({
+    res.json({
       success: true,
       message: 'If the email exists, a password reset link has been sent.',
     })
+    return
   }
 
   // Only allow password reset for email auth users
   if (user.authProvider !== 'email') {
-    return res.json({
+    res.json({
       success: true,
       message: 'If the email exists, a password reset link has been sent.',
     })
+    return
   }
 
   // Generate reset token
@@ -352,7 +354,7 @@ export async function resendVerification(req: Request, res: Response) {
 /**
  * Logout (client-side token invalidation)
  */
-export async function logout(req: Request, res: Response) {
+export async function logout(_req: Request, res: Response) {
   res.json({
     success: true,
     message: 'Logged out successfully',

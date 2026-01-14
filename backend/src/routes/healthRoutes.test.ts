@@ -41,7 +41,7 @@ describe('Health Routes', () => {
     it.skip('should check Python environment (requires Python)', async () => {
       const response = await request(app).get('/health/python')
       // This test requires actual Python installation
-      expect(response.status).toBeOneOf([200, 503])
+      expect([200, 503]).toContain(response.status)
     })
   })
 })

@@ -4,6 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import Stripe from 'stripe';
 import { db } from '../services/db.js';
 import { createTeamCheckoutSession, verifyPaymentWebhook, TEAM_ENTRY_FEE } from '../services/paymentService.js';
 import { handlePaymentSuccess, handlePaymentFailure } from '../services/webhookHandlers.js';
@@ -72,13 +73,18 @@ export async function createCheckout(req: Request, res: Response, next: NextFunc
       throw new ValidationError('Team must have exactly 8 players before payment');
     }
 
+    // Ensure user relation is loaded
+    if (!team.user) {
+      throw new NotFoundError('Team user not found');
+    }
+
     // Create checkout session
     const session = await createTeamCheckoutSession({
       teamId: team.id,
       teamName: team.name,
       amount: TEAM_ENTRY_FEE,
       userId: team.userId,
-      userEmail: team.user!.email,
+      userEmail: team.user.email,
     });
 
     // Update team status to pending
@@ -120,16 +126,15 @@ export async function handleWebhook(req: Request, res: Response, next: NextFunct
     // Handle different event types
     switch (event.type) {
       case 'checkout.session.completed': {
-        const session = event.data.object as any;
+        const session = event.data.object as Stripe.Checkout.Session;
 
         // Extract team data from metadata
         const teamId = session.metadata?.teamId || session.client_reference_id;
-        const userId = session.metadata?.userId;
-        const teamName = session.metadata?.teamName;
 
         if (!teamId) {
           console.error('Webhook missing teamId in metadata - ignoring event');
-          return res.json({ received: true }); // Always acknowledge
+          res.json({ received: true }); // Always acknowledge
+          return;
         }
 
         // Validate payment amount (security: prevent price manipulation)
@@ -138,7 +143,8 @@ export async function handleWebhook(req: Request, res: Response, next: NextFunct
           console.error(
             `Payment amount mismatch for team ${teamId}: expected ${TEAM_ENTRY_FEE}, got ${amountPaid} - rejecting payment`
           );
-          return res.json({ received: true }); // Always acknowledge but don't process
+          res.json({ received: true }); // Always acknowledge but don't process
+          return;
         }
 
         // Fetch user for email
@@ -149,15 +155,22 @@ export async function handleWebhook(req: Request, res: Response, next: NextFunct
 
         if (!team) {
           console.error(`Team not found: ${teamId} - ignoring webhook`);
-          return res.json({ received: true }); // Always acknowledge
+          res.json({ received: true }); // Always acknowledge
+          return;
+        }
+
+        if (!team.user) {
+          console.error(`Team user not found: ${teamId} - ignoring webhook`);
+          res.json({ received: true }); // Always acknowledge
+          return;
         }
 
         await handlePaymentSuccess({
           teamId,
           paymentId: session.id,
           amount: amountPaid,
-          userEmail: team.user!.email,
-          userName: team.user!.username,
+          userEmail: team.user.email,
+          userName: team.user.username,
           teamName: team.name,
         });
 
@@ -165,7 +178,7 @@ export async function handleWebhook(req: Request, res: Response, next: NextFunct
       }
 
       case 'payment_intent.payment_failed': {
-        const paymentIntent = event.data.object as any;
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
         const teamId = paymentIntent.metadata?.teamId;
 
         if (teamId) {
