@@ -43,7 +43,7 @@ if (process.env.NODE_ENV !== 'production') {
 if (process.env.NODE_ENV === 'production') {
   // Add custom domain if different from FRONTEND_URL
   if (process.env.CUSTOM_DOMAIN) {
-    allowedOrigins.push(process.env.CUSTOM_DOMAIN)
+    allowedOrigins.push(process.env.CUSTOM_DOMAIN || 'https://www.hrderbyus.com')
   }
 }
 
