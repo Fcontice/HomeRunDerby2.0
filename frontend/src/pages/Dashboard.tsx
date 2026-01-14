@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useSeason } from '../contexts/SeasonContext'
 import { useNavigate, Link } from 'react-router-dom'
@@ -11,13 +12,33 @@ import {
 } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
 import { LeaderboardWidget } from '../components/leaderboard'
+import { teamsApi, Team } from '../services/api'
 
 export default function Dashboard() {
   const { user, logout } = useAuth()
   const { season } = useSeason()
   const navigate = useNavigate()
 
+  const [teams, setTeams] = useState<Team[]>([])
+  const [teamsLoading, setTeamsLoading] = useState(true)
+
   const isRegistrationOpen = season?.phase === 'registration'
+
+  useEffect(() => {
+    const fetchTeams = async () => {
+      try {
+        const response = await teamsApi.getMyTeams()
+        if (response.success && response.data) {
+          setTeams(response.data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch teams:', error)
+      } finally {
+        setTeamsLoading(false)
+      }
+    }
+    fetchTeams()
+  }, [])
 
   const handleLogout = async () => {
     await logout()
@@ -107,12 +128,57 @@ export default function Dashboard() {
               <CardDescription>Your fantasy baseball teams</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground mb-4">
-                No teams created yet. Create your first team to compete!
-              </p>
-              <Button onClick={() => navigate('/create-team')} className="w-full">
-                Create Your First Team
-              </Button>
+              {teamsLoading ? (
+                <p className="text-muted-foreground">Loading teams...</p>
+              ) : teams.length === 0 ? (
+                <>
+                  <p className="text-muted-foreground mb-4">
+                    No teams created yet. Create your first team to compete!
+                  </p>
+                  <Button onClick={() => navigate('/create-team')} className="w-full">
+                    Create Your First Team
+                  </Button>
+                </>
+              ) : (
+                <div className="space-y-3">
+                  {teams.map((team) => (
+                    <Link
+                      key={team.id}
+                      to={`/teams/${team.id}`}
+                      className="block p-3 rounded-lg border hover:bg-accent transition-colors"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium">{team.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {team.seasonYear} Season
+                          </p>
+                        </div>
+                        <Badge
+                          variant={
+                            team.paymentStatus === 'paid'
+                              ? 'default'
+                              : team.paymentStatus === 'pending'
+                                ? 'secondary'
+                                : 'outline'
+                          }
+                        >
+                          {team.paymentStatus}
+                        </Badge>
+                      </div>
+                    </Link>
+                  ))}
+                  {isRegistrationOpen && (
+                    <Button
+                      onClick={() => navigate('/create-team')}
+                      variant="outline"
+                      className="w-full mt-2"
+                    >
+                      Create Another Team
+                    </Button>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
