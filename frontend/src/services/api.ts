@@ -141,6 +141,7 @@ export interface Team {
     id: string
     username: string
     avatarUrl: string | null
+    email: string
   }
 }
 
