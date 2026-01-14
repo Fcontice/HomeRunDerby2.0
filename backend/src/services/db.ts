@@ -409,6 +409,12 @@ export const teamDb = {
   async findMany(where: Record<string, unknown> = {}, options: Record<string, unknown> = {}): Promise<Team[]> {
     let query = supabaseAdmin.from('Team').select(`
       *,
+      user:User(
+      id,
+      username,
+      email,
+      avatarUrl
+    ),
       teamPlayers:TeamPlayer(
         id,
         position,
