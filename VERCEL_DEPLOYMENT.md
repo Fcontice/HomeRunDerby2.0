@@ -1,54 +1,27 @@
-# Vercel Deployment Guide - Home Run Derby 2.0
+# Deployment Guide - Home Run Derby 2.0
 
-## Deployment Architecture
+## Architecture Overview
 
-**Frontend**: Vercel (Static hosting)
-**Backend**: Railway/Render/Fly.io (Express server)
-**Database**: Supabase PostgreSQL (already configured)
+| Service | Platform | Domain |
+|---------|----------|--------|
+| Frontend | Vercel | `www.hrderbyus.com` |
+| Backend | Railway | `api.hrderbyus.com` |
+| Database | Supabase | (managed) |
 
 ---
 
-## Step 1: Deploy Backend First
+## Step 1: Deploy Backend to Railway
 
-### Option A: Railway (Recommended - $5/month)
+### 1.1 Create Railway Project
 
-1. **Sign up at [railway.app](https://railway.app)**
-
-2. **Create new project from GitHub repo**
-   - Connect your GitHub account
-   - Select your repository
-   - Railway will auto-detect Node.js
-
-3. **Configure build settings**
-   - **Root Directory**: `backend`
-   - **Build Command**: `npm install && npm run build`
-   - **Start Command**: `npm start`
-   - **Port**: Railway auto-detects from `PORT` env var
-
-4. **Set environment variables** (see section below)
-
-5. **Deploy** - Railway will provide a URL like `https://your-app.up.railway.app`
-
-### Option B: Render (Free tier available)
-
-1. **Sign up at [render.com](https://render.com)**
-
-2. **New Web Service** → Connect GitHub repo
-
-3. **Configure**:
+1. Sign up at [railway.app](https://railway.app)
+2. Create new project from GitHub repo
+3. Configure:
    - **Root Directory**: `backend`
    - **Build Command**: `npm install && npm run build`
    - **Start Command**: `npm start`
 
-4. **Set environment variables** (see section below)
-
-5. **Deploy** - URL: `https://your-app.onrender.com`
-
----
-
-## Step 2: Configure Backend Environment Variables
-
-Add these to your backend hosting service (Railway/Render):
+### 1.2 Set Railway Environment Variables
 
 ```bash
 # Database (Supabase)
@@ -60,285 +33,233 @@ SUPABASE_ANON_KEY=your-anon-key
 JWT_SECRET=your-jwt-secret-min-32-chars
 GOOGLE_CLIENT_ID=your-google-oauth-client-id
 GOOGLE_CLIENT_SECRET=your-google-oauth-secret
+BACKEND_URL=https://api.yourdomain.com
 
 # Email Service
 RESEND_API_KEY=re_your-resend-key
+FROM_EMAIL=noreply@yourdomain.com
 
-# Stripe Payments
+# Stripe Payments (use sk_live_ for production!)
 STRIPE_SECRET_KEY=sk_live_your-stripe-secret-key
 STRIPE_WEBHOOK_SECRET=whsec_your-webhook-secret
-STRIPE_PUBLIC_KEY=pk_live_your-stripe-public-key
-
-# Redis Cache (Upstash)
-REDIS_URL=redis://default:your-password@endpoint.upstash.io:port
 
 # App Configuration
 NODE_ENV=production
-PORT=5000
-FRONTEND_URL=https://your-domain.vercel.app
+FRONTEND_URL=https://www.yourdomain.com
 ```
 
-**⚠️ IMPORTANT**:
-- Use **production** Stripe keys (`sk_live_...` not `sk_test_...`)
-- Keep `JWT_SECRET` at least 32 characters
-- Update `FRONTEND_URL` with your actual Vercel domain
+### 1.3 Add Custom Domain to Railway
+
+1. Go to Railway → Settings → Networking
+2. Add custom domain: `api.yourdomain.com`
+3. Railway will show DNS instructions
 
 ---
 
-## Step 3: Deploy Frontend to Vercel
+## Step 2: Deploy Frontend to Vercel
 
-### Using Vercel CLI (Recommended)
+### 2.1 Create Vercel Project
 
-1. **Install Vercel CLI**
-   ```bash
-   npm install -g vercel
-   ```
+1. Sign up at [vercel.com](https://vercel.com)
+2. Import GitHub repo
+3. Configure:
+   - **Framework Preset**: Vite
+   - **Root Directory**: `frontend`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
 
-2. **Login to Vercel**
-   ```bash
-   vercel login
-   ```
+### 2.2 Set Vercel Environment Variables
 
-3. **Deploy from project root**
-   ```bash
-   cd C:\Users\conti\Desktop\HRD2.0
-   vercel
-   ```
-
-4. **Follow prompts**:
-   - Link to existing project? → No
-   - Project name? → `home-run-derby`
-   - Directory? → `./` (root)
-   - Override settings? → No
-
-5. **Set environment variables**:
-   ```bash
-   vercel env add VITE_API_URL
-   ```
-   Enter: `https://your-backend-domain.com` (your Railway/Render URL)
-
-   ```bash
-   vercel env add VITE_STRIPE_PUBLIC_KEY
-   ```
-   Enter: `pk_live_...` (your Stripe public key)
-
-6. **Deploy to production**:
-   ```bash
-   vercel --prod
-   ```
-
-### Using Vercel Dashboard
-
-1. **Go to [vercel.com](https://vercel.com) and login**
-
-2. **Import Git Repository**
-   - Click "Add New" → "Project"
-   - Import your GitHub repo
-   - Select repository
-
-3. **Configure Project**
-   - **Framework Preset**: Other
-   - **Root Directory**: `./`
-   - **Build Command**: (auto-detected from vercel.json)
-   - **Output Directory**: (auto-detected from vercel.json)
-
-4. **Environment Variables** (click "Environment Variables"):
-   ```
-   VITE_API_URL = https://your-backend-url.up.railway.app
-   VITE_STRIPE_PUBLIC_KEY = pk_live_your-stripe-public-key
-   ```
-
-5. **Deploy** - Vercel will build and deploy
-
-6. **Get your domain**: `https://your-project.vercel.app`
-
----
-
-## Step 4: Update Backend CORS & Webhook
-
-### Update CORS in backend
-
-After deploying frontend, update `backend/src/server.ts` with your Vercel domain:
-
-```typescript
-app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL || 'http://localhost:5173',
-    'https://your-domain.vercel.app'  // Add this line
-  ],
-  credentials: true
-}));
+```bash
+VITE_API_URL=https://api.yourdomain.com
+VITE_STRIPE_PUBLIC_KEY=pk_live_your-stripe-public-key
 ```
 
-Redeploy backend after this change.
+**IMPORTANT**: `VITE_API_URL` must point directly to your API domain (e.g., `https://api.hrderbyus.com`).
 
-### Configure Stripe Webhook
+### 2.3 Frontend vercel.json
 
-1. **Go to Stripe Dashboard** → Developers → Webhooks
-2. **Add endpoint**: `https://your-backend-domain.com/api/payments/webhook`
-3. **Select events**:
-   - `checkout.session.completed`
-   - `payment_intent.payment_failed`
-4. **Copy webhook signing secret** and add to backend env vars as `STRIPE_WEBHOOK_SECRET`
-
----
-
-## Step 5: Update vercel.json
-
-Before deploying, update the `vercel.json` file:
+The `frontend/vercel.json` file handles SPA routing (prevents 404 on page refresh):
 
 ```json
 {
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "https://YOUR-ACTUAL-BACKEND-URL.up.railway.app/api/:path*"
+      "source": "/((?!assets/).*)",
+      "destination": "/index.html"
     }
   ]
 }
 ```
 
-Replace `YOUR-ACTUAL-BACKEND-URL` with your Railway/Render domain.
+**Note**: The vercel.json must be in the `frontend/` folder since that's the Vercel root directory.
+
+### 2.4 Add Custom Domain to Vercel
+
+1. Go to Vercel → Settings → Domains
+2. Add: `www.yourdomain.com`
+3. Vercel will show DNS instructions
 
 ---
 
-## Step 6: Custom Domain (Optional)
+## Step 3: Configure DNS
 
-### Add your custom domain to Vercel:
+At your domain registrar, add these records:
 
-1. **Vercel Dashboard** → Your Project → Settings → Domains
-2. **Add domain**: `yourdomain.com`
-3. **Configure DNS** (at your domain registrar):
-   - Type: `A` Record
-   - Name: `@`
-   - Value: `76.76.21.21`
+### For Frontend (Vercel)
+```
+Type: CNAME
+Name: www
+Value: cname.vercel-dns.com (or the value Vercel provides)
+```
 
-   OR
+### For Backend (Railway)
+```
+Type: CNAME
+Name: api
+Value: your-app.up.railway.app (the value Railway provides)
+```
 
-   - Type: `CNAME`
-   - Name: `www`
-   - Value: `cname.vercel-dns.com`
+### Apex Domain (optional)
+```
+Type: A
+Name: @
+Value: 76.76.21.21
+```
 
-4. **Wait for DNS propagation** (5-30 minutes)
-
-5. **Update environment variables**:
-   - Backend `FRONTEND_URL`: `https://yourdomain.com`
-   - Backend CORS: Add `https://yourdomain.com`
+**Wait 5-30 minutes for DNS propagation.**
 
 ---
 
-## Testing Your Deployment
+## Step 4: Configure Stripe Webhook
 
-### Frontend Checklist
-- [ ] Site loads at Vercel URL
-- [ ] Login/Register pages work
-- [ ] Can create account and verify email
-- [ ] Dashboard displays after login
+1. Go to Stripe Dashboard → Developers → Webhooks
+2. Add endpoint: `https://api.yourdomain.com/api/payments/webhook`
+3. Select events:
+   - `checkout.session.completed`
+   - `payment_intent.payment_failed`
+4. Copy the signing secret to Railway's `STRIPE_WEBHOOK_SECRET`
 
-### Backend Checklist
-- [ ] `/api/health` endpoint returns 200
-- [ ] API calls from frontend work (check Network tab)
-- [ ] CORS errors don't appear in console
-- [ ] Authentication flow completes
+---
 
-### Payments Checklist
-- [ ] Team creation works
-- [ ] Payment page loads
-- [ ] Stripe Checkout redirects correctly
-- [ ] Webhook processes payment (check Stripe logs)
-- [ ] Team status updates to "paid" after payment
+## Step 5: Configure Google OAuth (Optional)
+
+In Google Cloud Console:
+1. Go to APIs & Services → Credentials
+2. Edit your OAuth client
+3. Add authorized redirect URI:
+   ```
+   https://api.yourdomain.com/api/auth/google/callback
+   ```
+
+---
+
+## Key Files
+
+### frontend/src/services/api.ts
+```typescript
+const API_URL = (import.meta as any).env.VITE_API_URL || ''
+```
+- Falls back to empty string for local development (uses Vite proxy)
+- In production, `VITE_API_URL` points to the API domain
+
+### frontend/vercel.json
+- Located in `frontend/` folder (Vercel root)
+- Handles SPA routing to prevent 404 on page refresh
+
+### backend/src/server.ts
+- CORS configured via `FRONTEND_URL` environment variable
+- Automatically allows `https://www.hrderbyus.com` and `https://hrderbyus.com` in production
+
+---
+
+## Environment Variables Reference
+
+### Vercel (Frontend)
+| Variable | Example | Required |
+|----------|---------|----------|
+| `VITE_API_URL` | `https://api.hrderbyus.com` | Yes |
+| `VITE_STRIPE_PUBLIC_KEY` | `pk_live_...` | Yes |
+
+### Railway (Backend)
+| Variable | Example | Required |
+|----------|---------|----------|
+| `SUPABASE_URL` | `https://xxx.supabase.co` | Yes |
+| `SUPABASE_SERVICE_ROLE_KEY` | `eyJ...` | Yes |
+| `SUPABASE_ANON_KEY` | `eyJ...` | Yes |
+| `JWT_SECRET` | 32+ random chars | Yes |
+| `STRIPE_SECRET_KEY` | `sk_live_...` | Yes |
+| `STRIPE_WEBHOOK_SECRET` | `whsec_...` | Yes |
+| `RESEND_API_KEY` | `re_...` | Yes |
+| `FROM_EMAIL` | `noreply@domain.com` | Yes |
+| `NODE_ENV` | `production` | Yes |
+| `FRONTEND_URL` | `https://www.hrderbyus.com` | Yes |
+| `BACKEND_URL` | `https://api.hrderbyus.com` | Yes |
+| `GOOGLE_CLIENT_ID` | `xxx.apps.googleusercontent.com` | No |
+| `GOOGLE_CLIENT_SECRET` | `GOCSPX-...` | No |
 
 ---
 
 ## Troubleshooting
 
-### "Network Error" when calling API
-- Verify `VITE_API_URL` is set in Vercel
-- Check backend is running (visit backend URL in browser)
-- Verify CORS settings in `backend/src/server.ts`
+### 404 on page refresh
+- Ensure `frontend/vercel.json` exists with SPA rewrites
+- Redeploy Vercel after adding the file
 
-### Stripe webhook not working
-- Verify webhook URL in Stripe dashboard
-- Check webhook secret matches `STRIPE_WEBHOOK_SECRET` env var
-- View webhook logs in Stripe dashboard
+### API calls fail with Network Error
+- Check `VITE_API_URL` is set correctly in Vercel
+- Check `FRONTEND_URL` in Railway matches your frontend domain
+- Check browser console for CORS errors
+
+### CORS errors
+- Verify `FRONTEND_URL` in Railway matches exactly (including `https://` and `www`)
+- Redeploy Railway after changing environment variables
 
 ### Build fails on Vercel
-- Check build logs in Vercel dashboard
-- Verify all dependencies are in `package.json`
-- Ensure TypeScript compiles (`npm run build` locally)
+- Ensure `@types/node` is in `frontend/package.json` devDependencies
+- Check build logs for TypeScript errors
 
-### Email verification not working
-- Check `RESEND_API_KEY` in backend env vars
-- Verify `FRONTEND_URL` is set correctly
-- Check Resend logs for delivery status
+### Login redirects to wrong URL
+- Check `BACKEND_URL` in Railway for Google OAuth callback
+- Verify Google OAuth redirect URIs in Google Cloud Console
 
 ---
 
-## Post-Deployment Updates
+## Security Checklist
 
-### Updating Frontend
+- [ ] `JWT_SECRET` is 32+ random characters
+- [ ] `STRIPE_SECRET_KEY` uses `sk_live_` (not `sk_test_`)
+- [ ] `VITE_STRIPE_PUBLIC_KEY` uses `pk_live_` (not `pk_test_`)
+- [ ] `FRONTEND_URL` only allows your production domain
+- [ ] Webhook secrets are configured
+- [ ] Email domain has SPF/DKIM records configured
+
+---
+
+## Deployment Commands
+
+### Redeploy Frontend
 ```bash
 git add .
 git commit -m "Update frontend"
-git push origin main
+git push
 ```
-Vercel auto-deploys on push to main branch.
+Vercel auto-deploys on push to main.
 
-### Updating Backend
-Push to GitHub, then:
-- **Railway**: Auto-deploys from main branch
-- **Render**: Auto-deploys from main branch
+### Redeploy Backend
+Push to GitHub - Railway auto-deploys from main branch.
+
+### Force Redeploy (clear cache)
+- **Vercel**: Deployments → "..." → Redeploy (uncheck "Use existing Build Cache")
+- **Railway**: Deployments → Redeploy
 
 ---
 
-## Environment Variables Quick Reference
+## Production URLs
 
-### Frontend (Vercel)
-```
-VITE_API_URL=https://your-backend-url.com
-VITE_STRIPE_PUBLIC_KEY=pk_live_...
-```
-
-### Backend (Railway/Render)
-```
-SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY
-JWT_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
-RESEND_API_KEY
-STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PUBLIC_KEY
-REDIS_URL
-NODE_ENV=production
-FRONTEND_URL=https://your-vercel-domain.com
-```
-
----
-
-## Security Checklist Before Going Live
-
-- [ ] All env vars use production credentials (no test keys)
-- [ ] JWT_SECRET is strong (min 32 random characters)
-- [ ] CORS only allows your production frontend domain
-- [ ] Stripe uses live mode keys
-- [ ] Webhook secrets are configured
-- [ ] Rate limiting is enabled
-- [ ] HTTPS is enforced (Vercel does this automatically)
-- [ ] Email service has proper SPF/DKIM records
-
----
-
-## Cost Estimate
-
-- **Vercel**: Free for hobby projects (upgrade if needed)
-- **Railway**: ~$5-20/month (pay for usage)
-- **Supabase**: Free tier (500MB database, 50K monthly active users)
-- **Upstash Redis**: Free tier (10,000 commands/day)
-- **Resend**: Free tier (100 emails/day)
-- **Stripe**: No monthly fee (2.9% + $0.30 per transaction)
-
-**Total**: ~$5-20/month (mostly backend hosting)
-
----
-
-Need help? Check logs:
-- **Vercel**: Dashboard → Deployments → View Function Logs
-- **Railway**: Dashboard → Deployments → View Logs
-- **Stripe**: Dashboard → Developers → Webhooks → View logs
+- **Frontend**: https://www.hrderbyus.com
+- **Backend API**: https://api.hrderbyus.com
+- **Health Check**: https://api.hrderbyus.com/health

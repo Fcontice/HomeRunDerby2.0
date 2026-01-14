@@ -553,28 +553,46 @@ cd backend && npm run test:coverage  # Coverage report
 ## Deployment
 
 ### Architecture
-- **Frontend**: Vercel (static site) - configured in `vercel.json`
-- **Backend**: Railway/Render (Express + BullMQ) - `https://hrderbyus.com`
-- **API Proxy**: Vercel rewrites `/api/*` → backend domain
+- **Frontend**: Vercel (static site) - `https://www.hrderbyus.com`
+- **Backend**: Railway (Express) - `https://api.hrderbyus.com`
+- **Database**: Supabase PostgreSQL
+
+**Important**: Frontend calls API directly via `VITE_API_URL` (no Vercel rewrites).
+
+### Project Structure
+- Vercel root directory: `frontend/`
+- Railway root directory: `backend/`
+- Config file: `frontend/vercel.json` (handles SPA routing)
 
 ### Quick Deploy
 
 **Frontend to Vercel:**
-```bash
-vercel                    # Deploy to preview
-vercel --prod            # Deploy to production
-vercel env add           # Add environment variables
-```
+1. Root directory: `frontend`
+2. Framework: Vite
+3. Build: `npm run build`
+4. Output: `dist`
+5. Environment variables:
+   - `VITE_API_URL=https://api.hrderbyus.com`
+   - `VITE_STRIPE_PUBLIC_KEY=pk_live_...`
 
 **Backend to Railway:**
-1. Connect GitHub repo at railway.app
-2. Set root directory: `backend`
-3. Build: `npm install && npm run build`
-4. Start: `npm start`
-5. Add environment variables (see `VERCEL_DEPLOYMENT.md`)
+1. Root directory: `backend`
+2. Build: `npm install && npm run build`
+3. Start: `npm start`
+4. Key environment variables:
+   - `FRONTEND_URL=https://www.hrderbyus.com`
+   - `BACKEND_URL=https://api.hrderbyus.com`
+   - See `VERCEL_DEPLOYMENT.md` for full list
 
-**Environment Variables:**
-- Frontend (Vercel): `VITE_API_URL`, `VITE_STRIPE_PUBLIC_KEY`
-- Backend (Railway): See `PROJECT_CONTEXT.md` → Environment Variables → Production
+### DNS Configuration
+```
+www  → CNAME → (Vercel provided value)
+api  → CNAME → (Railway provided value)
+```
+
+### Key Files
+- `frontend/vercel.json` - SPA routing (prevents 404 on refresh)
+- `frontend/src/services/api.ts` - API URL configuration
+- `backend/src/server.ts` - CORS configuration
 
 **Complete Guide:** See `VERCEL_DEPLOYMENT.md` for full deployment instructions, troubleshooting, and security checklist.
