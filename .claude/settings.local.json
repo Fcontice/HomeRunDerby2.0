@@ -111,7 +111,8 @@
       "Bash(export PATH=\"/c/Program Files/nodejs:$PATH\")",
       "WebFetch(domain:hrderbyus.com)",
       "WebFetch(domain:www.hrderbyus.com)",
-      "WebFetch(domain:hrd20-production.up.railway.app)"
+      "WebFetch(domain:hrd20-production.up.railway.app)",
+      "WebFetch(domain:api.hrderbyus.com)"
     ]
   },
   "enableAllProjectMcpServers": true,
