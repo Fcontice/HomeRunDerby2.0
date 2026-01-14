@@ -108,7 +108,10 @@
       "Bash(export PATH=\"$PATH:/c/Program Files/nodejs:/c/Users/conti/AppData/Roaming/npm\")",
       "Bash(/c/Windows/System32/cmd.exe /c \"cd /d C:\\\\Users\\\\conti\\\\Desktop\\\\HRD2.0\\\\backend && npm run build 2>&1\")",
       "Bash(\"/c/Program Files/nodejs/npm\" run build)",
-      "Bash(export PATH=\"/c/Program Files/nodejs:$PATH\")"
+      "Bash(export PATH=\"/c/Program Files/nodejs:$PATH\")",
+      "WebFetch(domain:hrderbyus.com)",
+      "WebFetch(domain:www.hrderbyus.com)",
+      "WebFetch(domain:hrd20-production.up.railway.app)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -8,7 +8,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://hrderbyus.com/api/:path*"
+      "destination": "https://hrd20-production.up.railway.app/api/:path*"
     }
   ]
 }
