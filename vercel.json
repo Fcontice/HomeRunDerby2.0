@@ -2,15 +2,15 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm install && npm run build",
   "outputDirectory": "dist",
-  "installCommand": "echo 'skipping root install'",
+  "installCommand": "echo skipping",
   "framework": null,
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://hrd20-production.up.railway.app/api/:path*"
+      "destination": "https://api.hrderbyus.com/api/:path*"
     },
     {
-      "source": "/(.*)",
+      "source": "/:path*",
       "destination": "/index.html"
     }
   ]
