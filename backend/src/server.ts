@@ -39,11 +39,14 @@ if (process.env.NODE_ENV !== 'production') {
   allowedOrigins.push('http://localhost:3000')
 }
 
-// Production: add additional domains if needed
+// Production: add production domains
 if (process.env.NODE_ENV === 'production') {
-  // Add custom domain if different from FRONTEND_URL
+  // Always allow the production domain
+  allowedOrigins.push('https://www.hrderbyus.com')
+  allowedOrigins.push('https://hrderbyus.com')
+  // Add custom domain if configured
   if (process.env.CUSTOM_DOMAIN) {
-    allowedOrigins.push(process.env.CUSTOM_DOMAIN || 'https://www.hrderbyus.com')
+    allowedOrigins.push(process.env.CUSTOM_DOMAIN)
   }
 }
 
