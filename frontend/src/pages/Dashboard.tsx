@@ -119,25 +119,6 @@ export default function Dashboard() {
           <LeaderboardWidget />
         </div>
 
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Phase 3 Complete!</CardTitle>
-            <CardDescription>Stats, scoring, and leaderboards are fully functional</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="list-disc list-inside space-y-1 text-sm">
-              <li>MLB-StatsAPI integration for live stats</li>
-              <li>Daily home run tracking with game-by-game data</li>
-              <li>Team scoring with "best 7 of 8" algorithm</li>
-              <li>Overall and monthly leaderboards</li>
-              <li>Player stats dashboard with season totals</li>
-              <li>Leaderboard caching for performance</li>
-            </ul>
-            <p className="mt-4 text-muted-foreground">
-              Next up: Phase 4 - Admin dashboard and automated stats updates!
-            </p>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )
