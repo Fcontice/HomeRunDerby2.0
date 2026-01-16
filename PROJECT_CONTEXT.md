@@ -465,6 +465,28 @@ created_at: Timestamp
 updated_at: Timestamp
 ```
 
+**JobExecutionLog Table** (Added January 16, 2026)
+```
+id: UUID (PK, auto-generated)
+job_name: TEXT ('update_stats' | 'import_season' | 'calculate_leaderboard' | 'recalculate_all')
+status: TEXT ('success' | 'failed' | 'running' | 'partial')
+start_time: Timestamp with time zone
+end_time: Timestamp with time zone (nullable)
+duration_ms: Integer (nullable)
+error_message: TEXT (nullable)
+error_stack: TEXT (nullable)
+context: JSONB (nullable) - stores seasonYear, date, counts, etc.
+admin_notified: Boolean (default false)
+notified_at: Timestamp with time zone (nullable)
+created_at: Timestamp with time zone
+```
+
+**Indexes:**
+- `idx_job_execution_log_job_name` - Filter by job type
+- `idx_job_execution_log_status` - Filter by status
+- `idx_job_execution_log_start_time` (DESC) - Latest executions first
+- `idx_job_execution_log_job_name_status` - Combined filter
+
 ---
 
 ### 7. API ENDPOINTS (Overview)
@@ -531,38 +553,60 @@ updated_at: Timestamp
 
 ---
 
-### 8. BACKGROUND JOBS
+### 8. BACKGROUND JOBS & SCHEDULED TASKS
 
-**Job Queue (BullMQ + Redis)**
+**Scheduler: node-cron (Production-Ready)**
 
-**Player Stats Sync Job**
-- Frequency: Every 10 minutes during active games, every 60 minutes otherwise
+The application uses `node-cron` for automated job scheduling. Jobs run in the server process (no Redis required for scheduling).
+
+**Daily Stats Update Job** (3:00 AM ET)
+- Cron pattern: `0 3 * * *`
+- Timezone: `America/New_York`
 - Process:
-  1. Scrape Baseball Reference for latest HR stats
-  2. Update `player_stats` table with new data
-  3. If scraping fails: Retry with exponential backoff (3 attempts)
-  4. Alert admin if all retries fail
-- Queue: `player-stats-sync`
+  1. Call Python MLB-StatsAPI script for yesterday's game data
+  2. Update `PlayerStats` table with new HR data
+  3. If stats changed, recalculate overall leaderboard
+  4. Log execution to `JobExecutionLog` table
+  5. Alert admin via email if job fails
+- Retry: 3 attempts with exponential backoff (2s, 4s, 8s)
 
 **Leaderboard Calculation Job**
-- Frequency: After each player stats sync
+- Triggered after stats update (if stats changed)
 - Process:
   1. For each team, calculate best 7 of 8 players' HRs
-  2. Update `leaderboards` table with new rankings
-  3. Invalidate Redis cache for leaderboard queries
-- Queue: `leaderboard-calculation`
+  2. Update `Leaderboard` table with new rankings
+  3. Log execution to `JobExecutionLog`
 
-**Email Notification Jobs**
-- **Lock Reminder**: 3 days before season (one-time)
-- **Daily Scores**: Daily summary of team performance (optional user setting)
-- **Monthly Winners**: After each month ends
-- **Season Winners**: After World Series
-- Queue: `email-notifications`
+**Hourly Heartbeat**
+- Cron pattern: `0 * * * *`
+- Purpose: Confirms scheduler is running (logs timestamp)
 
-**Payment Verification Job**
-- Frequency: Every 5 minutes
-- Process: Check Stripe webhook events for payment confirmations
-- Queue: `payment-verification`
+**Job Execution Logging**
+- All jobs logged to `JobExecutionLog` table
+- Tracks: jobName, status, startTime, endTime, durationMs, errorMessage, context
+- Admin notification tracking: `adminNotified`, `notifiedAt`
+
+**Admin Job API Endpoints** (`/api/admin/jobs/*`)
+- `GET /status` - Scheduler status and latest job executions
+- `GET /history` - Recent job history with optional filters
+- `GET /stats` - Job statistics (success rate, avg duration)
+- `POST /trigger` - Manually trigger any job
+- `POST /update-stats` - Shortcut for stats update
+
+**Manual Job Execution**
+```bash
+npm run job:stats                    # Run stats update for yesterday
+npm run job:stats:date 2026-04-15    # Run for specific date
+```
+
+**Environment Variables**
+- `SEASON_YEAR` - Override season year (default: 2026)
+- `ADMIN_ALERT_EMAIL` - Email for failure alerts
+- `DISABLE_SCHEDULED_JOBS` - Set to `"true"` to disable scheduling
+
+**Future: BullMQ + Redis**
+- Infrastructure configured but not yet utilized for job queuing
+- Available for queue-based jobs if needed (email campaigns, bulk operations)
 
 ---
 
@@ -664,16 +708,46 @@ updated_at: Timestamp
 
 ### 14. SECURITY REQUIREMENTS
 
+**Transport Security**
 - HTTPS only (SSL certificates)
-- JWT tokens with 24-hour expiration
+- Secure cookie flag in production (cookies only sent over HTTPS)
+
+**Authentication (httpOnly Cookie-Based)**
+- JWT access tokens with **15-minute expiration** (stored in httpOnly cookie)
+- JWT refresh tokens with **7-day expiration** (stored in httpOnly cookie)
 - Bcrypt password hashing (cost factor 10)
+- Automatic token refresh every 10 minutes (frontend interval)
+- On-demand refresh on 401 response (with subscriber pattern for race conditions)
+
+**Cookie Configuration** (`backend/src/config/cookies.ts`)
+- `access_token`: httpOnly, secure, sameSite=strict, 15 min expiry
+- `refresh_token`: httpOnly, secure, sameSite=strict, 7 day expiry
+- `XSRF-TOKEN`: NOT httpOnly (frontend must read), sameSite=strict, 1 hour expiry
+- Cross-subdomain support: `.hrderbyus.com` domain in production
+
+**CSRF Protection (Double-Submit Cookie Pattern)**
+- Server generates 64-char hex token (32 bytes of cryptographic randomness)
+- Token sent in readable `XSRF-TOKEN` cookie
+- Frontend reads cookie, sends value in `X-CSRF-Token` header
+- Backend validates header matches cookie using `crypto.timingSafeEqual()` (timing-safe)
+- Token rotation after each successful state-changing request
+- Middleware: `backend/src/middleware/csrf.ts`
+
+**XSS Protection**
+- JWT tokens stored in httpOnly cookies (JavaScript cannot access)
+- React escapes output by default
+- Only CSRF token accessible to JavaScript (non-secret)
+
+**API Security**
 - CORS configured for frontend domain only
-- Rate limiting on API endpoints (100 req/min per IP)
+- Rate limiting: 100 requests per 15 minutes per IP
 - Input validation on all user inputs (Zod schemas)
-- SQL injection prevention (Prisma parameterized queries)
-- XSS prevention (React escapes by default)
-- CSRF protection for state-changing operations
+- SQL injection prevention (Supabase parameterized queries)
+
+**Payment Security**
 - Stripe webhook signature verification
+- Payment amount validation in webhook handler
+- Database-level idempotency protection
 
 ---
 
@@ -958,6 +1032,6 @@ PORT=5000
 
 ---
 
-**Document Version:** Updated January 13, 2026 - Phase 5 testing implementation (backend/frontend unit tests, k6 load testing, deployment documentation, TESTING.md guide). Phase 5 ~80% complete, ready for production deployment.
+**Document Version:** Updated January 16, 2026 - Security hardening (httpOnly cookies, CSRF protection with timing-safe validation, token refresh mechanism), scheduled jobs system (node-cron scheduler, job execution logging, admin alerts). Phase 5 ~98% complete, ready for production deployment.
 
 This is the complete project context. Build with this as the single source of truth for requirements and technical decisions.

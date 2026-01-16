@@ -193,8 +193,14 @@ class MLBStatsUpdater:
         mlb_id_to_player = {}
         for player in all_players:
             mlb_id = player.get('mlbId', '')
-            if mlb_id.startswith('mlb-'):
-                mlb_player_id = int(mlb_id.replace('mlb-', ''))
+            if mlb_id:
+                # Handle both formats: "656941" or "mlb-656941"
+                if mlb_id.startswith('mlb-'):
+                    mlb_player_id = int(mlb_id.replace('mlb-', ''))
+                elif mlb_id.isdigit():
+                    mlb_player_id = int(mlb_id)
+                else:
+                    continue
                 mlb_id_to_player[mlb_player_id] = player
 
         logger.info(f"   Mapped {len(mlb_id_to_player)} players with valid MLB IDs")

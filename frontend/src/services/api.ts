@@ -1,42 +1,356 @@
 import axios, { AxiosInstance, AxiosError } from 'axios'
 
+/**
+ * ============================================================================
+ * FRONTEND SECURITY ARCHITECTURE
+ * ============================================================================
+ *
+ * This module implements a secure authentication system using httpOnly cookies
+ * with CSRF protection. Key security features:
+ *
+ * 1. **httpOnly Cookies for Tokens (XSS Protection)**
+ *    - Access and refresh tokens are stored in httpOnly cookies
+ *    - JavaScript cannot access these tokens, preventing XSS attacks from stealing them
+ *    - Tokens are automatically sent with requests via `withCredentials: true`
+ *
+ * 2. **Why NOT localStorage?**
+ *    - localStorage is accessible to any JavaScript running on the page
+ *    - An XSS vulnerability would allow attackers to steal tokens
+ *    - httpOnly cookies are immune to JavaScript access
+ *
+ * 3. **CSRF Protection (Double-Submit Cookie Pattern)**
+ *    - XSRF-TOKEN cookie is NOT httpOnly (frontend can read it)
+ *    - Token is sent in X-CSRF-Token header on state-changing requests
+ *    - Backend validates that cookie and header values match
+ *    - Attackers cannot read cross-origin cookies, so they can't set the header
+ *
+ * 4. **Token Refresh Mechanism**
+ *    - Access tokens expire in 15 minutes (limits exposure if compromised)
+ *    - Refresh tokens last 7 days (stored in separate httpOnly cookie)
+ *    - Automatic refresh happens 5 minutes before expiry
+ *    - Subscriber pattern prevents race conditions during refresh
+ *
+ * 5. **SameSite Cookie Policy**
+ *    - Cookies use SameSite=strict (only sent to same site)
+ *    - Provides additional CSRF protection at the browser level
+ *
+ * ============================================================================
+ */
+
 const API_URL = (import.meta as any).env.VITE_API_URL || ''
 
-// Create axios instance
+/**
+ * CSRF token stored in memory for quick access.
+ *
+ * @security The CSRF token is also stored in the XSRF-TOKEN cookie (NOT httpOnly
+ * so JavaScript can read it). We cache it in memory to avoid parsing cookies
+ * on every request. This token is sent in the X-CSRF-Token header for
+ * state-changing requests (POST, PATCH, DELETE).
+ *
+ * @why Memory storage is safe because:
+ * - The CSRF token is not a secret (it's readable from cookies anyway)
+ * - It only proves that the request came from our frontend, not a CSRF attack
+ * - Attackers can't read our cookies cross-origin, so they can't forge the header
+ */
+let csrfToken: string | null = null
+
+/**
+ * Token refresh state management.
+ *
+ * @pattern Subscriber Pattern for Concurrent Request Handling
+ *
+ * When multiple API calls fail with 401 simultaneously (e.g., dashboard loads
+ * teams, users, and stats at once), we need to ensure only ONE refresh request
+ * is made, and all pending requests retry after it succeeds.
+ *
+ * Without this pattern:
+ * - 3 concurrent 401s would trigger 3 refresh requests
+ * - Race conditions could lead to token corruption
+ * - Users might get logged out unnecessarily
+ *
+ * With this pattern:
+ * - First 401 triggers refresh, sets isRefreshing=true
+ * - Subsequent 401s subscribe to refreshSubscribers array
+ * - When refresh completes, all subscribers are notified
+ * - All original requests retry with the new token
+ */
+let isRefreshing = false
+let refreshSubscribers: ((success: boolean) => void)[] = []
+
+/**
+ * Queue a callback to be notified when the current token refresh completes.
+ *
+ * @internal Used by the response interceptor to handle concurrent 401 errors
+ * @param onComplete - Callback that receives true if refresh succeeded, false otherwise
+ *
+ * @example
+ * // Called when a request fails with 401 while another refresh is in progress
+ * subscribeToRefresh((success) => {
+ *   if (success) resolve(api(originalRequest))
+ *   else reject(error)
+ * })
+ */
+function subscribeToRefresh(onComplete: (success: boolean) => void): void {
+  refreshSubscribers.push(onComplete)
+}
+
+/**
+ * Notify all queued requests that the token refresh has completed.
+ *
+ * @internal Called after refresh succeeds or fails
+ * @param success - Whether the refresh was successful
+ */
+function onRefreshComplete(success: boolean): void {
+  refreshSubscribers.forEach(callback => callback(success))
+  refreshSubscribers = []
+}
+
+/**
+ * Extract CSRF token from the XSRF-TOKEN cookie.
+ *
+ * @internal Used as a fallback when the in-memory token is not set
+ * @returns The CSRF token value or null if not found
+ *
+ * @security The XSRF-TOKEN cookie is intentionally NOT httpOnly so that
+ * JavaScript can read it. This is safe because:
+ * - The token's purpose is to prove requests come from our frontend
+ * - It's not a secret - it just needs to match between cookie and header
+ * - Attackers can't read cross-origin cookies to forge the header
+ */
+function getCSRFTokenFromCookie(): string | null {
+  const value = `; ${document.cookie}`
+  const parts = value.split('; XSRF-TOKEN=')
+  if (parts.length === 2) {
+    return parts.pop()?.split(';').shift() || null
+  }
+  return null
+}
+
+/**
+ * Update the in-memory CSRF token.
+ *
+ * Called after successful login or when the token is refreshed. The token is
+ * typically received in the login response and also set as a cookie by the backend.
+ *
+ * @param token - The new CSRF token value, or null to clear it
+ *
+ * @security This function is exported so AuthContext can set the token after login.
+ * The token is safe to store in memory because it's not a secret - it's also
+ * readable from the XSRF-TOKEN cookie.
+ */
+export function setCSRFToken(token: string | null): void {
+  csrfToken = token
+}
+
+/**
+ * Get the current CSRF token for use in request headers.
+ *
+ * Attempts to retrieve the token from memory first (faster), then falls back
+ * to parsing the XSRF-TOKEN cookie if the in-memory value is not set.
+ *
+ * @returns The CSRF token value or null if not available
+ *
+ * @example
+ * // The request interceptor calls this automatically for non-GET requests
+ * const token = getCSRFToken()
+ * if (token) {
+ *   headers['X-CSRF-Token'] = token
+ * }
+ */
+export function getCSRFToken(): string | null {
+  // Try memory first, then cookie
+  return csrfToken || getCSRFTokenFromCookie()
+}
+
+/**
+ * Configured axios instance with security features enabled.
+ *
+ * @security Configuration breakdown:
+ * - `withCredentials: true` - CRITICAL: Tells browser to send cookies with requests.
+ *   Without this, httpOnly cookies containing auth tokens would not be sent.
+ * - `baseURL` - Points to API server (same origin in dev, cross-origin in production)
+ *
+ * @why_no_auth_header Unlike localStorage-based auth, we don't set Authorization headers.
+ * The access_token cookie is sent automatically by the browser. This is more secure
+ * because the token never touches JavaScript.
+ */
 const api: AxiosInstance = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true,
+  withCredentials: true, // CRITICAL: Required for httpOnly cookies to be sent
 })
 
-// Request interceptor - Add auth token to requests
+/**
+ * REQUEST INTERCEPTOR - CSRF Token Injection
+ *
+ * Automatically adds CSRF token to state-changing requests (POST, PATCH, PUT, DELETE).
+ * This implements the "double-submit cookie" pattern for CSRF protection.
+ *
+ * @security_flow
+ * 1. Backend sets XSRF-TOKEN cookie (NOT httpOnly, so JS can read it)
+ * 2. Backend sets access_token cookie (httpOnly, JS cannot read)
+ * 3. Frontend reads XSRF-TOKEN and puts value in X-CSRF-Token header
+ * 4. Browser automatically sends both cookies
+ * 5. Backend verifies X-CSRF-Token header matches XSRF-TOKEN cookie
+ *
+ * @why_this_works
+ * - Attackers can trigger cross-origin requests that send cookies
+ * - But attackers CANNOT read cross-origin cookies (Same-Origin Policy)
+ * - So attackers cannot set the X-CSRF-Token header correctly
+ * - Request fails CSRF validation, attack is blocked
+ *
+ * @excluded_methods GET, HEAD, OPTIONS - These are "safe" methods that shouldn't
+ * modify server state, so CSRF protection is not needed.
+ */
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access_token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+    // Add CSRF token for non-GET requests (state-changing operations)
+    const method = config.method?.toUpperCase()
+    if (method && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+      const token = getCSRFToken()
+      if (token) {
+        config.headers['X-CSRF-Token'] = token
+      }
     }
     return config
   },
   (error) => Promise.reject(error)
 )
 
-// Response interceptor - Handle token expiration
+/**
+ * RESPONSE INTERCEPTOR - Token Refresh & CSRF Recovery
+ *
+ * Handles two key security scenarios:
+ * 1. Expired access tokens (401) - Attempts automatic refresh
+ * 2. Invalid CSRF tokens (403) - Fetches new token and retries
+ *
+ * @security_pattern Token Refresh with Subscriber Queue
+ *
+ * Problem: When access token expires, multiple concurrent requests may all
+ * receive 401 errors simultaneously. Without coordination:
+ * - Each would trigger its own refresh request
+ * - Race conditions could corrupt token state
+ * - User might be logged out unnecessarily
+ *
+ * Solution: Subscriber pattern ensures only ONE refresh happens:
+ * 1. First 401 triggers refresh, sets isRefreshing=true
+ * 2. Subsequent 401s queue their retry callbacks
+ * 3. When refresh completes, all queued requests retry
+ *
+ * @flow_diagram
+ * Request A fails (401) → isRefreshing=false → Start refresh → isRefreshing=true
+ * Request B fails (401) → isRefreshing=true → Subscribe to refresh
+ * Request C fails (401) → isRefreshing=true → Subscribe to refresh
+ * Refresh completes → Notify all subscribers → A, B, C retry with new token
+ */
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as any
+    const requestUrl = originalRequest?.url || ''
 
-    // If 401 and not already retried, try to refresh token
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    /**
+     * Auth endpoints that should NOT trigger token refresh on 401.
+     *
+     * These endpoints are expected to return 401 for unauthenticated users:
+     * - /api/auth/me: Initial auth check on page load
+     * - /api/auth/refresh: The refresh endpoint itself (avoid infinite loop)
+     * - /api/auth/login: User hasn't logged in yet
+     * - /api/auth/register: User is creating account
+     *
+     * Triggering refresh on these would cause infinite loops or unnecessary requests.
+     */
+    const skipRefreshPaths = [
+      '/api/auth/me',       // Initial auth check - expected to fail if not logged in
+      '/api/auth/refresh',  // Refresh endpoint itself - would cause infinite loop
+      '/api/auth/login',    // Login - not authenticated yet
+      '/api/auth/register', // Register - not authenticated yet
+    ]
+    const shouldSkipRefresh = skipRefreshPaths.some(path => requestUrl.includes(path))
+
+    /**
+     * 401 HANDLER - Access Token Expired
+     *
+     * When a request fails with 401 (Unauthorized), the access token has expired.
+     * Attempt to get a new access token using the refresh token cookie.
+     *
+     * @flag _retry prevents infinite retry loops if refresh succeeds but
+     * the retried request still fails (indicates a real auth problem).
+     */
+    if (error.response?.status === 401 && !originalRequest._retry && !shouldSkipRefresh) {
       originalRequest._retry = true
 
-      // Clear tokens and redirect to login
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('refresh_token')
-      window.location.href = '/login'
+      // SUBSCRIBER PATTERN: If refresh is already in progress, queue this request
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          subscribeToRefresh((success: boolean) => {
+            if (success) {
+              // Refresh succeeded - retry the original request with new token
+              resolve(api(originalRequest))
+            } else {
+              // Refresh failed - user will be redirected to login
+              reject(error)
+            }
+          })
+        })
+      }
+
+      // First request to detect expired token - initiate refresh
+      isRefreshing = true
+
+      try {
+        // POST /api/auth/refresh uses refresh_token cookie (httpOnly)
+        // Backend validates refresh token, issues new access_token cookie
+        await api.post('/api/auth/refresh')
+        isRefreshing = false
+        onRefreshComplete(true)
+        // Retry the original request - new access_token cookie will be sent
+        return api(originalRequest)
+      } catch (refreshError) {
+        isRefreshing = false
+        onRefreshComplete(false)
+
+        // Refresh failed - refresh token is expired or invalid
+        // Redirect to login page (unless already there)
+        if (!window.location.pathname.startsWith('/login')) {
+          window.location.href = '/login'
+        }
+
+        return Promise.reject(refreshError)
+      }
+    }
+
+    /**
+     * 403 HANDLER - CSRF Token Invalid
+     *
+     * CSRF tokens can become invalid if:
+     * - Token expired (1 hour expiry)
+     * - Token was rotated by another request
+     * - Cookie was cleared by browser
+     *
+     * Recovery: Fetch a fresh CSRF token and retry the request once.
+     *
+     * @flag _csrfRetry prevents infinite loops if CSRF keeps failing.
+     */
+    if (error.response?.status === 403) {
+      const errorCode = (error.response.data as any)?.error?.code
+      if (errorCode === 'CSRF_TOKEN_INVALID' && !originalRequest._csrfRetry) {
+        originalRequest._csrfRetry = true
+
+        try {
+          // GET /api/csrf-token returns new token in response and sets cookie
+          const response = await api.get('/api/csrf-token')
+          if (response.data?.data?.csrfToken) {
+            setCSRFToken(response.data.data.csrfToken)
+          }
+          // Retry original request with fresh CSRF token
+          return api(originalRequest)
+        } catch {
+          return Promise.reject(error)
+        }
+      }
     }
 
     return Promise.reject(error)
@@ -145,10 +459,18 @@ export interface Team {
   }
 }
 
+/**
+ * Response returned after successful login.
+ *
+ * @security Note: The actual auth tokens (access_token, refresh_token) are NOT
+ * in this response - they're set as httpOnly cookies by the backend. The only
+ * token exposed to JavaScript is the CSRF token, which is intentionally readable
+ * for the double-submit cookie pattern.
+ */
 export interface AuthResponse {
   user: User
-  accessToken: string
-  refreshToken: string
+  /** CSRF token for double-submit pattern. Safe to expose - it's also in a readable cookie. */
+  csrfToken?: string
 }
 
 // ==================== LEADERBOARD TYPES ====================
@@ -282,7 +604,25 @@ export interface SeasonConfig {
 
 // ==================== AUTH API ====================
 
+/**
+ * Authentication API endpoints.
+ *
+ * @security_model These endpoints use httpOnly cookie-based authentication:
+ * - Login/OAuth: Backend sets httpOnly cookies (access_token, refresh_token)
+ * - Subsequent requests: Browser automatically sends cookies
+ * - Logout: Backend clears the httpOnly cookies
+ *
+ * This is more secure than localStorage because:
+ * - XSS attacks cannot steal httpOnly cookies
+ * - Tokens never touch JavaScript except for CSRF token
+ */
 export const authApi = {
+  /**
+   * Register a new user account.
+   *
+   * @security Does NOT log in the user automatically. User must verify email first.
+   * This prevents attackers from creating accounts with victim's email.
+   */
   register: async (data: {
     email: string
     username: string
@@ -292,6 +632,16 @@ export const authApi = {
     return response.data
   },
 
+  /**
+   * Authenticate user with email and password.
+   *
+   * @security On success, backend sets three cookies:
+   * - access_token: httpOnly, 15 min expiry, used for API authorization
+   * - refresh_token: httpOnly, 7 day expiry, used to get new access tokens
+   * - XSRF-TOKEN: NOT httpOnly, 1 hour expiry, readable for CSRF protection
+   *
+   * @returns User object and CSRF token (auth tokens are in cookies, not response body)
+   */
   login: async (data: {
     email: string
     password: string
@@ -300,16 +650,25 @@ export const authApi = {
     return response.data
   },
 
+  /**
+   * Verify user's email address using token from email link.
+   */
   verifyEmail: async (token: string): Promise<ApiResponse> => {
     const response = await api.post('/api/auth/verify-email', { token })
     return response.data
   },
 
+  /**
+   * Request password reset email.
+   */
   forgotPassword: async (email: string): Promise<ApiResponse> => {
     const response = await api.post('/api/auth/forgot-password', { email })
     return response.data
   },
 
+  /**
+   * Reset password using token from email link.
+   */
   resetPassword: async (data: {
     token: string
     password: string
@@ -318,22 +677,73 @@ export const authApi = {
     return response.data
   },
 
+  /**
+   * Get the currently authenticated user's profile.
+   *
+   * @security Used on app load to check if user has valid session.
+   * The access_token cookie is sent automatically by the browser.
+   * Returns 401 if not authenticated (cookie missing or expired).
+   */
   getProfile: async (): Promise<ApiResponse<{ user: User }>> => {
     const response = await api.get('/api/auth/me')
     return response.data
   },
 
+  /**
+   * Log out the current user.
+   *
+   * @security Backend clears all auth cookies (access_token, refresh_token, XSRF-TOKEN).
+   * The httpOnly cookies can only be cleared by the server, not by JavaScript.
+   */
   logout: async (): Promise<ApiResponse> => {
     const response = await api.post('/api/auth/logout')
     return response.data
   },
 
+  /**
+   * Resend email verification link.
+   */
   resendVerification: async (): Promise<ApiResponse> => {
     const response = await api.post('/api/auth/resend-verification')
     return response.data
   },
 
-  // Google OAuth - opens in same window
+  /**
+   * Refresh the access token using the httpOnly refresh token cookie.
+   *
+   * @security Called automatically by the response interceptor when access token expires.
+   * Also called proactively by AuthContext every 10 minutes to prevent expiry.
+   *
+   * The refresh_token cookie is sent automatically by the browser.
+   * On success, backend sets new access_token cookie (and optionally rotates refresh token).
+   *
+   * @returns Success/failure - new tokens are set as cookies, not in response body
+   */
+  refreshToken: async (): Promise<ApiResponse> => {
+    const response = await api.post('/api/auth/refresh')
+    return response.data
+  },
+
+  /**
+   * Get a fresh CSRF token.
+   *
+   * @security Called when a request fails with CSRF_TOKEN_INVALID error.
+   * Returns the token in response body AND sets XSRF-TOKEN cookie.
+   * The token is safe to expose because it's not a secret - it just proves
+   * the request originated from our frontend (not a CSRF attack).
+   */
+  getCSRFToken: async (): Promise<ApiResponse<{ csrfToken: string }>> => {
+    const response = await api.get('/api/csrf-token')
+    return response.data
+  },
+
+  /**
+   * Initiate Google OAuth login flow.
+   *
+   * @security Redirects to backend OAuth endpoint, which redirects to Google.
+   * After Google auth, user is redirected back with auth cookies set.
+   * This uses the same httpOnly cookie security as email/password login.
+   */
   googleLogin: () => {
     window.location.href = `${API_URL}/api/auth/google`
   },

@@ -43,22 +43,199 @@ npm run test:phase3          # Test stats/scoring/leaderboard pipeline
 
 Supabase configuration is in `backend/src/config/supabase.ts` with separate admin and anon clients.
 
-### Authentication Flow
+### Authentication Flow (Secure httpOnly Cookies)
 
-JWT-based auth with email/password and Google OAuth via Passport.js:
+JWT-based auth with email/password and Google OAuth via Passport.js, using httpOnly cookies for XSS protection.
 
-1. **Frontend**: Tokens stored in localStorage, managed by `AuthContext`
-2. **API requests**: Axios interceptor adds `Authorization: Bearer <token>` header
-3. **Backend**: `authenticate` middleware validates JWT and attaches `req.user`
-4. **Email verification**: Required before users can create teams
+#### Security Architecture Overview
 
-Key middleware in `backend/src/middleware/auth.ts`:
-- `authenticate` / `requireAuth` - Standard auth check
-- `requireAdmin` - Role-based access
-- `requireOwnership` - User owns the resource
-- `optionalAuth` - Attach user if token exists, don't fail if missing
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           AUTHENTICATION FLOW                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   1. LOGIN                           2. SUBSEQUENT REQUESTS                  │
+│   ──────                             ────────────────────                    │
+│   Frontend POST /api/auth/login      Frontend makes API request              │
+│          ↓                                    ↓                              │
+│   Backend validates credentials      Browser auto-sends httpOnly cookies     │
+│          ↓                           (withCredentials: true)                 │
+│   Backend sets three cookies:                 ↓                              │
+│   • access_token (httpOnly)          Frontend reads XSRF-TOKEN cookie        │
+│   • refresh_token (httpOnly)         and adds X-CSRF-Token header            │
+│   • XSRF-TOKEN (readable)                     ↓                              │
+│          ↓                           Backend validates:                      │
+│   Response: { user, csrfToken }      • JWT from access_token cookie          │
+│                                      • CSRF header matches cookie            │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
-Key middleware in `backend/src/middleware/seasonGuard.ts`:
+#### Why httpOnly Cookies (Not localStorage)
+
+| Storage Method | XSS Vulnerable? | Why |
+|---------------|-----------------|-----|
+| localStorage | YES | Any JavaScript on page can read `localStorage.getItem('token')` |
+| httpOnly cookie | NO | JavaScript cannot access httpOnly cookies - browser restriction |
+
+If an attacker injects malicious JavaScript (XSS), they can steal tokens from localStorage. httpOnly cookies are immune because JavaScript physically cannot read them.
+
+#### Cookie Configuration (`backend/src/config/cookies.ts`)
+
+| Cookie Name | Purpose | httpOnly | Expiry | Why This Config |
+|-------------|---------|----------|--------|-----------------|
+| `access_token` | API authorization | YES | 15 min | Short-lived limits damage if compromised |
+| `refresh_token` | Get new access tokens | YES | 7 days | Long-lived for user convenience; httpOnly protects from XSS |
+| `XSRF-TOKEN` | CSRF protection | NO | 1 hour | Frontend MUST read this to set header |
+
+All cookies use:
+- `secure: true` in production (HTTPS only)
+- `sameSite: 'strict'` (only sent to same site)
+- `path: '/'` (available for all routes)
+- `domain: '.hrderbyus.com'` in production (allows api ↔ www sharing)
+
+#### CSRF Protection (Double-Submit Cookie Pattern)
+
+**How it works:**
+1. Server generates random CSRF token (32 bytes, hex-encoded = 64 characters)
+2. Token stored in `XSRF-TOKEN` cookie (NOT httpOnly - frontend can read)
+3. Frontend reads cookie, puts value in `X-CSRF-Token` header
+4. Backend validates header value matches cookie value
+
+**Why this prevents CSRF attacks:**
+- Attacker on `evil.com` can trigger requests to our API (browser sends cookies)
+- But attacker CANNOT read our cookies (Same-Origin Policy blocks cross-origin cookie access)
+- So attacker cannot set the correct `X-CSRF-Token` header
+- Request fails validation, attack is blocked
+
+**Exempt routes** (don't require CSRF token):
+```typescript
+// backend/src/middleware/csrf.ts - skipPaths
+'/api/auth/login'           // User doesn't have CSRF token yet
+'/api/auth/register'        // User doesn't have CSRF token yet
+'/api/auth/verify-email'    // Public endpoint, no session
+'/api/auth/forgot-password' // Public endpoint, no session
+'/api/auth/reset-password'  // Public endpoint, no session
+'/api/auth/refresh'         // Protected by httpOnly refresh token instead
+'/api/auth/google'          // OAuth state parameter provides protection
+'/api/auth/google/callback' // OAuth state parameter provides protection
+'/api/payments/webhook'     // Stripe signature verification instead
+```
+
+**Token rotation:**
+- New CSRF token generated after each successful state-changing request
+- Provides forward secrecy (leaked token becomes invalid quickly)
+- Frontend always reads fresh token from cookie before requests
+
+**Timing-safe comparison:**
+```typescript
+// Prevents timing attacks that could leak token character-by-character
+crypto.timingSafeEqual(
+  Buffer.from(headerToken, 'utf8'),
+  Buffer.from(cookieToken, 'utf8')
+)
+```
+
+#### Token Refresh Mechanism
+
+**Backend endpoint:** `POST /api/auth/refresh`
+- Reads `refresh_token` from httpOnly cookie
+- Verifies token is valid and user exists
+- Issues new `access_token` cookie (15 min expiry)
+- Returns success/failure (new token is in cookie, not response body)
+
+**Frontend auto-refresh** (`frontend/src/contexts/AuthContext.tsx`):
+```typescript
+const TOKEN_REFRESH_INTERVAL = 10 * 60 * 1000 // 10 minutes
+
+// Proactive refresh runs every 10 minutes
+// Access tokens expire at 15 minutes, so we refresh 5 minutes early
+// Prevents session interruption during active use
+setInterval(() => authApi.refreshToken(), TOKEN_REFRESH_INTERVAL)
+```
+
+**On-demand refresh** (`frontend/src/services/api.ts` response interceptor):
+- Catches 401 errors from API responses
+- Attempts `POST /api/auth/refresh` to get new access token
+- Retries original request with new token
+
+**Subscriber pattern for concurrent 401s:**
+```typescript
+// Problem: 3 concurrent requests all get 401 → 3 refresh attempts → race condition
+// Solution: First 401 triggers refresh, others wait for it to complete
+
+let isRefreshing = false
+let refreshSubscribers: ((success: boolean) => void)[] = []
+
+// First 401: isRefreshing=false → start refresh → isRefreshing=true
+// Subsequent 401s: isRefreshing=true → subscribe to refreshSubscribers
+// Refresh completes: notify all subscribers → they retry their requests
+```
+
+**Skip list** (endpoints that don't trigger automatic refresh):
+```typescript
+// frontend/src/services/api.ts - skipRefreshPaths
+'/api/auth/me'       // Initial auth check - expected to 401 if not logged in
+'/api/auth/refresh'  // The refresh endpoint itself - would cause infinite loop
+'/api/auth/login'    // Login - user isn't authenticated yet
+'/api/auth/register' // Register - user isn't authenticated yet
+```
+
+#### Frontend Security Implementation (`frontend/src/services/api.ts`)
+
+**Axios configuration:**
+```typescript
+const api = axios.create({
+  baseURL: API_URL,
+  withCredentials: true, // CRITICAL: Required for cookies to be sent
+})
+```
+
+**Request interceptor (CSRF token injection):**
+```typescript
+api.interceptors.request.use((config) => {
+  const method = config.method?.toUpperCase()
+  // Only add CSRF token for state-changing requests
+  if (method && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    const token = getCSRFToken() // Reads from memory or parses XSRF-TOKEN cookie
+    if (token) {
+      config.headers['X-CSRF-Token'] = token
+    }
+  }
+  return config
+})
+```
+
+**CSRF token storage:**
+- Cached in memory (`csrfToken` variable) for fast access
+- Fallback: parse from `XSRF-TOKEN` cookie if memory cache empty
+- Set via `setCSRFToken()` after login (from response) or from cookie
+
+**Response interceptor (error recovery):**
+- 401 errors → attempt token refresh (with subscriber pattern)
+- 403 with `CSRF_TOKEN_INVALID` → fetch new CSRF token and retry once
+
+#### Auth Middleware (`backend/src/middleware/auth.ts`)
+
+| Middleware | Purpose |
+|------------|---------|
+| `authenticate` | Extract and verify JWT, attach `req.user` (from cookie or Authorization header) |
+| `requireAuth` | Same as authenticate but fails if no valid token |
+| `requireAdmin` | Requires `req.user.role === 'admin'` |
+| `requireOwnership(paramName)` | Requires `req.user.id === req.params[paramName]` |
+| `optionalAuth` | Attach user if token valid, continue anyway if not |
+
+#### CSRF Middleware (`backend/src/middleware/csrf.ts`)
+
+| Export | Purpose |
+|--------|---------|
+| `csrfProtection` | Validates X-CSRF-Token header matches XSRF-TOKEN cookie for POST/PUT/PATCH/DELETE |
+| `csrfTokenEndpoint` | GET /api/csrf-token handler - returns fresh token in response and cookie |
+| `ensureCSRFToken` | Sets initial CSRF token cookie if not present (fallback for edge cases) |
+| `generateCSRFToken()` | Creates 64-character hex string (32 bytes of entropy) |
+
+#### Season Guard Middleware (`backend/src/middleware/seasonGuard.ts`)
+
 - `requirePhase(['registration'])` - Restrict routes to specific season phases
 - Attaches `req.season` with current SeasonConfig for downstream use
 
@@ -125,7 +302,7 @@ Use these endpoints to verify:
 - `services/api.ts` - Axios instance with all API endpoints organized as `authApi`, `teamsApi`, `playersApi`, `adminApi`, `seasonApi`
 
 **Backend** (`/backend/src`):
-- `routes/` - Route definitions (auth, teams, players, payments, leaderboards, admin, season)
+- `routes/` - Route definitions (auth, teams, players, payments, leaderboards, admin, season, jobs)
 - `controllers/` - Request handlers with business logic (includes adminController.ts, seasonController.ts)
 - `services/` - Core business logic services:
   - `db.ts` - Database abstraction layer (Supabase wrapper)
@@ -133,6 +310,8 @@ Use these endpoints to verify:
   - `statsService.ts` - TypeScript wrapper that calls Python MLB-StatsAPI script
   - `scoringService.ts` - Team scoring calculator ("best 7 of 8" logic)
   - `leaderboardService.ts` - Leaderboard generation & caching
+  - `scheduledJobs.ts` - node-cron job scheduling (daily stats, leaderboard)
+  - `alertService.ts` - Job execution logging and admin failure alerts
 - `scripts/python/` - Python stats updater using MLB-StatsAPI:
   - `import_season_stats.py` - Yearly bulk import: full season stats for eligibility (≥20 HRs)
   - `update_stats.py` - Daily updates: fetches game-by-game HRs from MLB API (during contest)
@@ -157,6 +336,9 @@ Backend requires Supabase credentials validated in `backend/src/env.ts` (loaded 
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` - OAuth credentials (optional, warns if incomplete)
 - `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` - Payment processing (required)
 - `DISABLE_EMAIL_ERRORS` - Set to `"true"` to suppress email errors in development (optional)
+- `SEASON_YEAR` - Override current season year for scheduled jobs (default: 2026)
+- `ADMIN_ALERT_EMAIL` - Email address for job failure alerts (default: FROM_EMAIL or admin@hrderbyus.com)
+- `DISABLE_SCHEDULED_JOBS` - Set to `"true"` to disable automated job scheduling (optional)
 
 **Environment Validation:**
 - Production: Fails fast if critical services are missing (email, Stripe)
@@ -173,8 +355,8 @@ All major entities support soft deletes via `deletedAt` field. Database queries 
 ### Validation
 Use Zod schemas from `types/validation.ts` at controller entry points. Parse requests early to get type-safe payloads.
 
-### Background Jobs
-BullMQ + Redis configured but not fully implemented. Job queues defined for player stats sync and leaderboard calculation.
+### Background Jobs / Scheduled Tasks
+Automated scheduling implemented via `node-cron` (no Redis required). Daily stats update runs at 3am ET. See "Scheduled Jobs" section for full details. BullMQ + Redis available for future queue-based jobs if needed.
 
 ### Team Constraints
 - Exactly 8 players required
@@ -241,7 +423,7 @@ BullMQ + Redis configured but not fully implemented. Job queues defined for play
 - **Previous**: Baseball Savant CSV (season totals only, postseason mixed in)
 - **Current**: MLB-StatsAPI (game-by-game, regular season filtered, official data)
 - **Season**: Tracks 2026 season forward (no historical backfill)
-- **Update Schedule**: Daily at 3am ET (recommended via cron/Task Scheduler)
+- **Update Schedule**: Daily at 3am ET via built-in node-cron scheduler (see "Scheduled Jobs" section)
 
 **Leaderboard Types:**
 - Overall: Full season (regular + postseason), cached in database
@@ -286,12 +468,12 @@ npm run test:phase3 -- --date 2026-04-15
    - Run ONCE per year before contest starts
    - Example: Before 2026 contest, run `npm run import:season -- --season 2025`
 
-2. **Active Contest (Daily)**: `update:stats:python`
+2. **Active Contest (Daily)**: Automated via scheduled jobs
    - Updates current season's game-by-game data (e.g., 2026 daily HRs)
    - Populates `PlayerStats` table with daily tracking
-   - Runs daily during contest for live leaderboard updates
+   - Runs automatically at 3am ET via node-cron scheduler
    - Tracks regular season vs postseason HRs separately
-   - Should be scheduled via cron/Task Scheduler at 3am ET
+   - Can also be triggered manually via admin API or CLI (`npm run update:stats:python`)
 
 **Python Script Documentation:**
 See `backend/src/scripts/python/README.md` for complete implementation details, scheduling options, and troubleshooting.
@@ -371,6 +553,119 @@ The admin notifications page includes pre-configured reminder emails with tracki
 2. Log out and log back in to get a new JWT token with admin role
 3. Navigate to `/admin` or click the "Admin" link in navigation
 
+### Scheduled Jobs (Implemented)
+
+**Overview:**
+Automated task scheduling using node-cron for daily stats updates and leaderboard recalculations. Includes job execution logging, admin API endpoints for monitoring/manual triggers, and email alerts on failure.
+
+**Architecture:**
+- Uses `node-cron` for scheduling (runs in server process)
+- Jobs execute at 3:00 AM Eastern Time daily
+- Integrates with existing stats pipeline (`statsService` -> Python -> Supabase)
+- Failure alerts sent via Resend email to admin
+
+**Key Services:**
+- `scheduledJobs.ts` - Job scheduling, execution, and manual triggers
+- `alertService.ts` - Job logging, admin notifications, execution history
+
+**Database Table (`JobExecutionLog`):**
+```sql
+id: UUID (PK, auto-generated)
+jobName: TEXT ('update_stats' | 'import_season' | 'calculate_leaderboard' | 'recalculate_all')
+status: TEXT ('success' | 'failed' | 'running' | 'partial')
+startTime: TIMESTAMP WITH TIME ZONE
+endTime: TIMESTAMP WITH TIME ZONE
+durationMs: INTEGER
+errorMessage: TEXT
+errorStack: TEXT
+context: JSONB (seasonYear, date, updated count, etc.)
+adminNotified: BOOLEAN (default false)
+notifiedAt: TIMESTAMP WITH TIME ZONE
+createdAt: TIMESTAMP WITH TIME ZONE
+```
+
+**Indexes:**
+- `jobName` - Filter by job type
+- `status` - Filter by status
+- `startTime DESC` - Recent executions
+- `jobName, status` - Combined filtering
+
+**Admin API Endpoints** (`/api/admin/jobs/*`):
+- `GET /status` - Scheduler status, job configuration, latest execution for each job type
+- `GET /history` - Recent job execution history (supports `?limit=N&jobName=update_stats`)
+- `GET /stats` - Job execution statistics (success rate, avg duration) for last N days
+- `POST /trigger` - Manually trigger any job (`{ jobName, seasonYear?, date? }`)
+- `POST /update-stats` - Shortcut to trigger stats update (`{ seasonYear?, date? }`)
+
+**Scheduled Jobs:**
+1. **Daily Stats Update** (3:00 AM ET)
+   - Runs `runStatsUpdateJob()` which:
+   - Calls Python script to fetch yesterday's game data from MLB-StatsAPI
+   - Updates PlayerStats table with new HR data
+   - Recalculates overall leaderboard if stats changed
+   - Logs execution to JobExecutionLog
+   - Alerts admin on failure via email
+
+2. **Hourly Heartbeat** (every hour at :00)
+   - Logs timestamp to console for monitoring
+   - Confirms scheduler is running
+
+**Environment Variables:**
+- `SEASON_YEAR` - Override current season year (default: 2026)
+- `ADMIN_ALERT_EMAIL` - Email for failure alerts (default: FROM_EMAIL or admin@hrderbyus.com)
+- `DISABLE_SCHEDULED_JOBS` - Set to `"true"` to disable all scheduled jobs (useful in development)
+
+**Manual Triggers via CLI:**
+```bash
+# Trigger stats update for yesterday (default)
+npm run job:stats
+
+# Trigger stats update for specific date
+npm run job:stats:date 2026-04-15
+```
+
+**Manual Triggers via API:**
+```bash
+# Trigger stats update
+curl -X POST http://localhost:5000/api/admin/jobs/update-stats \
+  -H "Authorization: Bearer <admin-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"seasonYear": 2026, "date": "2026-04-15"}'
+
+# Trigger any job
+curl -X POST http://localhost:5000/api/admin/jobs/trigger \
+  -H "Authorization: Bearer <admin-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"jobName": "calculate_leaderboard", "seasonYear": 2026}'
+```
+
+**Error Alerting:**
+- On job failure, `alertAdminJobFailure()` sends HTML email with:
+  - Job name and timestamp (in ET)
+  - Error message and stack trace
+  - Attempt/retry count if applicable
+  - Context data (seasonYear, date)
+  - Recommended actions checklist
+  - Link to admin dashboard
+- Email sent via Resend API
+- Job marked as `adminNotified: true` after alert sent
+
+**Integration with Stats Pipeline:**
+1. `initializeScheduledJobs()` called at server startup
+2. node-cron triggers `runStatsUpdateJob()` at 3am ET
+3. Job logs start to JobExecutionLog (status: 'running')
+4. Calls `updatePlayerStats()` which spawns Python process
+5. Python fetches MLB data, writes to Supabase
+6. If stats changed, calls `calculateOverallLeaderboard()`
+7. Job logs completion (status: 'success' or 'failed')
+8. On failure: alerts admin, logs error details
+
+**Disabling Jobs:**
+Set `DISABLE_SCHEDULED_JOBS=true` in environment to prevent jobs from running. Useful for:
+- Local development (avoid duplicate updates)
+- Maintenance windows
+- Testing without side effects
+
 ### Season Management / Off-Season Mode (Implemented)
 
 **Overview:**
@@ -434,8 +729,8 @@ const { season, loading } = useSeason()
 
 ## Important Notes
 
-- **LocalStorage security**: Tokens currently stored in localStorage (XSS vulnerable). Consider httpOnly cookies for production.
-- **Token refresh**: No rotation implemented yet.
+- **Security hardened**: Tokens stored in httpOnly cookies (XSS protected), CSRF protection via double-submit pattern with timing-safe comparison.
+- **Token refresh**: Implemented with 15-minute access tokens and 7-day refresh tokens. Frontend auto-refreshes every 10 minutes via interval + on-demand via 401 interceptor with subscriber pattern for race condition prevention.
 - **Rate limiting**: Applied globally at 100 req/15min per IP.
 - **Email service**: Uses Resend API configured in `emailService.ts`.
   - Throws errors in production for failed sends
@@ -444,7 +739,8 @@ const { season, loading } = useSeason()
 - **Payments**: Stripe integration with webhook processing fully functional.
 - **Python stats updater**: Robust retry logic with exponential backoff (3 attempts, 5min timeout)
 - **Health monitoring**: `/health` and `/health/python` endpoints for system checks
-- **Current status**: Phases 1-4 complete (~95% overall). Admin dashboard with quick reminders and season management fully functional. Next: Automated stats scheduling, polish & testing.
+- **Scheduled jobs**: Automated daily stats update at 3am ET using node-cron. Job execution logged to `JobExecutionLog` table. Admin alerts on failure via Resend email. Admin API for monitoring/manual triggers at `/api/admin/jobs/*`.
+- **Current status**: Phases 1-4 complete (~98% overall). Automated stats scheduling fully implemented with logging and alerting. Next: polish & testing.
 
 ## Testing
 
@@ -505,19 +801,30 @@ cd backend && npm run test:coverage  # Coverage report
 - `add_payment_status_index.sql` - Adds index on Team.paymentStatus for admin queries
 - `add_reminder_log.sql` - Creates ReminderLog table for tracking sent reminders
 - `add_season_config.sql` - Creates SeasonConfig table for season phase management
+- `add_job_execution_log.sql` - Creates JobExecutionLog table for tracking scheduled jobs
 
 **Add a new page:**
 1. Create component in `frontend/src/pages/`
 2. Add route in `frontend/src/App.tsx`
 3. Use `ProtectedRoute` wrapper if auth required
 
+**Work with scheduled jobs:**
+1. Jobs run automatically at 3am ET (daily stats update + leaderboard recalculation)
+2. Manually trigger: `npm run job:stats` or `npm run job:stats:date 2026-04-15`
+3. Check job status: `GET /api/admin/jobs/status` (admin)
+4. View job history: `GET /api/admin/jobs/history` (admin)
+5. Trigger via API: `POST /api/admin/jobs/update-stats` (admin)
+6. Disable scheduling: Set `DISABLE_SCHEDULED_JOBS=true` in environment
+7. Configure alerts: Set `ADMIN_ALERT_EMAIL` for failure notifications
+
 **Work with stats/leaderboards:**
-1. Check Python health: `curl http://localhost:5000/health/python`
-2. Update stats: `statsService.updatePlayerStats(2025)` (includes retry logic)
-3. Calculate team score: `scoringService.calculateTeamScore(teamId, 2025, true)`
-4. Generate leaderboard: `leaderboardService.calculateOverallLeaderboard(2025)`
-5. Retrieve cached: `leaderboardService.getOverallLeaderboard(2025)`
-6. Test pipeline: `npm run test:phase3`
+1. Stats update runs automatically at 3am ET (see "Work with scheduled jobs" above)
+2. Check Python health: `curl http://localhost:5000/health/python`
+3. Update stats manually: `statsService.updatePlayerStats(2026)` or via admin API
+4. Calculate team score: `scoringService.calculateTeamScore(teamId, 2026, true)`
+5. Generate leaderboard: `leaderboardService.calculateOverallLeaderboard(2026)`
+6. Retrieve cached: `leaderboardService.getOverallLeaderboard(2026)`
+7. Test pipeline: `npm run test:phase3`
 
 **Work with admin dashboard:**
 1. Make user admin: `UPDATE "User" SET role = 'admin' WHERE email = 'user@example.com';`

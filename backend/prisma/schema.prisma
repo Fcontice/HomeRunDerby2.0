@@ -142,6 +142,25 @@ model ReminderLog {
   @@index([sentAt])
 }
 
+model JobExecutionLog {
+  id            String    @id @default(dbgenerated("gen_random_uuid()"))
+  jobName       String
+  status        String
+  startTime     DateTime  @db.Timestamptz(6)
+  endTime       DateTime? @db.Timestamptz(6)
+  durationMs    Int?
+  errorMessage  String?
+  errorStack    String?
+  context       Json?
+  adminNotified Boolean   @default(false)
+  notifiedAt    DateTime? @db.Timestamptz(6)
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([jobName])
+  @@index([status])
+  @@index([startTime(sort: Desc)])
+}
+
 model PlayerSeasonStats {
   id         String    @id @default(dbgenerated("gen_random_uuid()"))
   playerId   String
