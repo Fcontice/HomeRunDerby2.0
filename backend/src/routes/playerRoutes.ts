@@ -10,6 +10,7 @@ import {
   searchPlayers,
   getPlayerStats,
 } from '../controllers/playerController.js';
+import { cache } from '../middleware/cache.js';
 
 const router = express.Router();
 
@@ -20,15 +21,15 @@ const router = express.Router();
  */
 
 // GET /api/players - Get all eligible players (with filters)
-router.get('/', getPlayers);
+router.get('/', cache('medium'), getPlayers);
 
 // GET /api/players/search - Search players by name
-router.get('/search', searchPlayers);
+router.get('/search', cache('short'), searchPlayers);
 
 // GET /api/players/stats/summary - Get player pool statistics
-router.get('/stats/summary', getPlayerStats);
+router.get('/stats/summary', cache('medium'), getPlayerStats);
 
 // GET /api/players/:id - Get single player by ID
-router.get('/:id', getPlayerById);
+router.get('/:id', cache('medium'), getPlayerById);
 
 export default router;
