@@ -83,10 +83,10 @@ export default function PaymentPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-white mx-auto mb-4" />
-          <p className="text-white text-lg">Loading team...</p>
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-foreground text-lg">Loading team...</p>
         </div>
       </div>
     )
@@ -95,10 +95,10 @@ export default function PaymentPage() {
   // Error state
   if (!team) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardHeader>
-            <CardTitle className="text-red-600 flex items-center gap-2">
+            <CardTitle className="text-destructive flex items-center gap-2">
               <XCircle className="h-5 w-5" />
               Team Not Found
             </CardTitle>
@@ -116,20 +116,20 @@ export default function PaymentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 py-8 px-4">
+    <div className="min-h-screen bg-background py-8 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-6 animate-fade-up">
           <Button
             variant="ghost"
             onClick={() => navigate('/dashboard')}
-            className="text-white hover:text-white/80 mb-4"
+            className="text-muted-foreground hover:text-foreground mb-4"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
           </Button>
-          <h1 className="text-4xl font-bold text-white mb-2">Team Payment</h1>
-          <p className="text-slate-300 text-lg">
+          <h1 className="text-4xl font-bold text-foreground mb-2">Team Payment</h1>
+          <p className="text-muted-foreground text-lg">
             Complete your payment to enter the 2026 Home Run Derby contest
           </p>
         </div>
@@ -175,9 +175,9 @@ export default function PaymentPage() {
               <span className="text-sm text-muted-foreground">Payment Status</span>
               <span className="font-medium capitalize">{team.paymentStatus}</span>
             </div>
-            <div className="flex justify-between items-center py-4 bg-slate-50 dark:bg-slate-900 rounded-lg px-4">
-              <span className="font-semibold text-lg">Entry Fee</span>
-              <span className="font-bold text-2xl">${ENTRY_FEE.toFixed(2)}</span>
+            <div className="flex justify-between items-center py-4 bg-slate-800/50 border border-slate-700 rounded-lg px-4">
+              <span className="font-semibold text-lg text-foreground">Entry Fee</span>
+              <span className="font-bold text-2xl stat-gold">${ENTRY_FEE.toFixed(2)}</span>
             </div>
           </CardContent>
         </Card>
@@ -208,7 +208,7 @@ export default function PaymentPage() {
         </Button>
 
         {/* Info */}
-        <div className="mt-6 text-center text-sm text-slate-400">
+        <div className="mt-6 text-center text-sm text-muted-foreground">
           <p>Secure payment powered by Stripe</p>
           <p className="mt-2">
             After payment, your team will be entered into the contest

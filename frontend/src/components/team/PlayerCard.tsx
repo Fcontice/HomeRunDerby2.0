@@ -4,7 +4,7 @@
  */
 
 import { Player } from '../../services/api'
-import { Card } from '../ui/card'
+import { Plus } from 'lucide-react'
 
 interface PlayerCardProps {
   player: Player
@@ -26,43 +26,49 @@ export default function PlayerCard({
   }
 
   return (
-    <Card
+    <div
       className={`
-        p-4 cursor-pointer transition-all duration-200
+        p-3 rounded-lg border transition-all duration-150
         ${
           isSelected
-            ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950'
-            : 'hover:shadow-md hover:scale-[1.02]'
+            ? 'bg-emerald-500/15 border-emerald-500/50'
+            : 'bg-slate-800 border-slate-700 hover:bg-slate-750 hover:border-slate-600'
         }
         ${
-          isDisabled
-            ? 'opacity-50 cursor-not-allowed hover:shadow-none hover:scale-100'
-            : ''
+          isDisabled && !isSelected
+            ? 'opacity-40 cursor-not-allowed'
+            : 'cursor-pointer'
         }
       `}
       onClick={handleClick}
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        {/* Player Info */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-sm truncate">{player.name}</h3>
+          <h3 className="font-medium text-sm text-foreground truncate">{player.name}</h3>
           <p className="text-xs text-muted-foreground">{player.teamAbbr}</p>
         </div>
 
-        <div className="ml-3 flex-shrink-0">
-          <div className="text-right">
-            <div className="text-lg font-bold text-primary">
-              {player.hrsTotal}
-            </div>
-            <div className="text-xs text-muted-foreground">HRs</div>
-          </div>
+        {/* HR Count */}
+        <div className="text-right">
+          <div className="text-lg font-bold stat-gold">{player.hrsTotal}</div>
+          <div className="text-xs text-muted-foreground">HRs</div>
         </div>
-      </div>
 
-      {isSelected && (
-        <div className="mt-2 text-xs text-blue-600 dark:text-blue-400 font-medium">
-          ✓ Selected
-        </div>
-      )}
-    </Card>
+        {/* Add Button */}
+        {!isSelected && !isDisabled && (
+          <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-slate-400 hover:bg-primary hover:text-white transition-colors">
+            <Plus className="h-4 w-4" />
+          </div>
+        )}
+
+        {/* Selected indicator */}
+        {isSelected && (
+          <div className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold">
+            ✓
+          </div>
+        )}
+      </div>
+    </div>
   )
 }

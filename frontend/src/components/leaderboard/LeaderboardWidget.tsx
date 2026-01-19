@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { RefreshCw, ChevronRight } from 'lucide-react'
+import { RefreshCw, ChevronRight, Trophy } from 'lucide-react'
 import { leaderboardsApi, LeaderboardEntry } from '../../services/api'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
+import { EmptyState } from '../ui/empty-state'
 
 interface LeaderboardWidgetProps {
   userTeamIds?: string[]
@@ -17,19 +18,16 @@ export function LeaderboardWidget({ userTeamIds = [] }: LeaderboardWidgetProps) 
   const fetchData = async () => {
     setIsLoading(true)
     try {
-      // Fetch top entries
       const response = await leaderboardsApi.getOverall()
       if (response.success && response.data) {
         setTopEntries(response.data.leaderboard.slice(0, 5))
 
-        // Check if user's team is in top 5
         if (userTeamIds.length > 0) {
           const userInTop5 = response.data.leaderboard
             .slice(0, 5)
             .find((e) => userTeamIds.includes(e.teamId))
 
           if (!userInTop5) {
-            // Find user's best team position
             const userTeam = response.data.leaderboard.find((e) => userTeamIds.includes(e.teamId))
             setUserEntry(userTeam || null)
           } else {
@@ -48,23 +46,27 @@ export function LeaderboardWidget({ userTeamIds = [] }: LeaderboardWidgetProps) 
     fetchData()
   }, [userTeamIds.join(',')])
 
-  const getRankDisplay = (rank: number) => {
-    if (rank === 1) return '1st'
-    if (rank === 2) return '2nd'
-    if (rank === 3) return '3rd'
-    return `${rank}.`
+  const getRankBadgeClass = (rank: number) => {
+    if (rank === 1) return 'rank-badge'
+    if (rank === 2) return 'rank-badge rank-badge-silver'
+    if (rank === 3) return 'rank-badge rank-badge-bronze'
+    return 'inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full text-sm font-medium bg-slate-800 text-slate-300'
   }
 
   return (
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Leaderboard</CardTitle>
+          <div className="flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-gold" />
+            <CardTitle>Leaderboard</CardTitle>
+          </div>
           <Button
             variant="ghost"
-            size="sm"
+            size="icon"
             onClick={fetchData}
             disabled={isLoading}
+            className="h-8 w-8"
           >
             <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
           </Button>
@@ -72,45 +74,54 @@ export function LeaderboardWidget({ userTeamIds = [] }: LeaderboardWidgetProps) 
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="space-y-2 animate-pulse">
+          <div className="space-y-3">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex justify-between">
-                <div className="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
-                <div className="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded" />
+              <div key={i} className="flex items-center justify-between py-2 animate-pulse">
+                <div className="flex items-center gap-3">
+                  <div className="h-6 w-6 bg-slate-800 rounded-full" />
+                  <div className="h-4 w-28 bg-slate-800 rounded" />
+                </div>
+                <div className="h-4 w-12 bg-slate-800 rounded" />
               </div>
             ))}
           </div>
         ) : topEntries.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center py-4">
-            No teams yet. Be the first!
-          </p>
+          <EmptyState
+            icon="🏆"
+            title="The race starts soon"
+            description="Be the first to claim the top spot!"
+            className="py-8"
+          />
         ) : (
           <div className="space-y-1">
-            {topEntries.map((entry) => (
+            {topEntries.map((entry, index) => (
               <div
                 key={entry.teamId}
-                className="flex items-center justify-between py-1.5 text-sm"
+                className={`flex items-center justify-between py-2.5 px-2 -mx-2 rounded-lg transition-colors hover:bg-slate-800/50 animate-fade-up stagger-${index + 1}`}
               >
-                <div className="flex items-center gap-2 truncate">
-                  <span className="w-6">{getRankDisplay(entry.rank)}</span>
-                  <span className="truncate font-medium">{entry.teamName}</span>
+                <div className="flex items-center gap-3 truncate">
+                  <span className={getRankBadgeClass(entry.rank)}>{entry.rank}</span>
+                  <span className="truncate font-medium text-foreground">{entry.teamName}</span>
                 </div>
-                <span className="text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                  {entry.totalHrs} HRs
+                <span className="stat-gold font-semibold whitespace-nowrap">
+                  {entry.totalHrs}
                 </span>
               </div>
             ))}
 
             {userEntry && (
               <>
-                <div className="border-t border-dashed border-gray-300 dark:border-gray-600 my-2" />
-                <div className="flex items-center justify-between py-1.5 text-sm bg-blue-50 dark:bg-blue-900/20 -mx-2 px-2 rounded">
-                  <div className="flex items-center gap-2 truncate">
-                    <span className="w-6 font-medium">{userEntry.rank}.</span>
-                    <span className="truncate font-medium">{userEntry.teamName}</span>
+                <div className="border-t border-dashed border-slate-700 my-3" />
+                <div className="flex items-center justify-between py-2.5 px-2 -mx-2 rounded-lg bg-primary/10 border border-primary/20">
+                  <div className="flex items-center gap-3 truncate">
+                    <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full text-sm font-medium bg-primary/20 text-primary">
+                      {userEntry.rank}
+                    </span>
+                    <span className="truncate font-medium text-foreground">{userEntry.teamName}</span>
+                    <span className="text-xs text-muted-foreground">(You)</span>
                   </div>
-                  <span className="text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                    {userEntry.totalHrs} HRs
+                  <span className="stat-gold font-semibold whitespace-nowrap">
+                    {userEntry.totalHrs}
                   </span>
                 </div>
               </>
@@ -120,7 +131,7 @@ export function LeaderboardWidget({ userTeamIds = [] }: LeaderboardWidgetProps) 
 
         <Link
           to="/leaderboard"
-          className="flex items-center justify-center gap-1 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 mt-4 pt-3 border-t"
+          className="flex items-center justify-center gap-1 text-sm text-primary hover:text-primary/80 font-medium mt-4 pt-4 border-t border-slate-800 transition-colors"
         >
           View Full Leaderboard
           <ChevronRight size={16} />

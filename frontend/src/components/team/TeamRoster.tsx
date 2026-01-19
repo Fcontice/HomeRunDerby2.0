@@ -48,11 +48,11 @@ export default function TeamRoster({
             key={position}
             className={`
               flex items-center gap-3 p-3 rounded-lg border
-              ${player ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-900/50 border-dashed'}
+              ${player ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-900/50 border-slate-700/50 border-dashed'}
             `}
           >
             {/* Position Number */}
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-sm">
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center font-bold text-sm text-slate-300">
               {position}
             </div>
 
@@ -83,7 +83,7 @@ export default function TeamRoster({
                   variant="ghost"
                   size="sm"
                   onClick={() => onRemovePlayer(player.id)}
-                  className="flex-shrink-0 h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-900"
+                  className="flex-shrink-0 h-8 w-8 p-0 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -101,11 +101,11 @@ export default function TeamRoster({
       <div className="border-t pt-4 space-y-3">
         {/* Total HRs */}
         <div className="flex items-center justify-between">
-          <span className="font-semibold">Total HRs:</span>
+          <span className="font-semibold text-foreground">Total HRs:</span>
           <span
             className={`text-lg font-bold ${
               isOverLimit
-                ? 'text-red-600 dark:text-red-400'
+                ? 'text-rose-400'
                 : 'text-primary'
             }`}
           >
@@ -115,23 +115,23 @@ export default function TeamRoster({
 
         {/* Validation Messages */}
         {needsMorePlayers && (
-          <div className="text-sm text-amber-600 dark:text-amber-400 flex items-center gap-2">
+          <div className="text-sm text-amber-400 flex items-center gap-2">
             <span>⚠️</span>
             <span>Need {8 - selectedPlayers.length} more player{8 - selectedPlayers.length !== 1 ? 's' : ''}</span>
           </div>
         )}
 
         {isOverLimit && (
-          <div className="text-sm text-red-600 dark:text-red-400 flex items-center gap-2">
+          <div className="text-sm text-rose-400 flex items-center gap-2">
             <span>❌</span>
             <span>Over HR limit by {totalHRs - maxHRs}</span>
           </div>
         )}
 
         {isValid && (
-          <div className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
+          <div className="text-sm text-emerald-400 flex items-center gap-2">
             <span>✓</span>
-            <span className="font-medium">Ready to submit!</span>
+            <span className="font-medium">Roster complete!</span>
           </div>
         )}
       </div>

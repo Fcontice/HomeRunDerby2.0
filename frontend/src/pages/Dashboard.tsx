@@ -11,11 +11,14 @@ import {
   CardTitle,
 } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
+import { EmptyState } from '../components/ui/empty-state'
 import { LeaderboardWidget } from '../components/leaderboard'
+import { Navbar } from '../components/Navbar'
 import { teamsApi, Team } from '../services/api'
+import { Users, Trophy } from 'lucide-react'
 
 export default function Dashboard() {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const { season } = useSeason()
   const navigate = useNavigate()
 
@@ -40,131 +43,131 @@ export default function Dashboard() {
     fetchTeams()
   }, [])
 
-  const handleLogout = async () => {
-    await logout()
-    navigate('/login')
-  }
+  // Calculate total HRs across all teams
+  const totalHRs = teams.reduce((sum, team) => sum + (team.totalHomeRuns || 0), 0)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8 pt-8">
-          <div className="flex items-center gap-8">
-            <h1 className="text-4xl font-bold text-white">Home Run Derby</h1>
-            <nav className="flex gap-4">
-              <Link
-                to="/dashboard"
-                className="text-white hover:text-gray-300 transition-colors"
-              >
-                Dashboard
-              </Link>
-              <Link
-                to="/players"
-                className="text-white hover:text-gray-300 transition-colors"
-              >
-                Players
-              </Link>
-              <Link
-                to="/leaderboard"
-                className="text-white hover:text-gray-300 transition-colors"
-              >
-                Leaderboard
-              </Link>
-              {isRegistrationOpen ? (
-                <Link
-                  to="/create-team"
-                  className="text-white hover:text-gray-300 transition-colors"
-                >
-                  Create Team
-                </Link>
-              ) : (
-                <span className="flex items-center gap-2 text-slate-500 cursor-not-allowed">
-                  Create Team
-                  <Badge variant="secondary" className="text-xs">
-                    Closed
-                  </Badge>
-                </span>
-              )}
-              {user?.role === 'admin' && (
-                <Link
-                  to="/admin"
-                  className="text-purple-400 hover:text-purple-300 transition-colors font-medium"
-                >
-                  Admin
-                </Link>
-              )}
-            </nav>
-          </div>
-          <Button variant="outline" onClick={handleLogout}>
-            Logout
-          </Button>
+    <div className="min-h-screen bg-background">
+      <Navbar />
+
+      <main className="container mx-auto px-4 py-8">
+        {/* Hero Section */}
+        <div className="mb-8 animate-fade-up">
+          <h1 className="text-3xl font-bold tracking-tight mb-2">
+            Welcome back, {user?.username}!
+          </h1>
+          <p className="text-muted-foreground">
+            {isRegistrationOpen
+              ? "Registration is open. Draft your team and compete!"
+              : "Track your teams and watch the leaderboard."}
+          </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle>Welcome, {user?.username}!</CardTitle>
-              <CardDescription>Your profile information</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div>
-                <p className="text-sm text-muted-foreground">Email</p>
-                <p className="font-medium">{user?.email}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Role</p>
-                <p className="font-medium capitalize">{user?.role}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Auth Provider</p>
-                <p className="font-medium capitalize">{user?.authProvider}</p>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Quick Stats */}
+        {teams.length > 0 && (
+          <div className="grid gap-4 md:grid-cols-3 mb-8">
+            <Card className="animate-fade-up stagger-1">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-primary/10">
+                    <Users className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">My Teams</p>
+                    <p className="text-2xl font-bold">{teams.length}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="animate-fade-up stagger-2">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-gold/10">
+                    <Trophy className="h-6 w-6 text-gold" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Home Runs</p>
+                    <p className="text-2xl font-bold stat-gold">{totalHRs}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="animate-fade-up stagger-3">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-emerald-500/10">
+                    <span className="text-2xl">⚾</span>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Season</p>
+                    <p className="text-2xl font-bold">{season?.seasonYear || new Date().getFullYear()}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-          <Card>
+        {/* Main Content Grid */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* My Teams Card */}
+          <Card className="animate-fade-up stagger-2">
             <CardHeader>
               <CardTitle>My Teams</CardTitle>
               <CardDescription>Your fantasy baseball teams</CardDescription>
             </CardHeader>
             <CardContent>
               {teamsLoading ? (
-                <p className="text-muted-foreground">Loading teams...</p>
+                <div className="space-y-3">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="p-4 rounded-lg bg-slate-800/50 animate-pulse">
+                      <div className="h-4 w-32 bg-slate-700 rounded mb-2"></div>
+                      <div className="h-3 w-24 bg-slate-700/50 rounded"></div>
+                    </div>
+                  ))}
+                </div>
               ) : teams.length === 0 ? (
-                <>
-                  <p className="text-muted-foreground mb-4">
-                    No teams created yet. Create your first team to compete!
-                  </p>
-                  <Button onClick={() => navigate('/create-team')} className="w-full">
-                    Create Your First Team
-                  </Button>
-                </>
+                <EmptyState
+                  icon="⚾"
+                  title="Step up to the plate!"
+                  description="Draft your first lineup and join the competition. Pick 8 players and compete for the top spot."
+                  action={{
+                    label: 'Create Team',
+                    onClick: () => navigate('/create-team'),
+                  }}
+                />
               ) : (
                 <div className="space-y-3">
-                  {teams.map((team) => (
+                  {teams.map((team, index) => (
                     <Link
                       key={team.id}
                       to={`/teams/${team.id}`}
-                      className="block p-3 rounded-lg border hover:bg-accent transition-colors"
+                      className={`block p-4 rounded-lg border border-slate-800 bg-slate-900/50 hover:bg-slate-800/50 hover:border-slate-700 transition-all duration-200 animate-fade-up stagger-${index + 1}`}
                     >
                       <div className="flex justify-between items-start">
                         <div>
-                          <p className="font-medium">{team.name}</p>
+                          <p className="font-semibold text-foreground">{team.name}</p>
                           <p className="text-sm text-muted-foreground">
                             {team.seasonYear} Season
                           </p>
                         </div>
-                        <Badge
-                          variant={
-                            team.paymentStatus === 'paid'
-                              ? 'default'
-                              : team.paymentStatus === 'pending'
-                                ? 'secondary'
-                                : 'outline'
-                          }
-                        >
-                          {team.paymentStatus}
-                        </Badge>
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <p className="text-lg font-bold stat-gold">{team.totalHomeRuns || 0}</p>
+                            <p className="text-xs text-muted-foreground">HRs</p>
+                          </div>
+                          <Badge
+                            variant={
+                              team.paymentStatus === 'paid'
+                                ? 'default'
+                                : team.paymentStatus === 'pending'
+                                  ? 'secondary'
+                                  : 'outline'
+                            }
+                          >
+                            {team.paymentStatus}
+                          </Badge>
+                        </div>
                       </div>
                     </Link>
                   ))}
@@ -182,10 +185,12 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <LeaderboardWidget />
+          {/* Leaderboard Widget */}
+          <div className="animate-fade-up stagger-3">
+            <LeaderboardWidget />
+          </div>
         </div>
-
-      </div>
+      </main>
     </div>
   )
 }

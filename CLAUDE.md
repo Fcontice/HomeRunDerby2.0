@@ -68,7 +68,7 @@ All endpoints return: `{ success: boolean, message?: string, data?: T, error?: {
 - `controllers/` - Request handlers
 - `services/` - Core logic: `db.ts`, `statsService.ts`, `scoringService.ts`, `leaderboardService.ts`, `scheduledJobs.ts`
 - `scripts/python/` - MLB-StatsAPI stats updater
-- `middleware/` - Auth, CSRF, error handling, season guards
+- `middleware/` - Auth, CSRF, error handling, season guards, cache
 
 ## Environment Variables
 
@@ -113,6 +113,19 @@ Frontend: `VITE_API_URL`, `VITE_STRIPE_PUBLIC_KEY`
 ```sql
 UPDATE "User" SET role = 'admin' WHERE email = 'user@example.com';
 ```
+
+## Performance
+
+**Frontend code splitting** (`frontend/vite.config.ts`):
+- `react-vendor` chunk - React, ReactDOM, React Router
+- `ui-vendor` chunk - Radix UI components
+- Keeps bundles under 500KB warning threshold
+
+**API caching** (`backend/src/middleware/cache.ts`):
+- `cache('short')` - 1 min (search)
+- `cache('medium')` - 5 min (players, leaderboards)
+- `cache('long')` - 10 min (season config)
+- Uses `stale-while-revalidate` for instant responses
 
 ## Deployment
 

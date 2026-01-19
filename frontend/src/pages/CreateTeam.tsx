@@ -74,11 +74,12 @@ export default function CreateTeam() {
   const totalHRs = selectedPlayers.reduce((sum, p) => sum + p.hrsTotal, 0)
 
   // Validation
+  const isValidTeamName = teamName.trim().length >= 3
   const canSubmit =
     user?.emailVerified &&
     selectedPlayers.length === 8 &&
     totalHRs <= MAX_HRS &&
-    teamName.trim().length > 0 &&
+    isValidTeamName &&
     !submitting
 
   // Handle player selection
@@ -313,7 +314,7 @@ export default function CreateTeam() {
         {/* Team Name Input */}
         <Card className="p-6 mb-6">
           <div className="max-w-md">
-            <Label htmlFor="team-name" className="text-base font-semibold mb-2 block">
+            <Label htmlFor="team-name" className="text-base font-semibold mb-2 block text-foreground">
               Team Name
             </Label>
             <Input
@@ -323,11 +324,22 @@ export default function CreateTeam() {
               value={teamName}
               onChange={(e) => setTeamName(e.target.value)}
               maxLength={50}
-              className="text-base"
+              className={`text-base bg-slate-800/50 border-slate-700 ${
+                isValidTeamName ? 'border-emerald-500/50' : ''
+              }`}
             />
-            <p className="text-sm text-muted-foreground mt-2">
-              {teamName.length}/50 characters
-            </p>
+            <div className="flex items-center justify-between mt-2">
+              {teamName.trim().length === 0 ? (
+                <p className="text-sm text-amber-400">Team name is required</p>
+              ) : teamName.trim().length < 3 ? (
+                <p className="text-sm text-amber-400">Name must be at least 3 characters</p>
+              ) : (
+                <p className="text-sm text-emerald-400">✓ Valid team name</p>
+              )}
+              <p className="text-sm text-muted-foreground">
+                {teamName.length}/50
+              </p>
+            </div>
           </div>
         </Card>
 

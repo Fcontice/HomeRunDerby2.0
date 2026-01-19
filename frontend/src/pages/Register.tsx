@@ -187,10 +187,10 @@ export default function Register() {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
+              <div className="w-full border-t border-slate-700"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or continue with</span>
+              <span className="px-2 bg-card text-muted-foreground">Or continue with</span>
             </div>
           </div>
 
@@ -224,9 +224,9 @@ export default function Register() {
         </CardContent>
 
         <CardFooter className="flex flex-col space-y-2">
-          <div className="text-sm text-center text-gray-600">
+          <div className="text-sm text-center text-muted-foreground">
             Already have an account?{' '}
-            <Link to="/login" className="text-blue-600 hover:underline font-medium">
+            <Link to="/login" className="text-primary hover:underline font-medium">
               Sign in
             </Link>
           </div>

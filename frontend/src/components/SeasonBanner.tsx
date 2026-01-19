@@ -62,10 +62,10 @@ function getBannerConfig(
 }
 
 const variantStyles = {
-  info: 'bg-blue-50 border-blue-200 text-blue-800',
-  success: 'bg-green-50 border-green-200 text-green-800',
-  warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-  neutral: 'bg-gray-50 border-gray-200 text-gray-800',
+  info: 'bg-blue-950/50 border-blue-900/50 text-blue-300',
+  success: 'bg-emerald-950/50 border-emerald-900/50 text-emerald-300',
+  warning: 'bg-amber-950/50 border-amber-900/50 text-amber-300',
+  neutral: 'bg-slate-900/50 border-slate-800/50 text-slate-300',
 }
 
 export function SeasonBanner() {

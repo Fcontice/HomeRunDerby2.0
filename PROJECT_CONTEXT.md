@@ -6,7 +6,7 @@ A web-based sports pooling application where users create fantasy teams of MLB p
 
 ---
 
-## 🚧 IMPLEMENTATION STATUS (Updated: January 13, 2026)
+## 🚧 IMPLEMENTATION STATUS (Updated: January 16, 2026)
 
 ### ✅ COMPLETED
 
@@ -81,11 +81,15 @@ A web-based sports pooling application where users create fantasy teams of MLB p
   - Frontend: SeasonBanner, SeasonContext, usePhaseCheck hook
   - Dashboard nav disables "Create Team" link with "Closed" badge when not in registration
 
-**Phase 5: Testing & Launch** (In Progress - January 13, 2026)
+**Phase 5: Testing & Launch** (In Progress - January 16, 2026)
 - ✅ Backend unit tests (Vitest + Supertest)
 - ✅ Frontend unit tests (Vitest + React Testing Library)
 - ✅ Load testing infrastructure (k6)
 - ✅ Deployment documentation
+- ✅ Performance optimizations (January 16, 2026)
+  - HTTP cache middleware (1-10 min caching for API endpoints)
+  - Frontend code splitting (react-vendor, ui-vendor chunks)
+  - Bundles now under 500KB threshold
 - ⏳ Production deployment
 
 ### 🔧 TECHNICAL NOTES

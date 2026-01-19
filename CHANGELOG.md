@@ -4,6 +4,43 @@ All notable changes to Home Run Derby 2.0 project.
 
 ## [Unreleased]
 
+### Performance Optimizations - January 16, 2026
+
+#### Added
+- **HTTP Cache Middleware** (`backend/src/middleware/cache.ts`)
+  - `cache('short')` - 1 minute (search results)
+  - `cache('medium')` - 5 minutes (players, leaderboards)
+  - `cache('long')` - 10 minutes (season config)
+  - Uses `stale-while-revalidate` for instant responses while refreshing
+
+- **Frontend Code Splitting** (`frontend/vite.config.ts`)
+  - `react-vendor` chunk - React, ReactDOM, React Router
+  - `ui-vendor` chunk - Radix UI components
+  - Keeps all bundles under 500KB warning threshold
+
+#### Changed
+- **Cached API Endpoints**
+  - `GET /api/players` - 5 min cache
+  - `GET /api/players/search` - 1 min cache
+  - `GET /api/players/:id` - 5 min cache
+  - `GET /api/players/stats/summary` - 5 min cache
+  - `GET /api/leaderboards/*` - 5 min cache (1 min for team-specific)
+  - `GET /api/season/current` - 10 min cache
+
+- **Documentation Cleanup**
+  - Slimmed CLAUDE.md from 906 to 145 lines (84% reduction)
+  - Added Performance section with caching details
+
+#### Files Changed
+| File | Change Type |
+|------|-------------|
+| `backend/src/middleware/cache.ts` | NEW |
+| `backend/src/routes/playerRoutes.ts` | MODIFIED |
+| `backend/src/routes/leaderboardRoutes.ts` | MODIFIED |
+| `backend/src/routes/seasonRoutes.ts` | MODIFIED |
+| `frontend/vite.config.ts` | MODIFIED |
+| `CLAUDE.md` | MODIFIED |
+
 ### Security Hardening: httpOnly Cookie Authentication - January 16, 2026
 
 #### Added
