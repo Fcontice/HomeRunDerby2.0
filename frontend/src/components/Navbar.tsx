@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu'
-import { User, LogOut, Settings } from 'lucide-react'
+import { User, LogOut, Settings, Users } from 'lucide-react'
 
 interface NavbarProps {
   showAuth?: boolean
@@ -140,6 +140,13 @@ export function Navbar({ showAuth = true }: NavbarProps) {
                     >
                       <Settings className="mr-2 h-4 w-4" />
                       Dashboard
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => navigate('/my-teams')}
+                      className="cursor-pointer"
+                    >
+                      <Users className="mr-2 h-4 w-4" />
+                      My Teams
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem

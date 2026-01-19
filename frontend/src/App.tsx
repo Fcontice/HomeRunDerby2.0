@@ -9,6 +9,8 @@ import VerifyEmail from './pages/VerifyEmail'
 import Dashboard from './pages/Dashboard'
 import CreateTeam from './pages/CreateTeam'
 import PaymentPage from './pages/PaymentPage'
+import TeamDetail from './pages/TeamDetail'
+import MyTeams from './pages/MyTeams'
 import Leaderboard from './pages/Leaderboard'
 import Players from './pages/Players'
 import PlayerProfile from './pages/PlayerProfile'
@@ -53,10 +55,26 @@ function App() {
           }
         />
         <Route
+          path="/my-teams"
+          element={
+            <ProtectedRoute>
+              <MyTeams />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/create-team"
           element={
             <ProtectedRoute>
               <CreateTeam />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teams/:teamId"
+          element={
+            <ProtectedRoute>
+              <TeamDetail />
             </ProtectedRoute>
           }
         />
