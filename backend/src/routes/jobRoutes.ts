@@ -120,13 +120,13 @@ router.post(
     const result = await triggerJob(jobName, { seasonYear, date })
 
     if (result.success) {
-      res.json({
+      return res.json({
         success: true,
         message: `Job ${jobName} completed successfully`,
         data: result,
       })
     } else {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: {
           code: 'JOB_FAILED',
