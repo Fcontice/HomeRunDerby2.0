@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { leaderboardsApi, LeaderboardEntry } from '../services/api'
 import { LeaderboardTable } from '../components/leaderboard/LeaderboardTable'
 import { Navbar } from '../components/Navbar'
-import { Card, CardContent, CardHeader } from '../components/ui/card'
 import { Button } from '../components/ui/button'
-import { Trophy } from 'lucide-react'
+import { Trophy, TrendingUp } from 'lucide-react'
 
 type TabType = 'overall' | 'monthly'
 
@@ -19,6 +19,9 @@ const MONTHS = [
 ]
 
 export default function Leaderboard() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const highlightTeamId = searchParams.get('teamId')
+
   const [activeTab, setActiveTab] = useState<TabType>('overall')
   const [selectedMonth, setSelectedMonth] = useState<number>(() => {
     const currentMonth = new Date().getMonth() + 1
@@ -27,6 +30,17 @@ export default function Leaderboard() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Clear highlight param after initial load
+  useEffect(() => {
+    if (highlightTeamId && !isLoading) {
+      // Remove the teamId param after a short delay to allow scrolling
+      const timer = setTimeout(() => {
+        setSearchParams({}, { replace: true })
+      }, 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [highlightTeamId, isLoading, setSearchParams])
 
   const fetchLeaderboard = async () => {
     setIsLoading(true)
@@ -52,82 +66,150 @@ export default function Leaderboard() {
     fetchLeaderboard()
   }, [activeTab, selectedMonth])
 
+  // Get top 3 for podium display
+  const topThree = entries.slice(0, 3)
+  const hasEnoughEntries = entries.length >= 3
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#0c0c0c]">
       <Navbar />
 
       <main className="container mx-auto px-4 py-8">
-        {/* Hero Section */}
-        <div className="mb-8 animate-fade-up">
+        {/* Broadcast Header */}
+        <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <Trophy className="h-8 w-8 text-gold" />
-            <h1 className="text-3xl font-bold tracking-tight">Leaderboard</h1>
+            <div className="w-1 h-8 bg-[#b91c1c]" />
+            <h1 className="font-broadcast text-4xl text-white tracking-wide">LEADERBOARD</h1>
           </div>
-          <p className="text-muted-foreground">
+          <p className="text-gray-500 ml-4">
             Track the competition and see who's leading the home run race.
           </p>
         </div>
 
-        <Card className="animate-fade-up stagger-1">
-          <CardHeader className="pb-4">
-            {/* Tabs */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex bg-slate-800/50 rounded-lg p-1">
-                <button
-                  onClick={() => setActiveTab('overall')}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
-                    activeTab === 'overall'
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  Overall
-                </button>
-                <button
-                  onClick={() => setActiveTab('monthly')}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
-                    activeTab === 'monthly'
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  Monthly
-                </button>
+        {/* Top 3 Podium - Only show when we have entries */}
+        {hasEnoughEntries && !isLoading && (
+          <div className="mb-8 grid grid-cols-3 gap-4">
+            {/* 2nd Place */}
+            <div className="bg-[#18181b] border border-white/10 p-4 mt-8">
+              <div className="text-center">
+                <div className="w-10 h-10 mx-auto mb-2 bg-gray-400 flex items-center justify-center">
+                  <span className="font-broadcast text-xl text-[#0c0c0c]">2</span>
+                </div>
+                <h3 className="font-medium text-white truncate">{topThree[1]?.teamName}</h3>
+                <p className="text-xs text-gray-500 truncate">@{topThree[1]?.username}</p>
+                <div className="mt-2 font-broadcast text-2xl text-[#d97706]">{topThree[1]?.totalHrs}</div>
+                <div className="text-xs text-gray-500">HOME RUNS</div>
               </div>
-              {activeTab === 'monthly' && (
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                  className="px-3 py-2 border border-slate-700 rounded-md bg-slate-800 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  {MONTHS.map((month) => (
-                    <option key={month.value} value={month.value}>
-                      {month.label}
-                    </option>
-                  ))}
-                </select>
-              )}
             </div>
-          </CardHeader>
 
-          <CardContent className="p-0">
-            {error ? (
-              <div className="text-center py-12">
-                <p className="text-destructive mb-4">{error}</p>
-                <Button variant="outline" onClick={fetchLeaderboard}>
-                  Try Again
-                </Button>
+            {/* 1st Place */}
+            <div className="bg-[#18181b] border-2 border-[#d97706]/50 p-4 relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#d97706] px-3 py-1">
+                <Trophy className="h-4 w-4 text-[#0c0c0c]" />
               </div>
-            ) : (
-              <LeaderboardTable
-                entries={entries}
-                type={activeTab}
-                isLoading={isLoading}
-                onRefresh={fetchLeaderboard}
-              />
-            )}
-          </CardContent>
-        </Card>
+              <div className="text-center mt-2">
+                <div className="w-12 h-12 mx-auto mb-2 bg-[#d97706] flex items-center justify-center">
+                  <span className="font-broadcast text-2xl text-[#0c0c0c]">1</span>
+                </div>
+                <h3 className="font-medium text-white truncate text-lg">{topThree[0]?.teamName}</h3>
+                <p className="text-xs text-gray-500 truncate">@{topThree[0]?.username}</p>
+                <div className="mt-2 font-broadcast text-3xl text-[#d97706]">{topThree[0]?.totalHrs}</div>
+                <div className="text-xs text-gray-500">HOME RUNS</div>
+              </div>
+            </div>
+
+            {/* 3rd Place */}
+            <div className="bg-[#18181b] border border-white/10 p-4 mt-12">
+              <div className="text-center">
+                <div className="w-10 h-10 mx-auto mb-2 bg-amber-700 flex items-center justify-center">
+                  <span className="font-broadcast text-xl text-[#0c0c0c]">3</span>
+                </div>
+                <h3 className="font-medium text-white truncate">{topThree[2]?.teamName}</h3>
+                <p className="text-xs text-gray-500 truncate">@{topThree[2]?.username}</p>
+                <div className="mt-2 font-broadcast text-2xl text-[#d97706]">{topThree[2]?.totalHrs}</div>
+                <div className="text-xs text-gray-500">HOME RUNS</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Main Leaderboard Card */}
+        <div className="bg-[#18181b] border border-white/10">
+          {/* Tab Header */}
+          <div className="p-4 border-b border-white/10">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-[#b91c1c]" />
+                <span className="font-broadcast text-lg text-white">
+                  {activeTab === 'overall' ? 'SEASON STANDINGS' : `${MONTHS.find(m => m.value === selectedMonth)?.label.toUpperCase()} STANDINGS`}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {/* Tabs */}
+                <div className="flex bg-[#0c0c0c] p-1">
+                  <button
+                    onClick={() => setActiveTab('overall')}
+                    className={`px-4 py-2 text-sm font-medium transition-all ${
+                      activeTab === 'overall'
+                        ? 'bg-[#b91c1c] text-white'
+                        : 'text-gray-500 hover:text-white'
+                    }`}
+                  >
+                    Overall
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('monthly')}
+                    className={`px-4 py-2 text-sm font-medium transition-all ${
+                      activeTab === 'monthly'
+                        ? 'bg-[#b91c1c] text-white'
+                        : 'text-gray-500 hover:text-white'
+                    }`}
+                  >
+                    Monthly
+                  </button>
+                </div>
+
+                {/* Month Selector */}
+                {activeTab === 'monthly' && (
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                    className="px-3 py-2 border border-white/10 bg-[#0c0c0c] text-sm text-white focus:outline-none focus:border-[#b91c1c]"
+                  >
+                    {MONTHS.map((month) => (
+                      <option key={month.value} value={month.value}>
+                        {month.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Content */}
+          {error ? (
+            <div className="text-center py-12">
+              <p className="text-red-500 mb-4">{error}</p>
+              <Button
+                variant="outline"
+                onClick={fetchLeaderboard}
+                className="border-white/10 text-white hover:bg-white/5"
+              >
+                Try Again
+              </Button>
+            </div>
+          ) : (
+            <LeaderboardTable
+              entries={entries}
+              type={activeTab}
+              isLoading={isLoading}
+              onRefresh={fetchLeaderboard}
+              highlightTeamId={highlightTeamId}
+            />
+          )}
+        </div>
       </main>
     </div>
   )

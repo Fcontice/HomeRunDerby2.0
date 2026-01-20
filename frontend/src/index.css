@@ -178,3 +178,297 @@
     background-color: hsl(217 33% 35%);
   }
 }
+
+/* ================================================
+   BROADCAST DESIGN SYSTEM
+   Modern sports broadcast aesthetic
+   ================================================ */
+
+/* Broadcast color variables */
+@layer base {
+  :root {
+    --broadcast-black: 0 0% 4%;
+    --broadcast-crimson: 348 100% 59%;
+    --broadcast-gold: 43 100% 50%;
+    --broadcast-white: 0 0% 100%;
+    --broadcast-gray: 220 10% 40%;
+  }
+}
+
+/* Broadcast typography */
+@layer utilities {
+  .font-broadcast {
+    font-family: 'Bebas Neue', Impact, sans-serif;
+    letter-spacing: 0.02em;
+  }
+
+  .font-broadcast-body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+  }
+}
+
+/* Broadcast keyframes */
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(60px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ticker-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes broadcast-flash {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes stat-count {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes diagonal-sweep {
+  0% {
+    transform: translateX(-100%) skewX(-15deg);
+  }
+  100% {
+    transform: translateX(200%) skewX(-15deg);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px hsl(var(--broadcast-crimson) / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px hsl(var(--broadcast-crimson) / 0.6);
+  }
+}
+
+@keyframes live-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* Broadcast animation utilities */
+@layer utilities {
+  .animate-slide-left {
+    animation: slide-in-left 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-slide-right {
+    animation: slide-in-right 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-slide-up {
+    animation: slide-in-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-ticker {
+    animation: ticker-scroll 30s linear infinite;
+  }
+
+  .animate-broadcast-flash {
+    animation: broadcast-flash 1s ease-in-out infinite;
+  }
+
+  .animate-stat-count {
+    animation: stat-count 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  .animate-diagonal-sweep {
+    animation: diagonal-sweep 3s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  .animate-live-pulse {
+    animation: live-pulse 1.5s ease-in-out infinite;
+  }
+
+  /* Animation delays for staggered effects */
+  .delay-100 { animation-delay: 100ms; }
+  .delay-200 { animation-delay: 200ms; }
+  .delay-300 { animation-delay: 300ms; }
+  .delay-400 { animation-delay: 400ms; }
+  .delay-500 { animation-delay: 500ms; }
+  .delay-600 { animation-delay: 600ms; }
+  .delay-700 { animation-delay: 700ms; }
+  .delay-800 { animation-delay: 800ms; }
+}
+
+/* Broadcast component styles */
+@layer components {
+  /* Diagonal stripe accent */
+  .broadcast-stripe {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .broadcast-stripe::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -10%;
+    width: 120%;
+    height: 100%;
+    background: linear-gradient(
+      105deg,
+      transparent 0%,
+      transparent 40%,
+      hsl(var(--broadcast-crimson)) 40%,
+      hsl(var(--broadcast-crimson)) 45%,
+      transparent 45%
+    );
+    pointer-events: none;
+  }
+
+  /* Lower third style box */
+  .broadcast-lower-third {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--broadcast-crimson)) 0%,
+      hsl(var(--broadcast-crimson)) 70%,
+      transparent 100%
+    );
+    clip-path: polygon(0 0, 100% 0, 95% 100%, 0% 100%);
+  }
+
+  /* Score box style */
+  .broadcast-score-box {
+    background: linear-gradient(
+      180deg,
+      hsl(var(--broadcast-black)) 0%,
+      hsl(0 0% 8%) 100%
+    );
+    border: 1px solid hsl(var(--broadcast-gray) / 0.3);
+    box-shadow:
+      0 4px 30px hsl(0 0% 0% / 0.5),
+      inset 0 1px 0 hsl(var(--broadcast-white) / 0.05);
+  }
+
+  /* Live badge */
+  .broadcast-live-badge {
+    background: hsl(var(--broadcast-crimson));
+    box-shadow: 0 0 20px hsl(var(--broadcast-crimson) / 0.5);
+  }
+
+  /* Stat highlight */
+  .broadcast-stat {
+    font-family: 'Bebas Neue', Impact, sans-serif;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 2px 10px hsl(0 0% 0% / 0.5);
+  }
+
+  /* Diagonal section divider */
+  .broadcast-divider {
+    position: relative;
+    margin: 4rem 0;
+  }
+
+  .broadcast-divider::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--broadcast-crimson)) 20%,
+      hsl(var(--broadcast-crimson)) 80%,
+      transparent 100%
+    );
+    transform: skewX(-15deg);
+  }
+
+  /* Angled background section */
+  .broadcast-angle-bg {
+    position: relative;
+    background: hsl(var(--broadcast-black));
+  }
+
+  .broadcast-angle-bg::before {
+    content: '';
+    position: absolute;
+    top: -60px;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: inherit;
+    transform: skewY(-2deg);
+    transform-origin: bottom left;
+  }
+
+  /* Gradient text */
+  .broadcast-gradient-text {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--broadcast-white)) 0%,
+      hsl(var(--broadcast-white) / 0.8) 50%,
+      hsl(var(--broadcast-gold)) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Glass card for dark backgrounds */
+  .broadcast-glass {
+    background: hsl(var(--broadcast-white) / 0.03);
+    backdrop-filter: blur(10px);
+    border: 1px solid hsl(var(--broadcast-white) / 0.08);
+  }
+}

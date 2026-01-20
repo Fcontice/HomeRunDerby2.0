@@ -28,15 +28,15 @@ export default function PlayerCard({
   return (
     <div
       className={`
-        p-3 rounded-lg border transition-all duration-150
+        p-3 border transition-all duration-150
         ${
           isSelected
-            ? 'bg-emerald-500/15 border-emerald-500/50'
-            : 'bg-slate-800 border-slate-700 hover:bg-slate-750 hover:border-slate-600'
+            ? 'bg-emerald-500/10 border-emerald-500/30'
+            : 'bg-[#0c0c0c] border-white/5 hover:border-white/20 hover:bg-white/5'
         }
         ${
           isDisabled && !isSelected
-            ? 'opacity-40 cursor-not-allowed'
+            ? 'opacity-30 cursor-not-allowed'
             : 'cursor-pointer'
         }
       `}
@@ -45,26 +45,26 @@ export default function PlayerCard({
       <div className="flex items-center gap-3">
         {/* Player Info */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-sm text-foreground truncate">{player.name}</h3>
-          <p className="text-xs text-muted-foreground">{player.teamAbbr}</p>
+          <h3 className="font-medium text-sm text-white truncate">{player.name}</h3>
+          <p className="text-xs text-gray-500">{player.teamAbbr}</p>
         </div>
 
         {/* HR Count */}
         <div className="text-right">
-          <div className="text-lg font-bold stat-gold">{player.hrsTotal}</div>
-          <div className="text-xs text-muted-foreground">HRs</div>
+          <div className="font-broadcast text-xl text-[#d97706]">{player.hrsTotal}</div>
+          <div className="text-xs text-gray-500">HRs</div>
         </div>
 
         {/* Add Button */}
         {!isSelected && !isDisabled && (
-          <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-slate-400 hover:bg-primary hover:text-white transition-colors">
+          <div className="w-7 h-7 bg-white/5 flex items-center justify-center text-gray-400 hover:bg-[#b91c1c] hover:text-white transition-colors">
             <Plus className="h-4 w-4" />
           </div>
         )}
 
         {/* Selected indicator */}
         {isSelected && (
-          <div className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold">
+          <div className="w-7 h-7 bg-emerald-500 flex items-center justify-center text-white text-xs font-bold">
             ✓
           </div>
         )}

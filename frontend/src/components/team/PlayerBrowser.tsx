@@ -43,31 +43,34 @@ export default function PlayerBrowser({
   const isRosterFull = selectedPlayers.length >= 8
 
   return (
-    <Card className="p-6">
+    <div className="p-6 bg-[#18181b] border border-white/10">
       <div className="mb-4">
-        <h2 className="text-xl font-bold text-foreground">Available Players</h2>
-        <p className="text-sm text-muted-foreground">
-          2025 Season • {filteredPlayers.length} players
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-1 h-5 bg-[#b91c1c]" />
+          <h2 className="font-broadcast text-xl text-white">AVAILABLE PLAYERS</h2>
+        </div>
+        <p className="text-sm text-gray-500">
+          2025 Season • {filteredPlayers.length} eligible players
         </p>
       </div>
 
       {/* Search */}
       <div className="mb-4">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
           <Input
             type="text"
             placeholder="Search by name or team..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-slate-800/50 border-slate-700"
+            className="pl-10 bg-[#0c0c0c] border-white/10 text-white placeholder:text-gray-500 focus:border-[#b91c1c]"
           />
         </div>
       </div>
 
       {/* Player Grid */}
       {filteredPlayers.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[600px] overflow-y-auto overflow-x-hidden pr-3 -mr-3 scrollbar-thin">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[600px] overflow-y-auto overflow-x-hidden pr-2 -mr-2 scrollbar-thin">
           {filteredPlayers.map((player) => (
             <PlayerCard
               key={player.id}
@@ -79,7 +82,7 @@ export default function PlayerBrowser({
           ))}
         </div>
       ) : (
-        <div className="text-center py-12 text-muted-foreground">
+        <div className="text-center py-12 text-gray-500">
           <p>No players found</p>
           <p className="text-sm mt-2">Try adjusting your search</p>
         </div>
@@ -87,10 +90,10 @@ export default function PlayerBrowser({
 
       {/* Status Message */}
       {isRosterFull && (
-        <div className="mt-4 text-sm text-amber-400 text-center">
+        <div className="mt-4 text-sm text-[#d97706] text-center">
           Roster is full (8/8). Remove a player to add another.
         </div>
       )}
-    </Card>
+    </div>
   )
 }

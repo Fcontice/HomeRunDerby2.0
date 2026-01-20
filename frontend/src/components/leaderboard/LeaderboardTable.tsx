@@ -1,18 +1,42 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { LeaderboardEntry } from '../../services/api'
 import { LeaderboardRow } from './LeaderboardRow'
-import { Button } from '../ui/button'
 
 interface LeaderboardTableProps {
   entries: LeaderboardEntry[]
   type: 'overall' | 'monthly'
   isLoading: boolean
   onRefresh: () => void
+  highlightTeamId?: string | null
 }
 
-export function LeaderboardTable({ entries, type, isLoading, onRefresh }: LeaderboardTableProps) {
+export function LeaderboardTable({ entries, type, isLoading, onRefresh, highlightTeamId }: LeaderboardTableProps) {
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null)
+  const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map())
+
+  // Auto-expand and scroll to highlighted team
+  useEffect(() => {
+    if (highlightTeamId && entries.length > 0) {
+      setExpandedTeamId(highlightTeamId)
+
+      // Smooth scroll to team after a short delay
+      setTimeout(() => {
+        const element = rowRefs.current.get(highlightTeamId)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }, 100)
+    }
+  }, [highlightTeamId, entries])
+
+  const setRowRef = (teamId: string, element: HTMLDivElement | null) => {
+    if (element) {
+      rowRefs.current.set(teamId, element)
+    } else {
+      rowRefs.current.delete(teamId)
+    }
+  }
 
   const handleToggle = (teamId: string) => {
     setExpandedTeamId(expandedTeamId === teamId ? null : teamId)
@@ -22,10 +46,10 @@ export function LeaderboardTable({ entries, type, isLoading, onRefresh }: Leader
     return (
       <div className="animate-pulse">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="flex items-center gap-4 p-4 border-b">
-            <div className="w-12 h-6 bg-gray-200 dark:bg-gray-700 rounded" />
-            <div className="flex-1 h-6 bg-gray-200 dark:bg-gray-700 rounded" />
-            <div className="w-20 h-6 bg-gray-200 dark:bg-gray-700 rounded" />
+          <div key={i} className="flex items-center gap-4 p-4 border-b border-white/5">
+            <div className="w-12 h-6 bg-white/5" />
+            <div className="flex-1 h-6 bg-white/5" />
+            <div className="w-20 h-6 bg-white/5" />
           </div>
         ))}
       </div>
@@ -34,9 +58,9 @@ export function LeaderboardTable({ entries, type, isLoading, onRefresh }: Leader
 
   if (entries.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-500">
-        <p className="text-lg">No teams have entered the contest yet.</p>
-        <p className="text-sm mt-2">Be the first to create a team!</p>
+      <div className="text-center py-12">
+        <p className="text-lg text-gray-400">No teams have entered the contest yet.</p>
+        <p className="text-sm mt-2 text-gray-600">Be the first to create a team!</p>
       </div>
     )
   }
@@ -44,44 +68,32 @@ export function LeaderboardTable({ entries, type, isLoading, onRefresh }: Leader
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-gray-100 dark:bg-gray-800 border-b">
-        <div className="flex items-center gap-4">
-          <div className="w-5" /> {/* Spacer for chevron */}
-          <div className="w-12 text-center text-xs font-medium text-gray-500 uppercase">Rank</div>
-          <div className="flex-1 text-xs font-medium text-gray-500 uppercase">Team</div>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="w-32 text-xs font-medium text-gray-500 uppercase hidden sm:block">Owner</div>
-          {type === 'overall' ? (
-            <div className="flex gap-4 text-xs font-medium text-gray-500 uppercase">
-              <div className="w-16 text-right hidden md:block">Regular</div>
-              <div className="w-16 text-right hidden md:block">Post</div>
-              <div className="w-20 text-right">Total</div>
-            </div>
-          ) : (
-            <div className="w-20 text-right text-xs font-medium text-gray-500 uppercase">HRs</div>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onRefresh}
-            disabled={isLoading}
-            className="ml-2"
-          >
-            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-          </Button>
-        </div>
+      <div className="flex items-center px-4 py-3 bg-[#0c0c0c] border-b border-white/10">
+        <div className="w-5" /> {/* Spacer for chevron */}
+        <div className="w-12 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</div>
+        <div className="flex-1 text-xs font-medium text-gray-500 uppercase tracking-wider">Team</div>
+        <div className="w-32 text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:block">Owner</div>
+        <div className="w-20 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</div>
+        <button
+          onClick={onRefresh}
+          disabled={isLoading}
+          className="ml-2 p-2 text-gray-500 hover:text-white hover:bg-white/5 transition-colors"
+        >
+          <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
+        </button>
       </div>
 
       {/* Rows */}
       <div>
-        {entries.map((entry) => (
+        {entries.map((entry, index) => (
           <LeaderboardRow
             key={entry.teamId}
+            ref={(el) => setRowRef(entry.teamId, el)}
             entry={entry}
+            index={index}
             isExpanded={expandedTeamId === entry.teamId}
             onToggle={() => handleToggle(entry.teamId)}
-            showBreakdown={type === 'overall'}
+            isHighlighted={highlightTeamId === entry.teamId}
           />
         ))}
       </div>
