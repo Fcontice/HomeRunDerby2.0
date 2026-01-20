@@ -278,7 +278,7 @@ describe('Auth Routes', () => {
       // Tokens are now in httpOnly cookies, CSRF token in response
       expect(response.body.data.csrfToken).toBe('mock-csrf-token')
       // Check that cookies are set
-      const cookies = response.headers['set-cookie']
+      const cookies = response.headers['set-cookie'] as string[]
       expect(cookies).toBeDefined()
       expect(cookies.some((c: string) => c.includes('access_token'))).toBe(true)
       expect(cookies.some((c: string) => c.includes('refresh_token'))).toBe(true)
