@@ -378,6 +378,7 @@ export interface User {
   username: string
   role: 'user' | 'admin'
   avatarUrl: string | null
+  phoneNumber: string | null
   authProvider: 'email' | 'google'
   emailVerified: boolean
   createdAt: string
@@ -439,7 +440,7 @@ export interface Team {
   name: string
   seasonYear: number
   paymentStatus: 'draft' | 'pending' | 'paid' | 'rejected' | 'refunded'
-  stripePaymentId: string | null
+  paymentNotes: string | null
   entryStatus: 'draft' | 'entered' | 'locked'
   totalHrs2024: number
   createdAt: string
@@ -553,6 +554,7 @@ export interface AdminUser {
   emailVerified: boolean
   authProvider: 'email' | 'google'
   avatarUrl: string | null
+  phoneNumber: string | null
   createdAt: string
   teamCount: number
   paidTeamCount: number
@@ -627,6 +629,7 @@ export const authApi = {
     email: string
     username: string
     password: string
+    phoneNumber: string
   }): Promise<ApiResponse<{ user: User }>> => {
     const response = await api.post('/api/auth/register', data)
     return response.data
@@ -900,20 +903,6 @@ export const playersApi = {
   },
 }
 
-// ==================== PAYMENTS API ====================
-
-export const paymentsApi = {
-  /**
-   * Create a checkout session for team payment
-   */
-  createCheckout: async (
-    teamId: string
-  ): Promise<ApiResponse<{ checkoutUrl: string; sessionId: string }>> => {
-    const response = await api.post('/api/payments/checkout', { teamId })
-    return response.data
-  },
-}
-
 // ==================== LEADERBOARDS API ====================
 
 export const leaderboardsApi = {
@@ -1010,9 +999,10 @@ export const adminApi = {
    */
   updateTeamStatus: async (
     id: string,
-    paymentStatus: string
+    paymentStatus: string,
+    paymentNotes?: string
   ): Promise<ApiResponse<AdminTeam>> => {
-    const response = await api.patch(`/api/admin/teams/${id}/status`, { paymentStatus })
+    const response = await api.patch(`/api/admin/teams/${id}/status`, { paymentStatus, paymentNotes })
     return response.data
   },
 

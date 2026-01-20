@@ -27,6 +27,7 @@ export interface User {
   emailVerified: boolean
   role: UserRole
   avatarUrl: string | null
+  phoneNumber: string | null
   verificationToken: string | null
   verificationTokenExpiry: string | null
   resetToken: string | null
@@ -50,7 +51,7 @@ export interface Team {
   name: string
   seasonYear: number
   paymentStatus: PaymentStatus
-  stripePaymentId: string | null
+  paymentNotes: string | null
   entryStatus: EntryStatus
   totalHrs2024: number
   createdAt: string

@@ -26,7 +26,7 @@ import {
   ArrowLeft,
   Edit,
   Trash2,
-  CreditCard,
+  DollarSign,
   Trophy,
   Lock,
   Clock,
@@ -409,8 +409,8 @@ export default function TeamDetail() {
             <div className="flex flex-wrap gap-2">
               {canPay && (
                 <Button onClick={() => navigate(`/teams/${team.id}/payment`)}>
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  Complete Payment
+                  <DollarSign className="w-4 h-4 mr-2" />
+                  View Payment Instructions
                 </Button>
               )}
 

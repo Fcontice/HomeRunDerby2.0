@@ -76,7 +76,7 @@ import { generateCSRFToken } from '../middleware/csrf.js'
  * @throws ConflictError if email or username already exists
  */
 export async function register(req: Request, res: Response) {
-  const { email, username, password } = registerSchema.parse(req.body)
+  const { email, username, password, phoneNumber } = registerSchema.parse(req.body)
 
   // Check if email already exists
   const existingEmail = await db.user.findUnique({
@@ -108,6 +108,7 @@ export async function register(req: Request, res: Response) {
     email: email.toLowerCase(),
     username,
     passwordHash,
+    phoneNumber,
     authProvider: 'email',
     verificationToken,
     verificationTokenExpiry,
@@ -118,6 +119,7 @@ export async function register(req: Request, res: Response) {
     id: newUser.id,
     email: newUser.email,
     username: newUser.username,
+    phoneNumber: newUser.phoneNumber,
     role: newUser.role,
     createdAt: newUser.createdAt,
   }

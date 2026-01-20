@@ -20,6 +20,11 @@ export const registerSchema = z.object({
     .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
     .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
     .regex(/[0-9]/, 'Password must contain at least one number'),
+  phoneNumber: z
+    .string()
+    .min(10, 'Phone number must be at least 10 digits')
+    .max(20, 'Phone number is too long')
+    .regex(/^[\d\s\-\(\)\+]+$/, 'Invalid phone number format'),
 })
 
 export const loginSchema = z.object({
@@ -92,6 +97,7 @@ export const updateTeamSchema = z.object({
 export const updateTeamStatusSchema = z.object({
   paymentStatus: z.enum(['draft', 'pending', 'paid', 'rejected', 'refunded']),
   entryStatus: z.enum(['draft', 'entered', 'locked']).optional(),
+  paymentNotes: z.string().max(500).optional(),
 })
 
 export const sendNotificationSchema = z.object({
@@ -111,6 +117,7 @@ export const verifyPasswordSchema = z.object({
 
 export const updateTeamPaymentStatusSchema = z.object({
   paymentStatus: z.enum(['draft', 'pending', 'paid', 'rejected', 'refunded']),
+  paymentNotes: z.string().max(500).optional(),
 })
 
 export const adminSendNotificationSchema = z.object({

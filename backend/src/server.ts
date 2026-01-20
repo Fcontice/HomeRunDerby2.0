@@ -9,7 +9,6 @@ import passport from './config/passport.js'
 import authRoutes from './routes/authRoutes.js'
 import playerRoutes from './routes/playerRoutes.js'
 import teamRoutes from './routes/teamRoutes.js'
-import paymentRoutes from './routes/paymentRoutes.js'
 import leaderboardRoutes from './routes/leaderboardRoutes.js'
 import healthRoutes from './routes/healthRoutes.js'
 import adminRoutes from './routes/adminRoutes.js'
@@ -95,13 +94,6 @@ app.use('/api/', limiter)
 
 // ==================== GENERAL MIDDLEWARE ====================
 
-// Webhook endpoint needs raw body for signature verification
-// Must be registered BEFORE express.json()
-app.use(
-  '/api/payments/webhook',
-  express.raw({ type: 'application/json' })
-)
-
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
@@ -142,9 +134,6 @@ app.use('/api/players', playerRoutes)
 // Team routes
 app.use('/api/teams', teamRoutes)
 
-// Payment routes
-app.use('/api/payments', paymentRoutes)
-
 // Leaderboard routes
 app.use('/api/leaderboards', leaderboardRoutes)
 
@@ -180,9 +169,6 @@ const server = app.listen(PORT, () => {
   )
   console.log(
     `🔑 Google OAuth: ${process.env.GOOGLE_CLIENT_ID ? '✓ Configured' : '⚠ Not configured'}`
-  )
-  console.log(
-    `💳 Stripe: ${process.env.STRIPE_SECRET_KEY ? '✓ Configured' : '⚠ Not configured'}`
   )
 
   // Initialize scheduled jobs after server starts

@@ -23,6 +23,7 @@ model User {
   createdAt               DateTime       @default(now())
   updatedAt               DateTime       @updatedAt
   deletedAt               DateTime?
+  phoneNumber             String?        @db.VarChar(20)
   notifications           Notification[]
   reminderLogs            ReminderLog[]
   seasonConfigChanges     SeasonConfig[] @relation("SeasonConfigChangedBy")
@@ -33,21 +34,21 @@ model User {
 }
 
 model Team {
-  id              String        @id @default(dbgenerated("gen_random_uuid()"))
-  userId          String
-  name            String
-  seasonYear      Int
-  paymentStatus   PaymentStatus @default(draft)
-  stripePaymentId String?       @unique
-  entryStatus     EntryStatus   @default(draft)
-  totalHrs2024    Int           @default(0)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  lockedAt        DateTime?
-  deletedAt       DateTime?
-  leaderboards    Leaderboard[]
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  teamPlayers     TeamPlayer[]
+  id            String        @id @default(dbgenerated("gen_random_uuid()"))
+  userId        String
+  name          String
+  seasonYear    Int
+  paymentStatus PaymentStatus @default(draft)
+  entryStatus   EntryStatus   @default(draft)
+  totalHrs2024  Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  lockedAt      DateTime?
+  deletedAt     DateTime?
+  paymentNotes  String?
+  leaderboards  Leaderboard[]
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teamPlayers   TeamPlayer[]
 
   @@index([userId])
   @@index([entryStatus])
@@ -107,12 +108,15 @@ model Leaderboard {
   rank            Int
   totalHrs        Int
   calculatedAt    DateTime        @default(now())
+  seasonYear      Int             @default(2025)
   team            Team            @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
   @@unique([teamId, leaderboardType, month])
   @@index([leaderboardType])
   @@index([rank])
   @@index([month])
+  @@index([seasonYear])
+  @@index([leaderboardType, seasonYear], map: "Leaderboard_type_season_idx")
 }
 
 model Notification {
@@ -143,7 +147,7 @@ model ReminderLog {
 }
 
 model JobExecutionLog {
-  id            String    @id @default(dbgenerated("gen_random_uuid()"))
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   jobName       String
   status        String
   startTime     DateTime  @db.Timestamptz(6)
@@ -152,13 +156,14 @@ model JobExecutionLog {
   errorMessage  String?
   errorStack    String?
   context       Json?
-  adminNotified Boolean   @default(false)
+  adminNotified Boolean?  @default(false)
   notifiedAt    DateTime? @db.Timestamptz(6)
-  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+  createdAt     DateTime? @default(now()) @db.Timestamptz(6)
 
-  @@index([jobName])
-  @@index([status])
-  @@index([startTime(sort: Desc)])
+  @@index([jobName], map: "idx_job_execution_log_job_name")
+  @@index([jobName, status], map: "idx_job_execution_log_job_name_status")
+  @@index([startTime(sort: Desc)], map: "idx_job_execution_log_start_time")
+  @@index([status], map: "idx_job_execution_log_status")
 }
 
 model PlayerSeasonStats {
@@ -175,6 +180,24 @@ model PlayerSeasonStats {
   @@index([hrsTotal], map: "idx_player_season_stats_hrs")
   @@index([playerId], map: "idx_player_season_stats_player")
   @@index([seasonYear], map: "idx_player_season_stats_season")
+}
+
+model SeasonConfig {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()"))
+  seasonYear            Int       @unique
+  phase                 String    @default("off_season")
+  registrationOpenDate  DateTime? @db.Date
+  registrationCloseDate DateTime? @db.Date
+  seasonStartDate       DateTime? @db.Date
+  seasonEndDate         DateTime? @db.Date
+  isCurrentSeason       Boolean?  @default(false)
+  lastPhaseChange       DateTime? @default(now()) @db.Timestamp(6)
+  changedBy             String?
+  createdAt             DateTime? @default(now()) @db.Timestamp(6)
+  updatedAt             DateTime? @default(now()) @updatedAt @db.Timestamp(6)
+  changedByUser         User?     @relation("SeasonConfigChangedBy", fields: [changedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([seasonYear])
 }
 
 enum AuthProvider {
@@ -215,29 +238,4 @@ enum NotificationType {
 enum ReminderType {
   payment
   lock_deadline
-}
-
-enum SeasonPhase {
-  off_season
-  registration
-  active
-  completed
-}
-
-model SeasonConfig {
-  id                    String       @id @default(dbgenerated("gen_random_uuid()"))
-  seasonYear            Int          @unique
-  phase                 SeasonPhase  @default(off_season)
-  registrationOpenDate  DateTime?    @db.Date
-  registrationCloseDate DateTime?    @db.Date
-  seasonStartDate       DateTime?    @db.Date
-  seasonEndDate         DateTime?    @db.Date
-  isCurrentSeason       Boolean      @default(false)
-  lastPhaseChange       DateTime     @default(now())
-  changedBy             String?
-  createdAt             DateTime     @default(now())
-  updatedAt             DateTime     @updatedAt
-  changedByUser         User?        @relation("SeasonConfigChangedBy", fields: [changedBy], references: [id])
-
-  @@index([seasonYear])
 }

@@ -49,7 +49,7 @@ interface AuthContextType {
   loading: boolean
   login: (email: string, password: string) => Promise<void>
   logout: () => Promise<void>
-  register: (email: string, username: string, password: string) => Promise<void>
+  register: (email: string, username: string, password: string, phoneNumber: string) => Promise<void>
   setUser: (user: User | null) => void
   refreshUser: () => Promise<void>
   isAuthenticated: boolean
@@ -216,8 +216,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * - Prevents account enumeration attacks
    * - Ensures the email owner controls the account
    */
-  const register = async (email: string, username: string, password: string) => {
-    const response = await authApi.register({ email, username, password })
+  const register = async (email: string, username: string, password: string, phoneNumber: string) => {
+    const response = await authApi.register({ email, username, password, phoneNumber })
 
     if (!response.success) {
       throw new Error(response.error?.message || 'Registration failed')

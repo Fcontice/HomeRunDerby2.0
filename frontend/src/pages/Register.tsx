@@ -20,6 +20,11 @@ import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert'
 
 const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
+  phoneNumber: z
+    .string()
+    .min(10, 'Phone number must be at least 10 digits')
+    .max(20, 'Phone number is too long')
+    .regex(/^[\d\s\-\(\)\+]+$/, 'Invalid phone number format'),
   username: z
     .string()
     .min(3, 'Username must be at least 3 characters')
@@ -61,7 +66,7 @@ export default function Register() {
       setError('')
       setSuccess(false)
       setLoading(true)
-      await registerAuth(data.email, data.username, data.password)
+      await registerAuth(data.email, data.username, data.password, data.phoneNumber)
       setSuccess(true)
     } catch (err: any) {
       setError(
@@ -133,6 +138,20 @@ export default function Register() {
               />
               {errors.email && (
                 <p className="text-sm text-red-500">{errors.email.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phoneNumber">Phone Number</Label>
+              <Input
+                id="phoneNumber"
+                type="tel"
+                placeholder="(555) 123-4567"
+                {...register('phoneNumber')}
+                disabled={loading}
+              />
+              {errors.phoneNumber && (
+                <p className="text-sm text-red-500">{errors.phoneNumber.message}</p>
               )}
             </div>
 

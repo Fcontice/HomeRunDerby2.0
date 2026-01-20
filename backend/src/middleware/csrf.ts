@@ -188,7 +188,6 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction):
     '/api/auth/refresh',        // Uses httpOnly refresh token (XSS protection)
     '/api/auth/google',         // OAuth state parameter provides CSRF protection
     '/api/auth/google/callback',// OAuth state parameter provides CSRF protection
-    '/api/payments/webhook',    // Stripe webhook signature verification
     '/api/admin/jobs',          // Admin-only, protected by JWT + requireAdmin middleware
   ]
 

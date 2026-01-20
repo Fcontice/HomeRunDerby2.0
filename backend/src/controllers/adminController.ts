@@ -25,6 +25,7 @@ import {
   sendPaymentReminderEmail,
   sendLockDeadlineReminderEmail,
 } from '../services/emailService.js'
+import { addTeamToLeaderboard } from '../services/leaderboardService.js'
 
 /**
  * GET /api/admin/stats
@@ -175,22 +176,37 @@ export async function updateTeamStatus(req: Request, res: Response, next: NextFu
       throw new ValidationError(validation.error.errors[0].message)
     }
 
-    const { paymentStatus } = validation.data
+    const { paymentStatus, paymentNotes } = validation.data
 
     const team = await db.team.findUnique({ id })
     if (!team) {
       throw new NotFoundError('Team not found')
     }
 
-    // Update payment status and entry status if needed
+    // Update payment status, entry status, and notes if needed
     const updateData: Record<string, unknown> = { paymentStatus }
 
+    // Include payment notes if provided
+    if (paymentNotes !== undefined) {
+      updateData.paymentNotes = paymentNotes
+    }
+
     // If approving (paid), also set entry status to entered
-    if (paymentStatus === 'paid' && team.entryStatus === 'draft') {
+    const isApproving = paymentStatus === 'paid' && team.entryStatus === 'draft'
+    if (isApproving) {
       updateData.entryStatus = 'entered'
     }
 
     const updatedTeam = await db.team.update({ id }, updateData)
+
+    // Add team to leaderboard if approving
+    if (isApproving) {
+      try {
+        await addTeamToLeaderboard(id, team.seasonYear)
+      } catch (leaderboardError) {
+        console.error('Failed to add team to leaderboard:', leaderboardError)
+      }
+    }
 
     res.json({
       success: true,

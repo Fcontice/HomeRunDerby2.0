@@ -6,8 +6,6 @@ process.env.JWT_SECRET = 'test-jwt-secret-for-testing-only-32chars'
 process.env.SUPABASE_URL = 'https://test.supabase.co'
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-key'
 process.env.SUPABASE_ANON_KEY = 'test-anon-key'
-process.env.STRIPE_SECRET_KEY = 'sk_test_mock'
-process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_mock'
 process.env.RESEND_API_KEY = 're_test_mock'
 process.env.FRONTEND_URL = 'http://localhost:5173'
 

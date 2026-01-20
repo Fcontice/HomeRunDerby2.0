@@ -235,6 +235,52 @@ async function clearLeaderboard(
 }
 
 /**
+ * Add a team to the leaderboard with 0 HRs
+ * Called when a team is approved (payment success or admin approval)
+ */
+export async function addTeamToLeaderboard(teamId: string, seasonYear: number): Promise<void> {
+  // Get team with user info
+  const team = await db.team.findUnique({ id: teamId }, { user: true })
+
+  if (!team || !team.user) {
+    console.warn(`⚠️  Cannot add team ${teamId} to leaderboard: team or user not found`)
+    return
+  }
+
+  // Check if team is already in leaderboard
+  const existing = await db.leaderboard.findMany({
+    teamId,
+    leaderboardType: 'overall',
+    seasonYear,
+  })
+
+  if (existing.length > 0) {
+    console.log(`Team ${team.name} already in leaderboard, skipping`)
+    return
+  }
+
+  // Get current team count to determine rank (new teams go to the end)
+  const currentEntries = await db.leaderboard.findMany({
+    leaderboardType: 'overall',
+    seasonYear,
+  })
+  const newRank = currentEntries.length + 1
+
+  // Add to leaderboard with 0 HRs
+  await db.leaderboard.create({
+    teamId,
+    leaderboardType: 'overall',
+    month: null,
+    rank: newRank,
+    totalHrs: 0,
+    seasonYear,
+    calculatedAt: new Date().toISOString(),
+  })
+
+  console.log(`✅ Added team "${team.name}" to leaderboard (rank ${newRank}, 0 HRs)`)
+}
+
+/**
  * Recalculate all leaderboards (overall + all monthly)
  * This is expensive - use sparingly (e.g., once per day or on-demand)
  */
