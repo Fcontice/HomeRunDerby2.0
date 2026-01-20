@@ -81,6 +81,7 @@ model TeamPlayer {
   @@unique([teamId, playerId])
   @@index([teamId])
   @@index([playerId])
+  @@index([teamId], map: "idx_team_player_team_id")
 }
 
 model PlayerStats {
@@ -98,6 +99,7 @@ model PlayerStats {
   @@index([playerId])
   @@index([seasonYear])
   @@index([date])
+  @@index([playerId, seasonYear, date(sort: Desc)], map: "idx_player_stats_player_season_date")
 }
 
 model Leaderboard {
@@ -117,6 +119,7 @@ model Leaderboard {
   @@index([month])
   @@index([seasonYear])
   @@index([leaderboardType, seasonYear], map: "Leaderboard_type_season_idx")
+  @@index([leaderboardType, seasonYear, rank], map: "idx_leaderboard_type_season_rank")
 }
 
 model Notification {

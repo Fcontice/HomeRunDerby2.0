@@ -1,4 +1,4 @@
-import { forwardRef } from 'react'
+import { forwardRef, memo, useMemo } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { LeaderboardEntry } from '../../services/api'
 import { TeamDetails } from './TeamDetails'
@@ -11,9 +11,11 @@ interface LeaderboardRowProps {
   isHighlighted?: boolean
 }
 
-export const LeaderboardRow = forwardRef<HTMLDivElement, LeaderboardRowProps>(
+export const LeaderboardRow = memo(forwardRef<HTMLDivElement, LeaderboardRowProps>(
   function LeaderboardRow({ entry, index, isExpanded, onToggle, isHighlighted }, ref) {
-  const getRankDisplay = (rank: number) => {
+  // Memoize rank display to prevent recalculation on every render
+  const rankDisplay = useMemo(() => {
+    const rank = entry.rank
     if (rank === 1) {
       return (
         <div className="w-8 h-8 bg-[#d97706] flex items-center justify-center">
@@ -40,7 +42,7 @@ export const LeaderboardRow = forwardRef<HTMLDivElement, LeaderboardRowProps>(
         <span className="font-broadcast text-sm text-gray-400">{rank}</span>
       </div>
     )
-  }
+  }, [entry.rank])
 
   const isEven = index % 2 === 0
 
@@ -61,7 +63,7 @@ export const LeaderboardRow = forwardRef<HTMLDivElement, LeaderboardRowProps>(
         </div>
 
         {/* Rank */}
-        <div className="w-12 flex justify-center">{getRankDisplay(entry.rank)}</div>
+        <div className="w-12 flex justify-center">{rankDisplay}</div>
 
         {/* Team Name */}
         <div className="flex-1 min-w-0 px-2">
@@ -100,4 +102,4 @@ export const LeaderboardRow = forwardRef<HTMLDivElement, LeaderboardRowProps>(
       )}
     </div>
   )
-})
+}))

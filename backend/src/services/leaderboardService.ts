@@ -4,7 +4,9 @@
  */
 
 import { db } from './db.js'
+import { supabaseAdmin } from '../config/supabase.js'
 import { calculateAllTeamScores, calculateMonthlyScores, PlayerScore } from './scoringService.js'
+import { leaderboardCache } from './leaderboardCache.js'
 
 export type LeaderboardType = 'overall' | 'monthly' | 'allstar'
 
@@ -71,6 +73,9 @@ export async function calculateOverallLeaderboard(seasonYear: number = 2025): Pr
 
   console.log(`✅ Overall leaderboard saved (${entries.length} teams)\n`)
 
+  // Invalidate cache after recalculation
+  leaderboardCache.invalidate(`overall:${seasonYear}`)
+
   return entries
 }
 
@@ -123,40 +128,137 @@ export async function calculateMonthlyLeaderboard(
 
   console.log(`✅ Monthly leaderboard saved (${entries.length} teams)\n`)
 
+  // Invalidate cache after recalculation
+  leaderboardCache.invalidate(`monthly:${seasonYear}:${month}`)
+
   return entries
 }
 
 /**
  * Get overall leaderboard from database (cached)
+ * Optimized to use a single JOIN query instead of N+1 queries
  */
 export async function getOverallLeaderboard(seasonYear: number = 2025): Promise<LeaderboardEntry[]> {
-  const leaderboardRecords = await db.leaderboard.findMany({
-    leaderboardType: 'overall',
-    seasonYear,
-  }, {
-    orderBy: { rank: 'asc' },
-  })
+  // Check cache first
+  const cacheKey = `overall:${seasonYear}`
+  const cached = leaderboardCache.get<LeaderboardEntry[]>(cacheKey)
+  if (cached) {
+    console.log(`📋 Leaderboard cache hit for ${cacheKey}`)
+    return cached
+  }
 
+  console.log(`📋 Fetching leaderboard from database for ${seasonYear}...`)
+  const startTime = Date.now()
+
+  // Single query with JOINs to get all data at once
+  const { data, error } = await supabaseAdmin
+    .from('Leaderboard')
+    .select(`
+      id,
+      teamId,
+      rank,
+      totalHrs,
+      team:Team!inner(
+        id,
+        name,
+        deletedAt,
+        user:User!inner(
+          id,
+          username,
+          avatarUrl
+        ),
+        teamPlayers:TeamPlayer(
+          id,
+          player:Player(
+            id,
+            name
+          )
+        )
+      )
+    `)
+    .eq('leaderboardType', 'overall')
+    .eq('seasonYear', seasonYear)
+    .is('team.deletedAt', null)
+    .order('rank', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching leaderboard:', error)
+    throw error
+  }
+
+  // Get all player IDs from all teams in one pass
+  const allPlayerIds = new Set<string>()
+  for (const record of data || []) {
+    const team = record.team as unknown as {
+      teamPlayers: Array<{ player: { id: string } }>
+    }
+    if (team?.teamPlayers) {
+      for (const tp of team.teamPlayers) {
+        if (tp.player?.id) {
+          allPlayerIds.add(tp.player.id)
+        }
+      }
+    }
+  }
+
+  // Fetch all latest player stats in one query
+  const playerStatsMap = new Map<string, { hrsTotal: number; hrsRegularSeason: number; hrsPostseason: number }>()
+
+  if (allPlayerIds.size > 0) {
+    // Get the latest stats for each player by using a subquery approach
+    // We'll fetch all stats and then filter to the latest per player
+    const { data: allStats, error: statsError } = await supabaseAdmin
+      .from('PlayerStats')
+      .select('playerId, hrsTotal, hrsRegularSeason, hrsPostseason, date')
+      .eq('seasonYear', seasonYear)
+      .in('playerId', Array.from(allPlayerIds))
+      .order('date', { ascending: false })
+
+    if (statsError) {
+      console.error('Error fetching player stats:', statsError)
+      throw statsError
+    }
+
+    // Keep only the latest stat for each player
+    if (allStats) {
+      for (const stat of allStats) {
+        if (!playerStatsMap.has(stat.playerId)) {
+          playerStatsMap.set(stat.playerId, {
+            hrsTotal: stat.hrsTotal || 0,
+            hrsRegularSeason: stat.hrsRegularSeason || 0,
+            hrsPostseason: stat.hrsPostseason || 0,
+          })
+        }
+      }
+    }
+  }
+
+  // Transform data to LeaderboardEntry format
   const entries: LeaderboardEntry[] = []
 
-  for (const record of leaderboardRecords) {
-    const team = await db.team.findUnique({ id: record.teamId }, { user: true, teamPlayers: true })
+  for (const record of data || []) {
+    const team = record.team as unknown as {
+      id: string
+      name: string
+      user: { id: string; username: string; avatarUrl: string | null }
+      teamPlayers: Array<{ id: string; player: { id: string; name: string } }>
+    }
 
     if (!team || !team.user) continue
 
-    // Get player scores for this team
+    // Build player scores from the fetched stats
     const playerScores: PlayerScore[] = []
     if (team.teamPlayers) {
       for (const tp of team.teamPlayers) {
         const player = tp.player
-        const latestStats = await db.playerStats.getLatest(player.id, seasonYear)
+        const stats = playerStatsMap.get(player.id)
 
         playerScores.push({
           playerId: player.id,
           playerName: player.name,
-          hrsTotal: latestStats?.hrsTotal || 0,
-          hrsRegularSeason: latestStats?.hrsRegularSeason || 0,
-          hrsPostseason: latestStats?.hrsPostseason || 0,
+          hrsTotal: stats?.hrsTotal || 0,
+          hrsRegularSeason: stats?.hrsRegularSeason || 0,
+          hrsPostseason: stats?.hrsPostseason || 0,
           included: false, // Will be calculated below
         })
       }
@@ -180,28 +282,73 @@ export async function getOverallLeaderboard(seasonYear: number = 2025): Promise<
     })
   }
 
+  const duration = Date.now() - startTime
+  console.log(`✅ Leaderboard fetched in ${duration}ms (${entries.length} teams)`)
+
+  // Cache the results
+  leaderboardCache.set(cacheKey, entries)
+
   return entries
 }
 
 /**
  * Get monthly leaderboard from database (cached)
+ * Optimized to use a single JOIN query
  */
 export async function getMonthlyLeaderboard(
   seasonYear: number,
   month: number
 ): Promise<LeaderboardEntry[]> {
-  const leaderboardRecords = await db.leaderboard.findMany({
-    leaderboardType: 'monthly',
-    month,
-    seasonYear,
-  }, {
-    orderBy: { rank: 'asc' },
-  })
+  // Check cache first
+  const cacheKey = `monthly:${seasonYear}:${month}`
+  const cached = leaderboardCache.get<LeaderboardEntry[]>(cacheKey)
+  if (cached) {
+    console.log(`📋 Monthly leaderboard cache hit for ${cacheKey}`)
+    return cached
+  }
 
+  console.log(`📋 Fetching monthly leaderboard from database for ${seasonYear}-${month}...`)
+  const startTime = Date.now()
+
+  // Single query with JOINs
+  const { data, error } = await supabaseAdmin
+    .from('Leaderboard')
+    .select(`
+      id,
+      teamId,
+      rank,
+      totalHrs,
+      team:Team!inner(
+        id,
+        name,
+        deletedAt,
+        user:User!inner(
+          id,
+          username,
+          avatarUrl
+        )
+      )
+    `)
+    .eq('leaderboardType', 'monthly')
+    .eq('month', month)
+    .eq('seasonYear', seasonYear)
+    .is('team.deletedAt', null)
+    .order('rank', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching monthly leaderboard:', error)
+    throw error
+  }
+
+  // Transform data to LeaderboardEntry format
   const entries: LeaderboardEntry[] = []
 
-  for (const record of leaderboardRecords) {
-    const team = await db.team.findUnique({ id: record.teamId }, { user: true })
+  for (const record of data || []) {
+    const team = record.team as unknown as {
+      id: string
+      name: string
+      user: { id: string; username: string; avatarUrl: string | null }
+    }
 
     if (!team || !team.user) continue
 
@@ -215,6 +362,12 @@ export async function getMonthlyLeaderboard(
       avatarUrl: team.user.avatarUrl,
     })
   }
+
+  const duration = Date.now() - startTime
+  console.log(`✅ Monthly leaderboard fetched in ${duration}ms (${entries.length} teams)`)
+
+  // Cache the results
+  leaderboardCache.set(cacheKey, entries)
 
   return entries
 }

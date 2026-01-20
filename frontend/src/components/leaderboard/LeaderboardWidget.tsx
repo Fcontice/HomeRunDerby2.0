@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { RefreshCw, ChevronRight, Trophy } from 'lucide-react'
 import { leaderboardsApi, LeaderboardEntry } from '../../services/api'
@@ -40,9 +40,12 @@ export function LeaderboardWidget({ userTeamIds = [] }: LeaderboardWidgetProps) 
     navigate(`/leaderboard?teamId=${teamId}`)
   }
 
+  // Memoize the team IDs key to prevent unnecessary re-fetches
+  const userTeamIdsKey = useMemo(() => userTeamIds.join(','), [userTeamIds])
+
   useEffect(() => {
     fetchData()
-  }, [userTeamIds.join(',')])
+  }, [userTeamIdsKey])
 
   const getRankDisplay = (rank: number) => {
     if (rank === 1) {

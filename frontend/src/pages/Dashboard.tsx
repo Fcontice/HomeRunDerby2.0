@@ -35,11 +35,11 @@ export default function Dashboard() {
   }, [])
 
   // Calculate total HRs across all teams
-  const totalHRs = teams.reduce((sum, team) => sum + (team.totalHomeRuns || 0), 0)
+  const totalHRs = teams.reduce((sum, team) => sum + (team.totalHrs2024 || 0), 0)
 
   // Find best performing team
   const bestTeam = teams.length > 0
-    ? teams.reduce((best, team) => (team.totalHomeRuns || 0) > (best.totalHomeRuns || 0) ? team : best)
+    ? teams.reduce((best, team) => (team.totalHrs2024 || 0) > (best.totalHrs2024 || 0) ? team : best)
     : null
 
   return (
@@ -195,7 +195,7 @@ export default function Dashboard() {
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="text-right">
-                            <p className="font-broadcast text-2xl text-[#d97706]">{team.totalHomeRuns || 0}</p>
+                            <p className="font-broadcast text-2xl text-[#d97706]">{team.totalHrs2024 || 0}</p>
                             <p className="text-xs text-gray-500">HRs</p>
                           </div>
                           <div className={`px-2 py-1 text-xs uppercase tracking-wider ${

@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { PlayerScore } from '../../services/api'
 
@@ -6,8 +7,11 @@ interface TeamDetailsProps {
 }
 
 export function TeamDetails({ playerScores }: TeamDetailsProps) {
-  // Sort by HRs descending to show best players first
-  const sortedPlayers = [...playerScores].sort((a, b) => b.hrsTotal - a.hrsTotal)
+  // Memoize sorted players to prevent re-sorting on every render
+  const sortedPlayers = useMemo(
+    () => [...playerScores].sort((a, b) => b.hrsTotal - a.hrsTotal),
+    [playerScores]
+  )
 
   return (
     <div className="bg-[#0c0c0c] p-4 border-t border-white/10">
