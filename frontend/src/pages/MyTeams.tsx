@@ -307,7 +307,7 @@ export default function MyTeams() {
   const totalTeams = teams.length
   const paidTeams = teams.filter(t => t.paymentStatus === 'paid').length
   const draftTeams = teams.filter(t => t.paymentStatus === 'draft').length
-  const totalHRsAll = teams.reduce((sum, team) => sum + (team.totalHomeRuns || 0), 0)
+  const totalHRsAll = teams.reduce((sum, team) => sum + (team.totalHrs2024 || 0), 0)
 
   return (
     <div className="min-h-screen bg-[#0c0c0c]">
@@ -460,7 +460,7 @@ export default function MyTeams() {
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="text-right">
-                          <p className="font-broadcast text-2xl text-[#d97706]">{team.totalHomeRuns || 0}</p>
+                          <p className="font-broadcast text-2xl text-[#d97706]">{team.totalHrs2024 || 0}</p>
                           <p className="text-xs text-gray-500">HRs</p>
                         </div>
                         {isExpanded ? (
