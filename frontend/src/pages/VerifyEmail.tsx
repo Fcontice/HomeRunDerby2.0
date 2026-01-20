@@ -49,10 +49,10 @@ export default function VerifyEmail() {
   }, [searchParams])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md animate-fade-up">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">
+          <CardTitle className="text-2xl text-center text-foreground">
             {status === 'loading' && 'Verifying Email...'}
             {status === 'success' && 'Email Verified!'}
             {status === 'error' && 'Verification Failed'}
@@ -65,7 +65,7 @@ export default function VerifyEmail() {
         <CardContent>
           {status === 'loading' && (
             <div className="flex justify-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             </div>
           )}
 

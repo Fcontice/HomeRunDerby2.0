@@ -192,6 +192,7 @@ export default function AdminUsers() {
               <TableRow>
                 <TableHead className="text-slate-300">Username</TableHead>
                 <TableHead className="text-slate-300">Email</TableHead>
+                <TableHead className="text-slate-300">Phone</TableHead>
                 <TableHead className="text-slate-300">Status</TableHead>
                 <TableHead className="text-slate-300">Role</TableHead>
                 <TableHead className="text-slate-300">Teams</TableHead>
@@ -202,7 +203,7 @@ export default function AdminUsers() {
             <TableBody>
               {filteredUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-slate-400 py-8">
+                  <TableCell colSpan={8} className="text-center text-slate-400 py-8">
                     No users found
                   </TableCell>
                 </TableRow>
@@ -214,6 +215,9 @@ export default function AdminUsers() {
                     </TableCell>
                     <TableCell className="text-slate-300">
                       {user.email}
+                    </TableCell>
+                    <TableCell className="text-slate-300">
+                      {user.phoneNumber || '-'}
                     </TableCell>
                     <TableCell>
                       {user.emailVerified ? (
@@ -354,6 +358,10 @@ export default function AdminUsers() {
                 <div>
                   <p className="text-sm text-slate-400">Email</p>
                   <p className="text-white">{selectedUser.email}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-400">Phone</p>
+                  <p className="text-white">{selectedUser.phoneNumber || '-'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-400">Email Verified</p>

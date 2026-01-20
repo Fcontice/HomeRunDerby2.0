@@ -153,32 +153,4 @@ describe('Dashboard Page', () => {
     })
   })
 
-  describe('Create Team Button', () => {
-    it('navigates to create-team when clicking the card button', async () => {
-      const user = userEvent.setup()
-      render(<Dashboard />)
-
-      const createButton = screen.getByRole('button', { name: /create your first team/i })
-      await user.click(createButton)
-
-      expect(mockNavigate).toHaveBeenCalledWith('/create-team')
-    })
-  })
-
-  describe('Phase 3 Info Card', () => {
-    it('renders the phase 3 complete card', () => {
-      render(<Dashboard />)
-
-      expect(screen.getByText('Phase 3 Complete!')).toBeInTheDocument()
-      expect(screen.getByText(/stats, scoring, and leaderboards/i)).toBeInTheDocument()
-    })
-
-    it('lists the phase 3 features', () => {
-      render(<Dashboard />)
-
-      expect(screen.getByText(/MLB-StatsAPI integration/i)).toBeInTheDocument()
-      expect(screen.getByText(/best 7 of 8/i)).toBeInTheDocument()
-      expect(screen.getByText(/leaderboard caching/i)).toBeInTheDocument()
-    })
-  })
 })

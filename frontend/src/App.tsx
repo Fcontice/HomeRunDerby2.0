@@ -1,17 +1,17 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { SeasonProvider } from './contexts/SeasonContext'
-import { SeasonBanner } from './components/SeasonBanner'
 import ProtectedRoute from './components/ProtectedRoute'
+import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import VerifyEmail from './pages/VerifyEmail'
 import Dashboard from './pages/Dashboard'
 import CreateTeam from './pages/CreateTeam'
-import PaymentPage from './pages/PaymentPage'
+import MyTeams from './pages/MyTeams'
 import Leaderboard from './pages/Leaderboard'
 import Players from './pages/Players'
-import PlayerProfile from './pages/PlayerProfile'
+// PlayerProfile removed - player details now shown in slide-out panel on Players page
 
 // Admin pages
 import AdminLayout from './pages/admin/AdminLayout'
@@ -28,15 +28,15 @@ function App() {
   return (
     <AuthProvider>
       <SeasonProvider>
-        <SeasonBanner />
         <Routes>
         {/* Public routes */}
+        <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/players" element={<Players />} />
-        <Route path="/players/:id" element={<PlayerProfile />} />
+        <Route path="/players/:id" element={<Navigate to="/players" replace />} />
 
         {/* Test component routes */}
         <Route path="/pccomponent-test" element={<ComponentTest />} />  
@@ -53,6 +53,14 @@ function App() {
           }
         />
         <Route
+          path="/my-teams"
+          element={
+            <ProtectedRoute>
+              <MyTeams />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/create-team"
           element={
             <ProtectedRoute>
@@ -60,15 +68,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/teams/:teamId/payment"
-          element={
-            <ProtectedRoute>
-              <PaymentPage />
-            </ProtectedRoute>
-          }
-        />
-
         {/* Admin routes */}
         <Route
           path="/admin"
@@ -84,11 +83,8 @@ function App() {
           <Route path="notifications" element={<AdminNotifications />} />
         </Route>
 
-        {/* Default redirect */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
         {/* 404 - Catch all */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </SeasonProvider>
     </AuthProvider>

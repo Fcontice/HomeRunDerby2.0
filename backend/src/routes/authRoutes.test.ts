@@ -58,8 +58,17 @@ vi.mock('../utils/jwt.js', () => ({
   generateRefreshToken: vi.fn().mockReturnValue('mock-refresh-token'),
   generateRandomToken: vi.fn().mockReturnValue('mock-random-token'),
   createTokenExpiry: vi.fn().mockReturnValue(new Date(Date.now() + 86400000).toISOString()),
+  verifyToken: vi.fn().mockReturnValue({ userId: 'user-123', email: 'test@example.com', role: 'user' }),
 }))
 
+// Mock CSRF middleware
+vi.mock('../middleware/csrf.js', () => ({
+  generateCSRFToken: vi.fn().mockReturnValue('mock-csrf-token'),
+  csrfProtection: vi.fn((_req, _res, next) => next()),
+  csrfTokenEndpoint: vi.fn((_req, res) => res.json({ success: true, data: { csrfToken: 'mock-csrf-token' } })),
+}))
+
+import cookieParser from 'cookie-parser'
 import authRoutes from './authRoutes.js'
 import { db } from '../services/db.js'
 import { comparePassword } from '../utils/password.js'
@@ -68,6 +77,7 @@ import { errorHandler } from '../middleware/errorHandler.js'
 // Create test app
 const app = express()
 app.use(express.json())
+app.use(cookieParser())
 app.use('/api/auth', authRoutes)
 app.use(errorHandler)
 
@@ -240,7 +250,7 @@ describe('Auth Routes', () => {
       expect(response.status).toBe(401)
     })
 
-    it('should return 200 with tokens for valid login', async () => {
+    it('should return 200 with cookies and CSRF token for valid login', async () => {
       vi.mocked(db.user.findUnique).mockResolvedValue({
         id: 'user-123',
         email: 'test@example.com',
@@ -265,8 +275,14 @@ describe('Auth Routes', () => {
       expect(response.status).toBe(200)
       expect(response.body.success).toBe(true)
       expect(response.body.data.user.email).toBe('test@example.com')
-      expect(response.body.data.accessToken).toBe('mock-access-token')
-      expect(response.body.data.refreshToken).toBe('mock-refresh-token')
+      // Tokens are now in httpOnly cookies, CSRF token in response
+      expect(response.body.data.csrfToken).toBe('mock-csrf-token')
+      // Check that cookies are set
+      const cookies = response.headers['set-cookie']
+      expect(cookies).toBeDefined()
+      expect(cookies.some((c: string) => c.includes('access_token'))).toBe(true)
+      expect(cookies.some((c: string) => c.includes('refresh_token'))).toBe(true)
+      expect(cookies.some((c: string) => c.includes('XSRF-TOKEN'))).toBe(true)
     })
   })
 

@@ -6,6 +6,7 @@
 import { Router } from 'express'
 import { asyncHandler } from '../middleware/errorHandler.js'
 import { authenticate, requireAdmin } from '../middleware/auth.js'
+import { cache } from '../middleware/cache.js'
 import {
   getCurrentSeason,
   getAllSeasons,
@@ -20,7 +21,7 @@ const router = Router()
 // ==================== PUBLIC ROUTES ====================
 
 // Get current season (public - needed for frontend to check phase)
-router.get('/current', asyncHandler(getCurrentSeason))
+router.get('/current', cache('long'), asyncHandler(getCurrentSeason))
 
 // ==================== ADMIN ROUTES ====================
 

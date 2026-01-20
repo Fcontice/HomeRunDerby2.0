@@ -10,22 +10,15 @@ const mockAuthApi = vi.hoisted(() => ({
   logout: vi.fn(),
   getProfile: vi.fn(),
   googleLogin: vi.fn(),
+  refreshToken: vi.fn(),
 }))
+
+const mockSetCSRFToken = vi.hoisted(() => vi.fn())
 
 vi.mock('../services/api', () => ({
   authApi: mockAuthApi,
+  setCSRFToken: mockSetCSRFToken,
 }))
-
-// Mock localStorage
-const localStorageMock = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
-  length: 0,
-  key: vi.fn(),
-}
-Object.defineProperty(window, 'localStorage', { value: localStorageMock })
 
 // Test component that uses the hook
 function TestConsumer({ onError }: { onError?: (e: Error) => void }) {
@@ -41,7 +34,7 @@ function TestConsumer({ onError }: { onError?: (e: Error) => void }) {
 
   const handleRegister = async () => {
     try {
-      await register('test@example.com', 'testuser', 'password')
+      await register('test@example.com', 'testuser', 'password', '555-123-4567')
     } catch (e) {
       onError?.(e as Error)
     }
@@ -63,7 +56,6 @@ function TestConsumer({ onError }: { onError?: (e: Error) => void }) {
 describe('AuthContext', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    localStorageMock.getItem.mockReturnValue(null)
   })
 
   describe('Initialization', () => {
@@ -82,8 +74,7 @@ describe('AuthContext', () => {
       expect(screen.getByTestId('authenticated').textContent).toBe('false')
     })
 
-    it('fetches profile when token exists', async () => {
-      localStorageMock.getItem.mockReturnValue('existing-token')
+    it('fetches profile on mount (cookies sent automatically)', async () => {
       mockAuthApi.getProfile.mockResolvedValue({
         success: true,
         data: { user: TEST_USER },
@@ -104,8 +95,7 @@ describe('AuthContext', () => {
       expect(mockAuthApi.getProfile).toHaveBeenCalled()
     })
 
-    it('clears tokens when profile fetch fails', async () => {
-      localStorageMock.getItem.mockReturnValue('invalid-token')
+    it('handles profile fetch failure gracefully', async () => {
       mockAuthApi.getProfile.mockRejectedValue(new Error('Invalid token'))
 
       render(
@@ -119,12 +109,10 @@ describe('AuthContext', () => {
         expect(screen.getByTestId('user').textContent).toBe('null')
       })
 
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('access_token')
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('refresh_token')
+      // No localStorage to clear - cookies handled by browser/server
     })
 
-    it('clears tokens when profile response is not successful', async () => {
-      localStorageMock.getItem.mockReturnValue('some-token')
+    it('handles unsuccessful profile response', async () => {
       mockAuthApi.getProfile.mockResolvedValue({
         success: false,
         error: { message: 'Unauthorized' },
@@ -138,21 +126,19 @@ describe('AuthContext', () => {
 
       await waitFor(() => {
         expect(screen.getByTestId('loading').textContent).toBe('false')
+        expect(screen.getByTestId('user').textContent).toBe('null')
       })
-
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('access_token')
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('refresh_token')
     })
   })
 
   describe('login', () => {
-    it('stores tokens and sets user on successful login', async () => {
+    it('sets user and CSRF token on successful login', async () => {
+      mockAuthApi.getProfile.mockRejectedValue(new Error('Not authenticated'))
       mockAuthApi.login.mockResolvedValue({
         success: true,
         data: {
           user: TEST_USER,
-          accessToken: 'new-access-token',
-          refreshToken: 'new-refresh-token',
+          csrfToken: 'new-csrf-token',
         },
       })
 
@@ -175,8 +161,8 @@ describe('AuthContext', () => {
         expect(screen.getByTestId('authenticated').textContent).toBe('true')
       })
 
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('access_token', 'new-access-token')
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('refresh_token', 'new-refresh-token')
+      // CSRF token stored in memory via setCSRFToken
+      expect(mockSetCSRFToken).toHaveBeenCalledWith('new-csrf-token')
     })
 
     it('throws error on failed login', async () => {
@@ -234,6 +220,7 @@ describe('AuthContext', () => {
         email: 'test@example.com',
         username: 'testuser',
         password: 'password',
+        phoneNumber: '555-123-4567',
       })
 
       // User should still be null (no auto-login)
@@ -271,9 +258,8 @@ describe('AuthContext', () => {
   })
 
   describe('logout', () => {
-    it('clears tokens and user on logout', async () => {
+    it('clears user and CSRF token on logout', async () => {
       // Start with a logged in user
-      localStorageMock.getItem.mockReturnValue('existing-token')
       mockAuthApi.getProfile.mockResolvedValue({
         success: true,
         data: { user: TEST_USER },
@@ -299,12 +285,11 @@ describe('AuthContext', () => {
         expect(screen.getByTestId('authenticated').textContent).toBe('false')
       })
 
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('access_token')
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('refresh_token')
+      // CSRF token cleared from memory
+      expect(mockSetCSRFToken).toHaveBeenCalledWith(null)
     })
 
-    it('clears tokens even when API logout fails', async () => {
-      localStorageMock.getItem.mockReturnValue('existing-token')
+    it('clears user even when API logout fails', async () => {
       mockAuthApi.getProfile.mockResolvedValue({
         success: true,
         data: { user: TEST_USER },
@@ -331,15 +316,13 @@ describe('AuthContext', () => {
         expect(screen.getByTestId('user').textContent).toBe('null')
       })
 
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('access_token')
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('refresh_token')
+      expect(mockSetCSRFToken).toHaveBeenCalledWith(null)
       consoleSpy.mockRestore()
     })
   })
 
   describe('refreshUser', () => {
     it('updates user from profile API', async () => {
-      localStorageMock.getItem.mockReturnValue('existing-token')
       mockAuthApi.getProfile
         .mockResolvedValueOnce({
           success: true,

@@ -2,7 +2,11 @@ import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
-const JWT_EXPIRES_IN = '24h'
+
+// Short-lived access token for security (15 minutes)
+const ACCESS_TOKEN_EXPIRES_IN = '15m'
+
+// Long-lived refresh token stored in httpOnly cookie (7 days)
 const REFRESH_TOKEN_EXPIRES_IN = '7d'
 
 export interface JwtPayload {
@@ -12,16 +16,18 @@ export interface JwtPayload {
 }
 
 /**
- * Generate access token (24 hour expiry)
+ * Generate access token (15 minute expiry for cookie-based auth)
+ * Short expiry limits damage if token is somehow compromised
  */
 export function generateAccessToken(payload: JwtPayload): string {
   return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: JWT_EXPIRES_IN,
+    expiresIn: ACCESS_TOKEN_EXPIRES_IN,
   })
 }
 
 /**
  * Generate refresh token (7 day expiry)
+ * Stored in httpOnly cookie, used to get new access tokens
  */
 export function generateRefreshToken(payload: JwtPayload): string {
   return jwt.sign(payload, JWT_SECRET, {

@@ -112,7 +112,20 @@
       "WebFetch(domain:hrderbyus.com)",
       "WebFetch(domain:www.hrderbyus.com)",
       "WebFetch(domain:hrd20-production.up.railway.app)",
-      "WebFetch(domain:api.hrderbyus.com)"
+      "WebFetch(domain:api.hrderbyus.com)",
+      "mcp__MCP_DOCKER__list_directory",
+      "mcp__MCP_DOCKER__read_file",
+      "Bash(powershell.exe -Command \"cd ''C:\\\\Users\\\\conti\\\\Desktop\\\\HRD2.0\\\\backend''; npm install node-cron; npm install -D @types/node-cron\")",
+      "Bash(echo:*)",
+      "Bash(cmd.exe /c \"cd /d C:\\\\Users\\\\conti\\\\Desktop\\\\HRD2.0\\\\backend && npm install node-cron && npm install -D @types/node-cron\")",
+      "Bash(cmd.exe /c \"cd /d C:\\\\Users\\\\conti\\\\Desktop\\\\HRD2.0\\\\backend && npm install node-cron @types/node-cron --save-dev 2>&1\")",
+      "Bash(cmd.exe /c \"cd /d C:\\\\Users\\\\conti\\\\Desktop\\\\HRD2.0\\\\backend && npm list node-cron 2>&1\")",
+      "Bash(cmd.exe /c \"cd /d C:\\\\Users\\\\conti\\\\Desktop\\\\HRD2.0\\\\backend && npx tsc --noEmit 2>&1\")",
+      "Bash(cmd.exe /c \"cd /d C:\\\\Users\\\\conti\\\\Desktop\\\\HRD2.0\\\\backend && supabase db push 2>&1\")",
+      "Bash(cmd.exe /c \"cd /d C:\\\\Users\\\\conti\\\\Desktop\\\\HRD2.0\\\\backend && supabase db push\")",
+      "Bash(cmd.exe /c \"cd /d C:\\\\Users\\\\conti\\\\Desktop\\\\HRD2.0\\\\backend && supabase db push > supabase_output.txt 2>&1 && type supabase_output.txt\")",
+      "Bash(cmd.exe:*)",
+      "Bash(powershell.exe -Command \"Set-Location ''C:\\\\Users\\\\conti\\\\Desktop\\\\HRD2.0\\\\frontend''; npm test -- --run\")"
     ]
   },
   "enableAllProjectMcpServers": true,

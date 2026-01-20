@@ -4,6 +4,190 @@ All notable changes to Home Run Derby 2.0 project.
 
 ## [Unreleased]
 
+### Performance Optimizations - January 16, 2026
+
+#### Added
+- **HTTP Cache Middleware** (`backend/src/middleware/cache.ts`)
+  - `cache('short')` - 1 minute (search results)
+  - `cache('medium')` - 5 minutes (players, leaderboards)
+  - `cache('long')` - 10 minutes (season config)
+  - Uses `stale-while-revalidate` for instant responses while refreshing
+
+- **Frontend Code Splitting** (`frontend/vite.config.ts`)
+  - `react-vendor` chunk - React, ReactDOM, React Router
+  - `ui-vendor` chunk - Radix UI components
+  - Keeps all bundles under 500KB warning threshold
+
+#### Changed
+- **Cached API Endpoints**
+  - `GET /api/players` - 5 min cache
+  - `GET /api/players/search` - 1 min cache
+  - `GET /api/players/:id` - 5 min cache
+  - `GET /api/players/stats/summary` - 5 min cache
+  - `GET /api/leaderboards/*` - 5 min cache (1 min for team-specific)
+  - `GET /api/season/current` - 10 min cache
+
+- **Documentation Cleanup**
+  - Slimmed CLAUDE.md from 906 to 145 lines (84% reduction)
+  - Added Performance section with caching details
+
+#### Files Changed
+| File | Change Type |
+|------|-------------|
+| `backend/src/middleware/cache.ts` | NEW |
+| `backend/src/routes/playerRoutes.ts` | MODIFIED |
+| `backend/src/routes/leaderboardRoutes.ts` | MODIFIED |
+| `backend/src/routes/seasonRoutes.ts` | MODIFIED |
+| `frontend/vite.config.ts` | MODIFIED |
+| `CLAUDE.md` | MODIFIED |
+
+### Security Hardening: httpOnly Cookie Authentication - January 16, 2026
+
+#### Added
+- **Cookie Configuration** (`backend/src/config/cookies.ts`)
+  - Centralized cookie configuration utility for auth tokens
+  - `access_token`: 15 minute expiry, httpOnly, secure, sameSite=strict
+  - `refresh_token`: 7 day expiry, httpOnly, secure, sameSite=strict
+  - `XSRF-TOKEN`: 1 hour expiry, NOT httpOnly (frontend needs to read), sameSite=strict
+  - Cross-subdomain cookie domain for production (`.hrderbyus.com`)
+
+- **CSRF Protection Middleware** (`backend/src/middleware/csrf.ts`)
+  - Double-submit cookie pattern implementation
+  - Timing-safe CSRF token validation to prevent timing attacks
+  - `csrfProtection` middleware validates `X-CSRF-Token` header matches `XSRF-TOKEN` cookie
+  - `csrfTokenEndpoint` handler for `GET /api/csrf-token` endpoint
+
+- **Token Refresh Endpoint** (`backend/src/routes/authRoutes.ts`)
+  - `POST /api/auth/refresh` - Refresh access token using httpOnly refresh token cookie
+  - Automatic cookie extraction and validation
+  - Returns new access token in httpOnly cookie
+
+#### Changed
+- **JWT Token Expiry** (`backend/src/utils/jwt.ts`)
+  - Shortened access token expiry from 24 hours to 15 minutes
+  - Enhanced security through reduced token lifetime
+
+- **Authentication Middleware** (`backend/src/middleware/auth.ts`)
+  - Token extraction now reads from httpOnly `access_token` cookie first
+  - Falls back to Authorization header for backward compatibility
+  - Seamless migration path for existing clients
+
+- **Auth Controller** (`backend/src/controllers/authController.ts`)
+  - Login sets tokens in httpOnly cookies instead of returning in response body
+  - Logout clears all auth cookies (access_token, refresh_token, XSRF-TOKEN)
+  - Register and OAuth flows updated to use cookie-based auth
+  - CSRF token included in login response for frontend initialization
+
+- **Server Configuration** (`backend/src/server.ts`)
+  - Integrated CSRF protection middleware for state-changing requests
+  - Added cookie-parser middleware for httpOnly cookie handling
+  - CSRF protection applied to POST/PUT/PATCH/DELETE routes
+
+- **Frontend API Service** (`frontend/src/services/api.ts`)
+  - Removed all localStorage token storage (XSS protection)
+  - Added `withCredentials: true` to all Axios requests
+  - CSRF token handling via interceptor (reads from cookie, sends in header)
+  - Subscriber pattern for handling concurrent 401 errors during token refresh
+  - Automatic token refresh when 401 received
+
+- **Frontend Auth Context** (`frontend/src/contexts/AuthContext.tsx`)
+  - Removed localStorage token management
+  - Implemented automatic token refresh (10-minute interval)
+  - Auth state now derived from API calls, not local storage
+  - Cleanup on logout clears refresh interval
+
+#### Security Improvements
+- **XSS Protection**: JWT tokens stored in httpOnly cookies cannot be accessed by JavaScript
+- **CSRF Protection**: Double-submit cookie pattern with timing-safe validation
+- **SameSite Cookies**: Strict mode prevents cross-site request forgery
+- **Secure Flag**: Cookies only transmitted over HTTPS in production
+- **Short-lived Tokens**: 15-minute access tokens limit damage if compromised
+- **Automatic Refresh**: Seamless user experience with background token refresh
+
+#### Files Changed
+| File | Change Type |
+|------|-------------|
+| `backend/src/config/cookies.ts` | NEW |
+| `backend/src/middleware/csrf.ts` | NEW |
+| `backend/src/utils/jwt.ts` | MODIFIED |
+| `backend/src/middleware/auth.ts` | MODIFIED |
+| `backend/src/controllers/authController.ts` | MODIFIED |
+| `backend/src/routes/authRoutes.ts` | MODIFIED |
+| `backend/src/server.ts` | MODIFIED |
+| `frontend/src/services/api.ts` | MODIFIED |
+| `frontend/src/contexts/AuthContext.tsx` | MODIFIED |
+
+### Scheduled Jobs System - January 16, 2026
+
+#### Added
+- **Job Scheduler** (`backend/src/services/scheduledJobs.ts`)
+  - Uses `node-cron` for scheduling (runs in server process, no Redis required)
+  - Daily stats update at **3:00 AM ET** (cron: `0 3 * * *`)
+  - Hourly heartbeat check for monitoring
+  - Timezone-aware scheduling (`America/New_York`)
+  - Graceful shutdown on SIGTERM/SIGINT
+  - Configurable via `DISABLE_SCHEDULED_JOBS=true` environment variable
+
+- **Alert Service** (`backend/src/services/alertService.ts`)
+  - Job execution logging to `JobExecutionLog` table
+  - Admin email alerts on job failure via Resend
+  - Execution statistics (success rate, avg duration)
+  - Query functions for job history and latest executions
+  - `logJobStart()` / `logJobComplete()` for execution tracking
+  - `alertAdminJobFailure()` sends rich HTML email with error details
+
+- **Manual Job Runner** (`backend/src/scripts/runStatsJob.ts`)
+  - CLI script for manual job execution outside scheduler
+  - Supports `--date` flag for specific date updates
+  - Commands: `npm run job:stats`, `npm run job:stats:date 2026-04-15`
+
+- **Admin Job API** (`backend/src/routes/jobRoutes.ts`)
+  - `GET /api/admin/jobs/status` - Scheduler status and latest executions
+  - `GET /api/admin/jobs/history` - Recent job history with filters
+  - `GET /api/admin/jobs/stats` - Execution statistics over time period
+  - `POST /api/admin/jobs/trigger` - Manually trigger any job
+  - `POST /api/admin/jobs/update-stats` - Shortcut for stats update
+
+- **Database Schema** (`backend/migrations/add_job_execution_log.sql`)
+  - `JobExecutionLog` table with columns:
+    - `id`, `jobName`, `status` (success/failed/running/partial)
+    - `startTime`, `endTime`, `durationMs`
+    - `errorMessage`, `errorStack`, `context` (JSONB)
+    - `adminNotified`, `notifiedAt`, `createdAt`
+  - Indexes for efficient querying by job name, status, start time
+
+#### Environment Variables
+- `SEASON_YEAR` - Override current season year (default: 2026)
+- `ADMIN_ALERT_EMAIL` - Email for failure alerts
+- `DISABLE_SCHEDULED_JOBS` - Set to `"true"` to disable scheduling
+
+#### Job Types
+- `update_stats` - Daily stats update + leaderboard recalculation
+- `calculate_leaderboard` - Standalone leaderboard recalculation
+- `import_season` - Pre-contest yearly player import
+- `recalculate_all` - Full system recalculation
+
+---
+
+#### Technical Details
+- **Token Flow**:
+  1. Login: Server sets `access_token`, `refresh_token`, and `XSRF-TOKEN` cookies
+  2. API Requests: Browser auto-sends cookies; frontend adds `X-CSRF-Token` header
+  3. Refresh: Frontend calls `/api/auth/refresh` before token expiry
+  4. Logout: Server clears all auth cookies
+
+- **CSRF Token Validation**:
+  - Uses `crypto.timingSafeEqual()` to prevent timing attacks
+  - Token from `X-CSRF-Token` header must match `XSRF-TOKEN` cookie
+  - Applied to all state-changing HTTP methods (POST, PUT, PATCH, DELETE)
+
+- **Concurrent Request Handling**:
+  - Subscriber pattern queues requests during token refresh
+  - Only one refresh request made even with multiple concurrent 401s
+  - Queued requests automatically retried after successful refresh
+
+---
+
 ### Phase 4: Leaderboard UI - January 8, 2026
 
 #### Added
@@ -641,9 +825,7 @@ Test verifies:
 - **Google OAuth** - Credentials configured for social login
 
 ### Known Issues
-- Background jobs (BullMQ) infrastructure ready but not automated
-- Redis caching infrastructure ready but not utilized
-- Admin routes not implemented
+- Redis caching infrastructure ready but not utilized (using database-backed caching instead)
 - Structured logging (Winston/Pino) not implemented (using console.log)
 
 ---
@@ -651,8 +833,8 @@ Test verifies:
 ## Progress Summary
 
 ### Completed (Phase 1 - 100%)
-✅ Database schema with 7 tables and relationships
-✅ Complete authentication system (backend + frontend)
+✅ Database schema with 10 tables and relationships
+✅ Complete authentication system (httpOnly cookies, CSRF protection)
 ✅ Email verification flow with Resend
 ✅ Password reset functionality
 ✅ Protected routes with JWT
@@ -668,28 +850,36 @@ Test verifies:
 ✅ Stripe payment integration with provider abstraction
 ✅ Payment webhook processing with security hardening
 ✅ Frontend payment page with Stripe Checkout
-⏳ Admin approval system (deferred to Phase 4)
 
 ### Completed (Phase 3 - 100%) - Refactored December 31, 2025
-✅ Player stats updater (MLB-StatsAPI Python script - replaced Baseball Savant)
+✅ Player stats updater (MLB-StatsAPI Python script)
 ✅ Game-by-game tracking with regular season filtering
 ✅ Team scoring calculator ("best 7 of 8" logic)
 ✅ Leaderboard calculation engine (overall + monthly)
 ✅ Database-backed leaderboard caching
 ✅ Leaderboard API endpoints (5 routes)
-✅ Comprehensive test script (7-step pipeline verification)
 
-### Completed (Phase 4 - In Progress)
-✅ Leaderboard UI pages (frontend) - January 8, 2026
+### Completed (Phase 4 - 100%)
+✅ Leaderboard UI pages (frontend)
 ✅ Dashboard leaderboard widget
-✅ Test data seeding script
+✅ Player profile pages (`/players`, `/players/:id`)
+✅ Admin dashboard with team approval workflow
+✅ Quick reminders system (payment + lock deadline)
+✅ Season management / off-season mode
+✅ Re-authentication for destructive actions
 
-### Pending (Phase 4-5)
-❌ Player profile/stats pages
-❌ Admin dashboard with team approval workflow
-❌ Email notification system for leaderboard updates
-❌ Background jobs for automated stats syncing (BullMQ + Redis)
-❌ Production deployment configuration
+### Completed (Phase 5 - 98%)
+✅ Backend unit tests (Vitest + Supertest)
+✅ Frontend unit tests (Vitest + React Testing Library)
+✅ Load testing infrastructure (k6)
+✅ Deployment documentation
+✅ Security hardening (httpOnly cookies, CSRF, token refresh)
+✅ Scheduled jobs system (node-cron, job logging, admin alerts)
+
+### Pending (Final 2%)
+⏳ Production deployment (Railway + Vercel)
+⏳ Production environment configuration
+⏳ Final production verification
 
 ---
 

@@ -26,13 +26,17 @@ import {
   DropdownMenuTrigger,
 } from '../../components/ui/dropdown-menu'
 import { Badge } from '../../components/ui/badge'
+import { Textarea } from '../../components/ui/textarea'
+import { Label } from '../../components/ui/label'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '../../components/ui/dialog'
-import { Loader2, MoreHorizontal, Check, X, RefreshCw, Eye } from 'lucide-react'
+import { Loader2, MoreHorizontal, Check, X, RefreshCw, Eye, StickyNote } from 'lucide-react'
 
 const paymentStatusColors: Record<string, string> = {
   draft: 'bg-slate-500',
@@ -61,8 +65,14 @@ export default function AdminTeams() {
 
   // Modal state
   const [showReAuth, setShowReAuth] = useState(false)
-  const [pendingAction, setPendingAction] = useState<{ teamId: string; status: string } | null>(null)
+  const [pendingAction, setPendingAction] = useState<{ teamId: string; status: string; notes?: string } | null>(null)
   const [selectedTeam, setSelectedTeam] = useState<AdminTeam | null>(null)
+
+  // Payment notes dialog state
+  const [showPaymentNotesDialog, setShowPaymentNotesDialog] = useState(false)
+  const [paymentNotesTeam, setPaymentNotesTeam] = useState<AdminTeam | null>(null)
+  const [paymentNotes, setPaymentNotes] = useState('')
+  const [pendingPaymentStatus, setPendingPaymentStatus] = useState<string | null>(null)
 
   useEffect(() => {
     loadTeams()
@@ -90,26 +100,42 @@ export default function AdminTeams() {
     loadTeams()
   }
 
-  const handleStatusChange = (teamId: string, newStatus: string) => {
+  const handleStatusChange = (teamId: string, newStatus: string, team?: AdminTeam) => {
     // Destructive actions require re-auth
     if (newStatus === 'rejected' || newStatus === 'refunded') {
       setPendingAction({ teamId, status: newStatus })
       setShowReAuth(true)
+    } else if (newStatus === 'paid' && team) {
+      // Show payment notes dialog for approval
+      setPaymentNotesTeam(team)
+      setPaymentNotes(team.paymentNotes || '')
+      setPendingPaymentStatus(newStatus)
+      setShowPaymentNotesDialog(true)
     } else {
       executeStatusChange(teamId, newStatus)
     }
   }
 
+  const handlePaymentNotesConfirm = () => {
+    if (paymentNotesTeam && pendingPaymentStatus) {
+      executeStatusChange(paymentNotesTeam.id, pendingPaymentStatus, paymentNotes)
+      setShowPaymentNotesDialog(false)
+      setPaymentNotesTeam(null)
+      setPaymentNotes('')
+      setPendingPaymentStatus(null)
+    }
+  }
+
   const handleReAuthSuccess = () => {
     if (pendingAction) {
-      executeStatusChange(pendingAction.teamId, pendingAction.status)
+      executeStatusChange(pendingAction.teamId, pendingAction.status, pendingAction.notes)
       setPendingAction(null)
     }
   }
 
-  const executeStatusChange = async (teamId: string, newStatus: string) => {
+  const executeStatusChange = async (teamId: string, newStatus: string, notes?: string) => {
     try {
-      const result = await adminApi.updateTeamStatus(teamId, newStatus)
+      const result = await adminApi.updateTeamStatus(teamId, newStatus, notes)
       if (result.success) {
         loadTeams()
       }
@@ -253,13 +279,13 @@ export default function AdminTeams() {
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
-                          {team.paymentStatus === 'pending' && (
+                          {(team.paymentStatus === 'pending' || team.paymentStatus === 'draft') && (
                             <DropdownMenuItem
-                              onClick={() => handleStatusChange(team.id, 'paid')}
+                              onClick={() => handleStatusChange(team.id, 'paid', team)}
                               className="text-green-400"
                             >
                               <Check className="mr-2 h-4 w-4" />
-                              Approve
+                              Approve Payment
                             </DropdownMenuItem>
                           )}
                           {(team.paymentStatus === 'pending' || team.paymentStatus === 'draft') && (
@@ -336,14 +362,53 @@ export default function AdminTeams() {
                   ))}
                 </div>
               </div>
-              {selectedTeam.stripePaymentId && (
+              {selectedTeam.paymentNotes && (
                 <div>
-                  <p className="text-sm text-slate-400">Stripe Payment ID</p>
-                  <p className="text-white font-mono text-sm">{selectedTeam.stripePaymentId}</p>
+                  <p className="text-sm text-slate-400 flex items-center gap-1">
+                    <StickyNote className="h-3 w-3" />
+                    Payment Notes
+                  </p>
+                  <p className="text-white text-sm bg-slate-700/50 p-2 rounded mt-1">{selectedTeam.paymentNotes}</p>
                 </div>
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment Notes Dialog */}
+      <Dialog open={showPaymentNotesDialog} onOpenChange={setShowPaymentNotesDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Approve Payment</DialogTitle>
+            <DialogDescription>
+              Mark team "{paymentNotesTeam?.name}" as paid. Add optional payment notes for tracking.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="paymentNotes">Payment Notes (optional)</Label>
+              <Textarea
+                id="paymentNotes"
+                placeholder="e.g., Venmo payment received 1/15, Zelle from john@email.com"
+                value={paymentNotes}
+                onChange={(e) => setPaymentNotes(e.target.value)}
+                className="min-h-[100px]"
+              />
+              <p className="text-xs text-slate-500">
+                Record how payment was received for future reference
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPaymentNotesDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handlePaymentNotesConfirm} className="bg-green-600 hover:bg-green-700">
+              <Check className="mr-2 h-4 w-4" />
+              Approve Payment
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

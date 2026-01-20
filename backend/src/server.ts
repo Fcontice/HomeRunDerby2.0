@@ -9,12 +9,14 @@ import passport from './config/passport.js'
 import authRoutes from './routes/authRoutes.js'
 import playerRoutes from './routes/playerRoutes.js'
 import teamRoutes from './routes/teamRoutes.js'
-import paymentRoutes from './routes/paymentRoutes.js'
 import leaderboardRoutes from './routes/leaderboardRoutes.js'
 import healthRoutes from './routes/healthRoutes.js'
 import adminRoutes from './routes/adminRoutes.js'
 import seasonRoutes from './routes/seasonRoutes.js'
+import jobRoutes from './routes/jobRoutes.js'
+import { initializeScheduledJobs, stopScheduledJobs } from './services/scheduledJobs.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
+import { csrfProtection, csrfTokenEndpoint } from './middleware/csrf.js'
 import rateLimit from 'express-rate-limit'
 
 const app = express()
@@ -70,7 +72,8 @@ app.use(
         callback(new Error('Not allowed by CORS'))
       }
     },
-    credentials: true,
+    credentials: true, // Required for httpOnly cookies
+    exposedHeaders: ['X-Total-Count'], // Allow frontend to read pagination headers
   })
 )
 
@@ -91,13 +94,6 @@ app.use('/api/', limiter)
 
 // ==================== GENERAL MIDDLEWARE ====================
 
-// Webhook endpoint needs raw body for signature verification
-// Must be registered BEFORE express.json()
-app.use(
-  '/api/payments/webhook',
-  express.raw({ type: 'application/json' })
-)
-
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
@@ -109,6 +105,14 @@ app.use(passport.initialize())
 
 // Health check routes (includes Python environment check)
 app.use('/health', healthRoutes)
+
+// ==================== CSRF PROTECTION ====================
+
+// CSRF token endpoint - frontend calls this to get initial CSRF token
+app.get('/api/csrf-token', csrfTokenEndpoint)
+
+// Apply CSRF protection to all API routes (after getting token endpoint)
+app.use('/api/', csrfProtection)
 
 // ==================== API ROUTES ====================
 
@@ -130,9 +134,6 @@ app.use('/api/players', playerRoutes)
 // Team routes
 app.use('/api/teams', teamRoutes)
 
-// Payment routes
-app.use('/api/payments', paymentRoutes)
-
 // Leaderboard routes
 app.use('/api/leaderboards', leaderboardRoutes)
 
@@ -145,6 +146,9 @@ app.use('/api/admin', adminRoutes)
 app.use('/api/season', seasonRoutes)
 app.use('/api/admin/seasons', seasonRoutes)
 
+// Job management routes (admin only)
+app.use('/api/admin/jobs', jobRoutes)
+
 // ==================== ERROR HANDLING ====================
 
 // 404 handler (must be after all routes)
@@ -155,7 +159,7 @@ app.use(errorHandler)
 
 // ==================== START SERVER ====================
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`)
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`)
   console.log(`🌐 Allowed Origins: ${allowedOrigins.join(', ')}`)
@@ -166,9 +170,32 @@ app.listen(PORT, () => {
   console.log(
     `🔑 Google OAuth: ${process.env.GOOGLE_CLIENT_ID ? '✓ Configured' : '⚠ Not configured'}`
   )
-  console.log(
-    `💳 Stripe: ${process.env.STRIPE_SECRET_KEY ? '✓ Configured' : '⚠ Not configured'}`
-  )
+
+  // Initialize scheduled jobs after server starts
+  initializeScheduledJobs()
 })
+
+// Graceful shutdown handling
+const gracefulShutdown = (signal: string) => {
+  console.log(`\n${signal} received. Shutting down gracefully...`)
+
+  // Stop scheduled jobs first
+  stopScheduledJobs()
+
+  // Close the HTTP server
+  server.close(() => {
+    console.log('HTTP server closed')
+    process.exit(0)
+  })
+
+  // Force close after 10 seconds
+  setTimeout(() => {
+    console.error('Forced shutdown after timeout')
+    process.exit(1)
+  }, 10000)
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
+process.on('SIGINT', () => gracefulShutdown('SIGINT'))
 
 export default app

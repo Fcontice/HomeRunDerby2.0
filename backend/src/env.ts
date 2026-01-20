@@ -16,13 +16,6 @@ if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   process.exit(1)
 }
 
-if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
-  console.error('❌ Missing critical Stripe environment variables!')
-  console.error('Required: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET')
-  console.error('Check your .env file in the backend directory')
-  process.exit(1)
-}
-
 // Validate email service (required for user flows)
 if (!process.env.RESEND_API_KEY) {
   console.error('❌ Missing RESEND_API_KEY!')
@@ -59,10 +52,6 @@ export const env = {
   SUPABASE_URL: process.env.SUPABASE_URL!,
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY!,
   SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || '',
-
-  // Stripe (validated above, safe to assert non-null)
-  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY!,
-  STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET!,
 
   // Frontend URL
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
