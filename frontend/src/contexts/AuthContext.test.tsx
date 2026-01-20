@@ -34,7 +34,7 @@ function TestConsumer({ onError }: { onError?: (e: Error) => void }) {
 
   const handleRegister = async () => {
     try {
-      await register('test@example.com', 'testuser', 'password')
+      await register('test@example.com', 'testuser', 'password', '555-123-4567')
     } catch (e) {
       onError?.(e as Error)
     }
@@ -220,6 +220,7 @@ describe('AuthContext', () => {
         email: 'test@example.com',
         username: 'testuser',
         password: 'password',
+        phoneNumber: '555-123-4567',
       })
 
       // User should still be null (no auto-login)

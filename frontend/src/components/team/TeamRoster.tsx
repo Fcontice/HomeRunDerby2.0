@@ -5,7 +5,6 @@
 
 import { Link } from 'react-router-dom'
 import { Player } from '../../services/api'
-import { Card } from '../ui/card'
 import { Button } from '../ui/button'
 import { X } from 'lucide-react'
 

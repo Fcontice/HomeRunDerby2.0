@@ -5,7 +5,6 @@
 
 import { useState, useMemo } from 'react'
 import { Player } from '../../services/api'
-import { Card } from '../ui/card'
 import { Input } from '../ui/input'
 import PlayerCard from './PlayerCard'
 import { Search } from 'lucide-react'

@@ -11,7 +11,7 @@ interface LeaderboardTableProps {
   highlightTeamId?: string | null
 }
 
-export function LeaderboardTable({ entries, type, isLoading, onRefresh, highlightTeamId }: LeaderboardTableProps) {
+export function LeaderboardTable({ entries, type: _type, isLoading, onRefresh, highlightTeamId }: LeaderboardTableProps) {
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null)
   const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map())
 
