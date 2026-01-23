@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express'
 import { verifyToken, JwtPayload } from '../utils/jwt.js'
 import { AuthenticationError, AuthorizationError } from '../utils/errors.js'
 import { COOKIE_NAMES } from '../config/cookies.js'
+import { db } from '../services/db.js'
 
 /**
  * @fileoverview Authentication middleware for JWT-based access control.
@@ -259,22 +260,46 @@ export const requireAuth = authenticate
 export const optionalAuth = optionalAuthenticate
 
 /**
- * Express middleware placeholder for email verification requirement.
+ * Express middleware that requires the user's email to be verified.
  *
- * Note: Email verification is currently checked in controllers (authController.ts)
- * rather than in this middleware. This middleware exists for potential future use
- * as a route-level protection mechanism.
+ * Prerequisites: Must be used AFTER authenticate middleware.
  *
- * Current Implementation:
- * - Login controller checks emailVerified before issuing tokens
- * - Team creation controller checks emailVerified before allowing draft
+ * Checks that req.user exists and queries the database to verify
+ * the user's email is verified. Returns 403 if not verified.
  *
- * @param _req - Express request (unused)
+ * @param req - Express request (must have req.user from authenticate)
  * @param _res - Express response (unused)
  * @param next - Express next function
+ *
+ * @example
+ * // Require verified email for team creation
+ * router.post('/teams', authenticate, requireEmailVerified, createTeam)
  */
-export function requireEmailVerified(_req: Request, _res: Response, next: NextFunction): void {
-  // This check is now handled in the controller
-  // But we keep the middleware for route-level protection
-  next()
+export async function requireEmailVerified(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    if (!req.user?.userId) {
+      next(new AuthenticationError('Authentication required'))
+      return
+    }
+
+    const user = await db.user.findUnique({ id: req.user.userId })
+
+    if (!user) {
+      next(new AuthenticationError('User not found'))
+      return
+    }
+
+    if (!user.emailVerified) {
+      next(new AuthorizationError('Email must be verified'))
+      return
+    }
+
+    next()
+  } catch (error) {
+    next(error)
+  }
 }

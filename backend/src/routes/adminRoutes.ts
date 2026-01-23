@@ -14,7 +14,7 @@ import {
   sendPasswordReset,
   deleteUser,
   sendNotifications,
-  endSeason,
+  lockTeams,
   verifyPassword,
   getRecipientCounts,
   getReminderStatus,
@@ -53,7 +53,7 @@ router.post('/reminders/payment', sendPaymentReminder)
 router.post('/reminders/lock-deadline', sendLockDeadlineReminder)
 
 // Season control
-router.post('/season/end', endSeason)
+router.post('/season/lock-teams', lockTeams)
 
 // Re-auth verification
 router.post('/verify-password', verifyPassword)

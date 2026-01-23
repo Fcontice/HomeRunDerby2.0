@@ -127,8 +127,8 @@ export const adminSendNotificationSchema = z.object({
   body: z.string().min(1, 'Body is required').max(10000),
 })
 
-export const endSeasonSchema = z.object({
-  confirmation: z.literal('END SEASON'),
+export const lockTeamsSchema = z.object({
+  confirmation: z.literal('LOCK TEAMS'),
   seasonYear: z.number().int().min(2020).max(2100),
 })
 
@@ -198,7 +198,7 @@ export type CreateCheckoutInput = z.infer<typeof createCheckoutSchema>
 export type VerifyPasswordInput = z.infer<typeof verifyPasswordSchema>
 export type UpdateTeamPaymentStatusInput = z.infer<typeof updateTeamPaymentStatusSchema>
 export type AdminSendNotificationInput = z.infer<typeof adminSendNotificationSchema>
-export type EndSeasonInput = z.infer<typeof endSeasonSchema>
+export type LockTeamsInput = z.infer<typeof lockTeamsSchema>
 export type SendPaymentReminderInput = z.infer<typeof sendPaymentReminderSchema>
 export type SendLockReminderInput = z.infer<typeof sendLockReminderSchema>
 export type SeasonPhase = z.infer<typeof seasonPhaseEnum>

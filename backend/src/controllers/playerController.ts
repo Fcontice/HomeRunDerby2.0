@@ -7,6 +7,7 @@ import { Request, Response, NextFunction } from 'express';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { db } from '../services/db.js';
 import { supabaseAdmin } from '../config/supabase.js';
+import { playerCache } from '../services/playerCache.js';
 // Entity types imported for reference, actual types inferred from db methods
 
 /**
@@ -36,6 +37,33 @@ export async function getPlayers(req: Request, res: Response, next: NextFunction
       limit = '500',
       offset = '0',
     } = req.query;
+
+    // Generate cache key from query params
+    const cacheKey = playerCache.generateKey({
+      seasonYear,
+      minHrs,
+      maxHrs: maxHrs || '',
+      team: team || '',
+      search: search || '',
+      sortBy,
+      sortOrder,
+      limit,
+      offset,
+    });
+
+    // Check cache first
+    const cached = playerCache.get<{
+      players: unknown[];
+      pagination: { total: number; limit: number; offset: number; hasMore: boolean };
+    }>(cacheKey);
+
+    if (cached) {
+      res.json({
+        success: true,
+        data: cached,
+      });
+      return;
+    }
 
     // Build where clause for PlayerSeasonStats
     const where: Record<string, unknown> = {
@@ -93,17 +121,22 @@ export async function getPlayers(req: Request, res: Response, next: NextFunction
       updatedAt: stat.updatedAt,
     }));
 
+    const responseData = {
+      players,
+      pagination: {
+        total: totalCount,
+        limit: parseInt(limit as string),
+        offset: parseInt(offset as string),
+        hasMore: parseInt(offset as string) + players.length < totalCount,
+      },
+    };
+
+    // Cache the result for 5 minutes
+    playerCache.set(cacheKey, responseData);
+
     res.json({
       success: true,
-      data: {
-        players,
-        pagination: {
-          total: totalCount,
-          limit: parseInt(limit as string),
-          offset: parseInt(offset as string),
-          hasMore: parseInt(offset as string) + players.length < totalCount,
-        },
-      },
+      data: responseData,
     });
   } catch (error) {
     next(error);
@@ -117,6 +150,17 @@ export async function getPlayers(req: Request, res: Response, next: NextFunction
 export async function getPlayerById(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
+
+    // Check cache first (2-minute TTL since draftCount can change)
+    const cacheKey = `player:${id}`;
+    const cached = playerCache.get<object>(cacheKey);
+    if (cached) {
+      res.json({
+        success: true,
+        data: cached,
+      });
+      return;
+    }
 
     const player = await db.player.findUnique(
       { id },
@@ -159,19 +203,24 @@ export async function getPlayerById(req: Request, res: Response, next: NextFunct
     const hrsTotal = latestSeasonStats?.hrsTotal || 0;
     const capPercentage = Math.round((hrsTotal / 172) * 1000) / 10; // One decimal place
 
+    const responseData = {
+      ...player,
+      seasonHistory,
+      draftCount,
+      latestSeasonStats: latestSeasonStats ? {
+        seasonYear: latestSeasonStats.seasonYear,
+        hrsTotal: latestSeasonStats.hrsTotal,
+        isEligible: latestSeasonStats.hrsTotal >= 10
+      } : null,
+      capPercentage
+    };
+
+    // Cache for 2 minutes (shorter TTL since draftCount can change with new teams)
+    playerCache.set(cacheKey, responseData, 2 * 60 * 1000);
+
     res.json({
       success: true,
-      data: {
-        ...player,
-        seasonHistory,
-        draftCount,
-        latestSeasonStats: latestSeasonStats ? {
-          seasonYear: latestSeasonStats.seasonYear,
-          hrsTotal: latestSeasonStats.hrsTotal,
-          isEligible: latestSeasonStats.hrsTotal >= 10
-        } : null,
-        capPercentage
-      },
+      data: responseData,
     });
   } catch (error) {
     next(error);

@@ -24,40 +24,99 @@ export interface LeaderboardEntry {
 /**
  * Calculate and save overall season leaderboard
  * Includes both regular season and postseason HRs
+ *
+ * OPTIMIZED: Uses batch queries to fetch all user info and batch insert leaderboard entries
+ * Previously made 2N queries (1 user lookup + 1 insert per team)
+ * Now makes 2 queries total: 1 batch user lookup + 1 batch insert
  */
 export async function calculateOverallLeaderboard(seasonYear: number = 2025): Promise<LeaderboardEntry[]> {
-  console.log(`\n🏆 Calculating overall leaderboard for ${seasonYear}...`)
+  console.log(`\n[Leaderboard] Calculating overall leaderboard for ${seasonYear}...`)
+  const startTime = Date.now()
 
-  // Calculate all team scores
+  // Calculate all team scores (already optimized with batch queries)
   const teamScores = await calculateAllTeamScores(seasonYear, true)
 
   // Clear existing overall leaderboard for this season
   await clearLeaderboard(seasonYear, 'overall')
 
-  // Save to database and build response
+  if (teamScores.length === 0) {
+    console.log(`[Leaderboard] No teams to add to leaderboard`)
+    return []
+  }
+
+  // Step 1: Batch fetch all team user info in ONE query
+  const teamIds = teamScores.map(s => s.teamId)
+  const { data: teamsData, error: teamsError } = await supabaseAdmin
+    .from('Team')
+    .select(`
+      id,
+      user:User(
+        id,
+        username,
+        avatarUrl
+      )
+    `)
+    .in('id', teamIds)
+    .is('deletedAt', null)
+
+  if (teamsError) {
+    console.error('Error fetching team users:', teamsError)
+    throw teamsError
+  }
+
+  // Build a map of teamId -> user info
+  const teamUserMap = new Map<string, { id: string; username: string; avatarUrl: string | null }>()
+  for (const teamData of teamsData || []) {
+    const team = teamData as unknown as { id: string; user: { id: string; username: string; avatarUrl: string | null } }
+    if (team.user) {
+      teamUserMap.set(team.id, team.user)
+    }
+  }
+
+  // Step 2: Build leaderboard entries and batch insert data
   const entries: LeaderboardEntry[] = []
+  const leaderboardInserts: Array<{
+    teamId: string
+    leaderboardType: string
+    month: null
+    rank: number
+    totalHrs: number
+    seasonYear: number
+    calculatedAt: string
+  }> = []
+
+  const now = new Date().toISOString()
+
+  // Competition ranking: tied teams share rank, next team gets position-based rank
+  // Example: 50 HRs → #1, 50 HRs → #1, 45 HRs → #3 (skips #2)
+  let currentRank = 1
+  let previousHrs = -1
 
   for (let i = 0; i < teamScores.length; i++) {
     const score = teamScores[i]
-    const rank = i + 1
 
-    // Get team user info
-    const team = await db.team.findUnique({ id: score.teamId }, { user: true })
+    // Update rank only when HRs differ from previous team
+    if (score.totalHrs !== previousHrs) {
+      currentRank = i + 1  // Position-based rank (creates gaps after ties)
+      previousHrs = score.totalHrs
+    }
 
-    if (!team || !team.user) {
-      console.warn(`⚠️  Team ${score.teamId} has no user, skipping`)
+    const rank = currentRank
+    const user = teamUserMap.get(score.teamId)
+
+    if (!user) {
+      console.warn(`   Team ${score.teamId} has no user, skipping`)
       continue
     }
 
-    // Save to Leaderboard table
-    await db.leaderboard.create({
+    leaderboardInserts.push({
       teamId: score.teamId,
       leaderboardType: 'overall',
       month: null,
       rank,
       totalHrs: score.totalHrs,
       seasonYear,
-      calculatedAt: new Date().toISOString(),
+      calculatedAt: now,
     })
 
     entries.push({
@@ -65,13 +124,26 @@ export async function calculateOverallLeaderboard(seasonYear: number = 2025): Pr
       teamId: score.teamId,
       teamName: score.teamName,
       totalHrs: score.totalHrs,
-      userId: team.user.id,
-      username: team.user.username,
-      avatarUrl: team.user.avatarUrl,
+      userId: user.id,
+      username: user.username,
+      avatarUrl: user.avatarUrl,
     })
   }
 
-  console.log(`✅ Overall leaderboard saved (${entries.length} teams)\n`)
+  // Step 3: Batch insert all leaderboard entries in ONE query
+  if (leaderboardInserts.length > 0) {
+    const { error: insertError } = await supabaseAdmin
+      .from('Leaderboard')
+      .insert(leaderboardInserts)
+
+    if (insertError) {
+      console.error('Error batch inserting leaderboard entries:', insertError)
+      throw insertError
+    }
+  }
+
+  const duration = Date.now() - startTime
+  console.log(`[Leaderboard] Overall leaderboard saved (${entries.length} teams) in ${duration}ms\n`)
 
   // Invalidate cache after recalculation
   leaderboardCache.invalidate(`overall:${seasonYear}`)
@@ -81,38 +153,99 @@ export async function calculateOverallLeaderboard(seasonYear: number = 2025): Pr
 
 /**
  * Calculate and save monthly leaderboard (regular season only)
+ *
+ * OPTIMIZED: Uses batch queries to fetch all user info and batch insert leaderboard entries
+ * Previously made 2N queries (1 user lookup + 1 insert per team)
+ * Now makes 2 queries total: 1 batch user lookup + 1 batch insert
  */
 export async function calculateMonthlyLeaderboard(
   seasonYear: number,
   month: number
 ): Promise<LeaderboardEntry[]> {
-  console.log(`\n📅 Calculating monthly leaderboard for ${seasonYear}-${month.toString().padStart(2, '0')}...`)
+  console.log(`\n[Leaderboard] Calculating monthly leaderboard for ${seasonYear}-${month.toString().padStart(2, '0')}...`)
+  const startTime = Date.now()
 
-  // Calculate monthly team scores
+  // Calculate monthly team scores (already optimized with batch queries)
   const teamScores = await calculateMonthlyScores(seasonYear, month)
 
   // Clear existing monthly leaderboard for this month
   await clearLeaderboard(seasonYear, 'monthly', month)
 
-  // Save to database
+  if (teamScores.length === 0) {
+    console.log(`[Leaderboard] No teams to add to monthly leaderboard`)
+    return []
+  }
+
+  // Step 1: Batch fetch all team user info in ONE query
+  const teamIds = teamScores.map(s => s.teamId)
+  const { data: teamsData, error: teamsError } = await supabaseAdmin
+    .from('Team')
+    .select(`
+      id,
+      user:User(
+        id,
+        username,
+        avatarUrl
+      )
+    `)
+    .in('id', teamIds)
+    .is('deletedAt', null)
+
+  if (teamsError) {
+    console.error('Error fetching team users:', teamsError)
+    throw teamsError
+  }
+
+  // Build a map of teamId -> user info
+  const teamUserMap = new Map<string, { id: string; username: string; avatarUrl: string | null }>()
+  for (const teamData of teamsData || []) {
+    const team = teamData as unknown as { id: string; user: { id: string; username: string; avatarUrl: string | null } }
+    if (team.user) {
+      teamUserMap.set(team.id, team.user)
+    }
+  }
+
+  // Step 2: Build leaderboard entries and batch insert data
   const entries: LeaderboardEntry[] = []
+  const leaderboardInserts: Array<{
+    teamId: string
+    leaderboardType: string
+    month: number
+    rank: number
+    totalHrs: number
+    seasonYear: number
+    calculatedAt: string
+  }> = []
+
+  const now = new Date().toISOString()
+
+  // Competition ranking: tied teams share rank, next team gets position-based rank
+  // Example: 50 HRs → #1, 50 HRs → #1, 45 HRs → #3 (skips #2)
+  let currentRank = 1
+  let previousHrs = -1
 
   for (let i = 0; i < teamScores.length; i++) {
     const score = teamScores[i]
-    const rank = i + 1
 
-    const team = await db.team.findUnique({ id: score.teamId }, { user: true })
+    // Update rank only when HRs differ from previous team
+    if (score.totalHrs !== previousHrs) {
+      currentRank = i + 1  // Position-based rank (creates gaps after ties)
+      previousHrs = score.totalHrs
+    }
 
-    if (!team || !team.user) continue
+    const rank = currentRank
+    const user = teamUserMap.get(score.teamId)
 
-    await db.leaderboard.create({
+    if (!user) continue
+
+    leaderboardInserts.push({
       teamId: score.teamId,
       leaderboardType: 'monthly',
       month,
       rank,
       totalHrs: score.totalHrs,
       seasonYear,
-      calculatedAt: new Date().toISOString(),
+      calculatedAt: now,
     })
 
     entries.push({
@@ -120,13 +253,26 @@ export async function calculateMonthlyLeaderboard(
       teamId: score.teamId,
       teamName: score.teamName,
       totalHrs: score.totalHrs,
-      userId: team.user.id,
-      username: team.user.username,
-      avatarUrl: team.user.avatarUrl,
+      userId: user.id,
+      username: user.username,
+      avatarUrl: user.avatarUrl,
     })
   }
 
-  console.log(`✅ Monthly leaderboard saved (${entries.length} teams)\n`)
+  // Step 3: Batch insert all leaderboard entries in ONE query
+  if (leaderboardInserts.length > 0) {
+    const { error: insertError } = await supabaseAdmin
+      .from('Leaderboard')
+      .insert(leaderboardInserts)
+
+    if (insertError) {
+      console.error('Error batch inserting monthly leaderboard entries:', insertError)
+      throw insertError
+    }
+  }
+
+  const duration = Date.now() - startTime
+  console.log(`[Leaderboard] Monthly leaderboard saved (${entries.length} teams) in ${duration}ms\n`)
 
   // Invalidate cache after recalculation
   leaderboardCache.invalidate(`monthly:${seasonYear}:${month}`)
@@ -161,6 +307,7 @@ export async function getOverallLeaderboard(seasonYear: number = 2025): Promise<
       team:Team!inner(
         id,
         name,
+        createdAt,
         deletedAt,
         user:User!inner(
           id,
@@ -321,6 +468,7 @@ export async function getMonthlyLeaderboard(
       team:Team!inner(
         id,
         name,
+        createdAt,
         deletedAt,
         user:User!inner(
           id,
@@ -388,8 +536,69 @@ async function clearLeaderboard(
 }
 
 /**
+ * Remove a team from all leaderboards
+ * Called when a team's payment status changes to rejected or refunded
+ */
+export async function removeTeamFromLeaderboard(teamId: string, seasonYear: number): Promise<void> {
+  // Get team info for logging
+  const team = await db.team.findUnique({ id: teamId })
+  const teamName = team?.name || teamId
+
+  // Check if team exists in leaderboard
+  const existing = await db.leaderboard.findMany({
+    teamId,
+    seasonYear,
+  })
+
+  if (existing.length === 0) {
+    console.log(`Team "${teamName}" not in leaderboard, nothing to remove`)
+    return
+  }
+
+  // Remove from overall leaderboard
+  try {
+    await db.leaderboard.delete({
+      teamId,
+      leaderboardType: 'overall',
+      month: null,
+    })
+    console.log(`Removed team "${teamName}" from overall leaderboard`)
+  } catch (error) {
+    // May not exist, which is fine
+    console.log(`Team "${teamName}" not in overall leaderboard (may already be removed)`)
+  }
+
+  // Remove from all monthly leaderboards (months 3-9)
+  for (let month = 3; month <= 9; month++) {
+    try {
+      await db.leaderboard.delete({
+        teamId,
+        leaderboardType: 'monthly',
+        month,
+      })
+      console.log(`Removed team "${teamName}" from monthly leaderboard (month ${month})`)
+    } catch (error) {
+      // May not exist for this month, which is fine
+    }
+  }
+
+  // Invalidate caches
+  leaderboardCache.invalidate(`overall:${seasonYear}`)
+  for (let month = 3; month <= 9; month++) {
+    leaderboardCache.invalidate(`monthly:${seasonYear}:${month}`)
+  }
+
+  console.log(`✅ Removed team "${teamName}" from all leaderboards`)
+}
+
+/**
  * Add a team to the leaderboard with 0 HRs
  * Called when a team is approved (payment success or admin approval)
+ *
+ * Uses upsert to prevent duplicate entries from concurrent operations.
+ * The database unique constraint (teamId, leaderboardType, month) ensures
+ * that even if two concurrent requests try to add the same team, only one
+ * entry will be created.
  */
 export async function addTeamToLeaderboard(teamId: string, seasonYear: number): Promise<void> {
   // Get team with user info
@@ -400,37 +609,40 @@ export async function addTeamToLeaderboard(teamId: string, seasonYear: number): 
     return
   }
 
-  // Check if team is already in leaderboard
-  const existing = await db.leaderboard.findMany({
-    teamId,
-    leaderboardType: 'overall',
-    seasonYear,
-  })
-
-  if (existing.length > 0) {
-    console.log(`Team ${team.name} already in leaderboard, skipping`)
-    return
-  }
-
   // Get current team count to determine rank (new teams go to the end)
+  // Note: In case of concurrent operations, the rank may be slightly off,
+  // but it will be corrected during the next leaderboard recalculation
   const currentEntries = await db.leaderboard.findMany({
     leaderboardType: 'overall',
     seasonYear,
   })
   const newRank = currentEntries.length + 1
 
-  // Add to leaderboard with 0 HRs
-  await db.leaderboard.create({
-    teamId,
-    leaderboardType: 'overall',
-    month: null,
-    rank: newRank,
-    totalHrs: 0,
-    seasonYear,
-    calculatedAt: new Date().toISOString(),
-  })
+  // Use upsert to atomically add or update the leaderboard entry
+  // This prevents duplicate entries from concurrent admin operations
+  const { data: entry, created } = await db.leaderboard.upsert(
+    {
+      teamId,
+      leaderboardType: 'overall',
+      seasonYear,
+      month: null,
+    },
+    {
+      // Create data - used when inserting new entry
+      rank: newRank,
+      totalHrs: 0,
+    },
+    {
+      // Update data - used when entry already exists (no-op, keep existing values)
+      // We don't update anything since the team is already in the leaderboard
+    }
+  )
 
-  console.log(`✅ Added team "${team.name}" to leaderboard (rank ${newRank}, 0 HRs)`)
+  if (created) {
+    console.log(`✅ Added team "${team.name}" to leaderboard (rank ${entry.rank}, 0 HRs)`)
+  } else {
+    console.log(`Team "${team.name}" already in leaderboard (rank ${entry.rank}), skipping`)
+  }
 }
 
 /**

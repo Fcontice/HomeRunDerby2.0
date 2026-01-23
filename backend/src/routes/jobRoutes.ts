@@ -12,6 +12,11 @@ import {
   runStatsUpdateJob,
 } from '../services/scheduledJobs.js'
 import {
+  invalidateStatsCache,
+  getStatsDataVersion,
+} from '../middleware/cache.js'
+import { playerCache } from '../services/playerCache.js'
+import {
   getRecentJobExecutions,
   getLatestJobExecutions,
   getJobStats,
@@ -33,12 +38,17 @@ router.get(
   asyncHandler(async (_req, res) => {
     const status = getSchedulerStatus()
     const latestExecutions = await getLatestJobExecutions()
+    const cacheDataVersion = getStatsDataVersion()
 
     res.json({
       success: true,
       data: {
         scheduler: status,
         latestExecutions,
+        cache: {
+          dataVersion: cacheDataVersion,
+          dataVersionDate: new Date(cacheDataVersion).toISOString(),
+        },
       },
     })
   })
@@ -170,6 +180,33 @@ router.post(
         },
       })
     }
+  })
+)
+
+/**
+ * POST /api/admin/jobs/invalidate-cache
+ * Manually invalidate HTTP cache
+ */
+router.post(
+  '/invalidate-cache',
+  asyncHandler(async (req, res) => {
+    console.log(`🔧 Admin ${req.user?.email} manually invalidated cache`)
+
+    const previousVersion = getStatsDataVersion()
+    invalidateStatsCache()
+    playerCache.invalidate()
+    const newVersion = getStatsDataVersion()
+
+    res.json({
+      success: true,
+      message: 'Cache invalidated successfully',
+      data: {
+        previousVersion,
+        previousVersionDate: new Date(previousVersion).toISOString(),
+        newVersion,
+        newVersionDate: new Date(newVersion).toISOString(),
+      },
+    })
   })
 )
 

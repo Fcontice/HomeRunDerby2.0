@@ -32,12 +32,7 @@ export async function createTeam(req: Request, res: Response, next: NextFunction
     const { name, seasonYear, playerIds } = validation.data;
     const userId = req.user!.userId;
 
-    // Check if user's email is verified
-    const user = await db.user.findUnique({ id: userId });
-
-    if (!user?.emailVerified) {
-      throw new AuthorizationError('Email must be verified before creating a team');
-    }
+    // Note: Email verification is now handled by requireEmailVerified middleware
 
     // Validate exactly 8 players
     if (playerIds.length !== 8) {

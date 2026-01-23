@@ -94,7 +94,7 @@ export default function Login() {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               {/* Email field */}
               <div>
-                <label className="block text-xs font-medium text-white/60 uppercase tracking-wider mb-2">
+                <label htmlFor="email" className="block text-xs font-medium text-white/60 uppercase tracking-wider mb-2">
                   Email Address
                 </label>
                 <div className="relative">
@@ -102,6 +102,7 @@ export default function Login() {
                     <Mail className="w-4 h-4 text-white/40" />
                   </div>
                   <input
+                    id="email"
                     type="email"
                     placeholder="you@example.com"
                     {...register('email')}
@@ -117,7 +118,7 @@ export default function Login() {
               {/* Password field */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-xs font-medium text-white/60 uppercase tracking-wider">
+                  <label htmlFor="password" className="block text-xs font-medium text-white/60 uppercase tracking-wider">
                     Password
                   </label>
                   <Link
@@ -132,6 +133,7 @@ export default function Login() {
                     <Lock className="w-4 h-4 text-white/40" />
                   </div>
                   <input
+                    id="password"
                     type="password"
                     placeholder="••••••••"
                     {...register('password')}

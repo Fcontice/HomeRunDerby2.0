@@ -56,6 +56,8 @@ function TestConsumer({ onError }: { onError?: (e: Error) => void }) {
 describe('AuthContext', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Default: simulate unauthenticated state (no valid cookies)
+    mockAuthApi.getProfile.mockResolvedValue({ success: false })
   })
 
   describe('Initialization', () => {
