@@ -201,10 +201,11 @@ export const playerDb = {
       .single()
 
     if (error && error.code !== 'PGRST116') throw error
+    if (!data) return null
 
     // Filter out teamPlayers with soft-deleted teams
-    if (data && include?.teamPlayers) {
-      const playerData = data as Player & { teamPlayers?: Array<{ team: { deletedAt: string | null } }> }
+    if (include?.teamPlayers) {
+      const playerData = data as unknown as { teamPlayers?: Array<{ team?: { deletedAt: string | null } }> }
       if (playerData.teamPlayers) {
         playerData.teamPlayers = playerData.teamPlayers.filter(
           (tp) => tp.team?.deletedAt === null
@@ -212,7 +213,7 @@ export const playerDb = {
       }
     }
 
-    return data as Player | null
+    return data as unknown as Player
   },
 
   async create(data: Partial<Player>): Promise<Player> {
