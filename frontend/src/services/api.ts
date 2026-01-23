@@ -1072,11 +1072,11 @@ export const adminApi = {
   },
 
   /**
-   * End season
+   * Lock all teams for the season
    */
-  endSeason: async (seasonYear: number): Promise<ApiResponse> => {
-    const response = await api.post('/api/admin/season/end', {
-      confirmation: 'END SEASON',
+  lockTeams: async (seasonYear: number): Promise<ApiResponse> => {
+    const response = await api.post('/api/admin/season/lock-teams', {
+      confirmation: 'LOCK TEAMS',
       seasonYear,
     })
     return response.data

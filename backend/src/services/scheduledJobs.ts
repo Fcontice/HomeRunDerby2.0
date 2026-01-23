@@ -21,6 +21,21 @@ import { invalidateStatsCache } from '../middleware/cache.js'
 // Track scheduled tasks for cleanup
 const scheduledTasks: cron.ScheduledTask[] = []
 
+// Job execution locks to prevent concurrent runs
+const jobLocks = new Map<string, boolean>()
+
+function acquireJobLock(jobName: string): boolean {
+  if (jobLocks.get(jobName)) {
+    return false // Already running
+  }
+  jobLocks.set(jobName, true)
+  return true
+}
+
+function releaseJobLock(jobName: string): void {
+  jobLocks.delete(jobName)
+}
+
 // Current season year (can be overridden via env)
 const CURRENT_SEASON_YEAR = parseInt(process.env.SEASON_YEAR || '2026', 10)
 
@@ -40,6 +55,18 @@ export async function runStatsUpdateJob(
   leaderboardUpdated: boolean
   error?: string
 }> {
+  const lockName = 'update_stats'
+
+  if (!acquireJobLock(lockName)) {
+    console.log('⚠️ Stats update job already running, skipping')
+    return {
+      success: false,
+      error: 'Job already running',
+      statsResult: { updated: 0, created: 0, errors: 0 },
+      leaderboardUpdated: false,
+    }
+  }
+
   const jobId = await logJobStart('update_stats', { seasonYear, date: dateStr || 'yesterday' })
 
   console.log(`\n${'='.repeat(60)}`)
@@ -130,6 +157,8 @@ export async function runStatsUpdateJob(
       leaderboardUpdated,
       error: errorMessage,
     }
+  } finally {
+    releaseJobLock(lockName)
   }
 }
 
@@ -142,6 +171,16 @@ export async function runLeaderboardJob(
   success: boolean
   error?: string
 }> {
+  const lockName = 'calculate_leaderboard'
+
+  if (!acquireJobLock(lockName)) {
+    console.log('⚠️ Leaderboard job already running, skipping')
+    return {
+      success: false,
+      error: 'Job already running',
+    }
+  }
+
   const jobId = await logJobStart('calculate_leaderboard', { seasonYear })
 
   console.log(`\n${'='.repeat(60)}`)
@@ -190,6 +229,8 @@ export async function runLeaderboardJob(
       success: false,
       error: errorMessage,
     }
+  } finally {
+    releaseJobLock(lockName)
   }
 }
 

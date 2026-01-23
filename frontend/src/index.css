@@ -40,6 +40,22 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
+
+  /* Override browser autofill styles */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px #18181b inset !important;
+    -webkit-text-fill-color: white !important;
+    caret-color: white !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
+  /* For inputs with bg-white/5 styling */
+  input:-webkit-autofill {
+    background-clip: content-box !important;
+  }
 }
 
 /* Animation keyframes */

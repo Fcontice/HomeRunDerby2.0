@@ -20,11 +20,11 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  // End season modal state
-  const [showEndSeason, setShowEndSeason] = useState(false)
+  // Lock teams modal state
+  const [showLockTeams, setShowLockTeams] = useState(false)
   const [showReAuth, setShowReAuth] = useState(false)
-  const [endSeasonConfirm, setEndSeasonConfirm] = useState('')
-  const [endingSeason, setEndingSeason] = useState(false)
+  const [lockTeamsConfirm, setLockTeamsConfirm] = useState('')
+  const [lockingTeams, setLockingTeams] = useState(false)
 
   useEffect(() => {
     loadStats()
@@ -46,31 +46,31 @@ export default function AdminDashboard() {
     }
   }
 
-  const handleEndSeasonClick = () => {
+  const handleLockTeamsClick = () => {
     setShowReAuth(true)
   }
 
   const handleReAuthSuccess = () => {
-    setShowEndSeason(true)
+    setShowLockTeams(true)
   }
 
-  const handleEndSeason = async () => {
-    if (endSeasonConfirm !== 'END SEASON' || !stats) return
+  const handleLockTeams = async () => {
+    if (lockTeamsConfirm !== 'LOCK TEAMS' || !stats) return
 
-    setEndingSeason(true)
+    setLockingTeams(true)
     try {
-      const result = await adminApi.endSeason(stats.seasonYear)
+      const result = await adminApi.lockTeams(stats.seasonYear)
       if (result.success) {
-        setShowEndSeason(false)
-        setEndSeasonConfirm('')
+        setShowLockTeams(false)
+        setLockTeamsConfirm('')
         loadStats()
       } else {
-        setError(result.error?.message || 'Failed to end season')
+        setError(result.error?.message || 'Failed to lock teams')
       }
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || 'Failed to end season')
+      setError(err.response?.data?.error?.message || 'Failed to lock teams')
     } finally {
-      setEndingSeason(false)
+      setLockingTeams(false)
     }
   }
 
@@ -243,11 +243,11 @@ export default function AdminDashboard() {
             <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
           </Link>
           <button
-            onClick={handleEndSeasonClick}
+            onClick={handleLockTeamsClick}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors"
           >
             <AlertTriangle className="w-4 h-4" />
-            <span className="text-sm">End Season</span>
+            <span className="text-sm">Lock Teams</span>
           </button>
         </div>
       </div>
@@ -257,18 +257,18 @@ export default function AdminDashboard() {
         open={showReAuth}
         onOpenChange={setShowReAuth}
         onSuccess={handleReAuthSuccess}
-        title="End Season"
+        title="Lock Teams"
         description="This is a destructive action. Please verify your identity."
       />
 
-      {/* End Season Confirmation Modal */}
-      {showEndSeason && (
+      {/* Lock Teams Confirmation Modal */}
+      {showLockTeams && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-[#1e293b] border border-white/10 w-full max-w-md">
             <div className="p-5 border-b border-white/5">
               <div className="flex items-center gap-3 text-red-400">
                 <AlertTriangle className="w-5 h-5" />
-                <h3 className="font-semibold">End Season Early?</h3>
+                <h3 className="font-semibold">Lock All Teams?</h3>
               </div>
             </div>
             <div className="p-5 space-y-4">
@@ -276,8 +276,8 @@ export default function AdminDashboard() {
                 <p>This will:</p>
                 <ul className="list-disc list-inside space-y-1 text-slate-400">
                   <li>Lock all team modifications</li>
-                  <li>Freeze the leaderboard</li>
-                  <li>Mark season {stats.seasonYear} as complete</li>
+                  <li>Prevent any further roster changes</li>
+                  <li>Apply to all paid teams in season {stats.seasonYear}</li>
                 </ul>
                 <p className="text-red-400 font-medium pt-2">
                   This action cannot be undone.
@@ -285,12 +285,12 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <label className="block text-xs text-slate-400 mb-2">
-                  Type "END SEASON" to confirm:
+                  Type "LOCK TEAMS" to confirm:
                 </label>
                 <input
-                  value={endSeasonConfirm}
-                  onChange={(e) => setEndSeasonConfirm(e.target.value)}
-                  placeholder="END SEASON"
+                  value={lockTeamsConfirm}
+                  onChange={(e) => setLockTeamsConfirm(e.target.value)}
+                  placeholder="LOCK TEAMS"
                   className="w-full bg-[#0f172a] border border-white/10 text-white px-4 py-2.5 focus:outline-none focus:border-red-500/50"
                 />
               </div>
@@ -298,20 +298,20 @@ export default function AdminDashboard() {
             <div className="p-5 border-t border-white/5 flex justify-end gap-3">
               <button
                 onClick={() => {
-                  setShowEndSeason(false)
-                  setEndSeasonConfirm('')
+                  setShowLockTeams(false)
+                  setLockTeamsConfirm('')
                 }}
                 className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
               >
                 Cancel
               </button>
               <button
-                onClick={handleEndSeason}
-                disabled={endSeasonConfirm !== 'END SEASON' || endingSeason}
+                onClick={handleLockTeams}
+                disabled={lockTeamsConfirm !== 'LOCK TEAMS' || lockingTeams}
                 className="px-4 py-2 text-sm bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                {endingSeason && <Loader2 className="w-4 h-4 animate-spin" />}
-                End Season
+                {lockingTeams && <Loader2 className="w-4 h-4 animate-spin" />}
+                Lock Teams
               </button>
             </div>
           </div>

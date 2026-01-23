@@ -18,7 +18,7 @@ import {
   verifyPasswordSchema,
   updateTeamPaymentStatusSchema,
   adminSendNotificationSchema,
-  endSeasonSchema,
+  lockTeamsSchema,
   sendPaymentReminderSchema,
   sendLockReminderSchema,
 } from '../types/validation.js'
@@ -505,12 +505,12 @@ export async function sendNotifications(req: Request, res: Response, next: NextF
 }
 
 /**
- * POST /api/admin/season/end
- * End the season early
+ * POST /api/admin/season/lock-teams
+ * Lock all teams for the season (prevents further modifications)
  */
-export async function endSeason(req: Request, res: Response, next: NextFunction) {
+export async function lockTeams(req: Request, res: Response, next: NextFunction) {
   try {
-    const validation = endSeasonSchema.safeParse(req.body)
+    const validation = lockTeamsSchema.safeParse(req.body)
     if (!validation.success) {
       throw new ValidationError(validation.error.errors[0].message)
     }
@@ -541,7 +541,7 @@ export async function endSeason(req: Request, res: Response, next: NextFunction)
 
     res.json({
       success: true,
-      message: `Season ${seasonYear} ended. Locked ${lockedCount} teams.`,
+      message: `Locked ${lockedCount} teams for season ${seasonYear}.`,
       data: { seasonYear, lockedCount },
     })
   } catch (error) {
