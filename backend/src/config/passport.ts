@@ -107,8 +107,16 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
               )
             }
           } else {
-            // Create new user
-            const username = email.split('@')[0] + '_' + Date.now()
+            // Create new user - use email prefix as username
+            const baseUsername = email.split('@')[0]
+            let username = baseUsername
+
+            // Check if username is taken, add short suffix if needed
+            const existingUser = await db.user.findFirst({ username: baseUsername })
+            if (existingUser) {
+              // Add random 4-digit suffix if username taken
+              username = baseUsername + '_' + Math.floor(1000 + Math.random() * 9000)
+            }
 
             user = await db.user.create({
               email: email.toLowerCase(),

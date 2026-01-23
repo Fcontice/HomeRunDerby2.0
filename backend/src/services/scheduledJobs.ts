@@ -17,6 +17,7 @@ import {
   type JobName,
 } from './alertService.js'
 import { invalidateStatsCache } from '../middleware/cache.js'
+import { playerCache } from './playerCache.js'
 
 // Track scheduled tasks for cleanup
 const scheduledTasks: cron.ScheduledTask[] = []
@@ -96,6 +97,7 @@ export async function runStatsUpdateJob(
       // Step 3: Invalidate HTTP cache so users see fresh data immediately
       console.log('\n🔄 Step 3: Invalidating HTTP cache...')
       invalidateStatsCache()
+      playerCache.invalidate()
       console.log('   ✅ Cache invalidated - users will see fresh data')
     } else {
       console.log('\n📈 Step 2: Skipping leaderboard (no stats changes)')

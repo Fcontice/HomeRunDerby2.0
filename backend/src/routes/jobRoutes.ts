@@ -15,6 +15,7 @@ import {
   invalidateStatsCache,
   getStatsDataVersion,
 } from '../middleware/cache.js'
+import { playerCache } from '../services/playerCache.js'
 import {
   getRecentJobExecutions,
   getLatestJobExecutions,
@@ -193,6 +194,7 @@ router.post(
 
     const previousVersion = getStatsDataVersion()
     invalidateStatsCache()
+    playerCache.invalidate()
     const newVersion = getStatsDataVersion()
 
     res.json({
