@@ -16,6 +16,7 @@ import {
   alertAdminJobFailure,
   type JobName,
 } from './alertService.js'
+import { invalidateStatsCache } from '../middleware/cache.js'
 
 // Track scheduled tasks for cleanup
 const scheduledTasks: cron.ScheduledTask[] = []
@@ -64,6 +65,11 @@ export async function runStatsUpdateJob(
       await calculateOverallLeaderboard(seasonYear)
       leaderboardUpdated = true
       console.log('   ✅ Leaderboard recalculated')
+
+      // Step 3: Invalidate HTTP cache so users see fresh data immediately
+      console.log('\n🔄 Step 3: Invalidating HTTP cache...')
+      invalidateStatsCache()
+      console.log('   ✅ Cache invalidated - users will see fresh data')
     } else {
       console.log('\n📈 Step 2: Skipping leaderboard (no stats changes)')
     }
@@ -146,6 +152,10 @@ export async function runLeaderboardJob(
 
   try {
     await calculateOverallLeaderboard(seasonYear)
+
+    // Invalidate HTTP cache so users see fresh leaderboard immediately
+    invalidateStatsCache()
+    console.log('   🔄 Cache invalidated - users will see fresh leaderboard')
 
     await logJobComplete(jobId, 'success', {
       context: { seasonYear },

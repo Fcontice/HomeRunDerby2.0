@@ -177,6 +177,7 @@ export const playerDb = {
     let selectQuery = '*'
 
     if (include?.teamPlayers) {
+      // Include teamPlayers with their teams, including deletedAt for filtering
       selectQuery = `
         *,
         teamPlayers:TeamPlayer(
@@ -186,7 +187,8 @@ export const playerDb = {
           team:Team(
             id,
             name,
-            userId
+            userId,
+            deletedAt
           )
         )
       `
@@ -199,6 +201,14 @@ export const playerDb = {
       .single()
 
     if (error && error.code !== 'PGRST116') throw error
+
+    // Filter out teamPlayers with soft-deleted teams
+    if (data && include?.teamPlayers && data.teamPlayers) {
+      data.teamPlayers = (data.teamPlayers as Array<{ team: { deletedAt: string | null } }>).filter(
+        (tp) => tp.team?.deletedAt === null
+      )
+    }
+
     return data as Player | null
   },
 
@@ -226,13 +236,43 @@ export const playerDb = {
   },
 
   async upsert(where: { mlbId: string }, create: Partial<Player>, update: Partial<Player>): Promise<Player> {
-    // Check if exists
-    const existing = await this.findFirst({ mlbId: where.mlbId })
+    // Use Supabase's native upsert with onConflict to handle race conditions atomically
+    // This prevents UNIQUE constraint violations when concurrent calls occur
+    const now = new Date().toISOString()
 
-    if (existing) {
-      return await this.update({ id: existing.id }, update)
-    } else {
-      return await this.create(create)
+    // Merge create and update data, prioritizing update values for existing records
+    // For new records, create data is used; for existing, update data takes precedence
+    const upsertData = {
+      ...create,
+      ...update,
+      mlbId: where.mlbId,
+      updatedAt: now,
+    }
+
+    // Remove id from upsert data - let DB handle it for new records
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { id, ...dataWithoutId } = upsertData as Record<string, unknown>
+
+    try {
+      const { data: player, error } = await supabaseAdmin
+        .from('Player')
+        .upsert(dataWithoutId, {
+          onConflict: 'mlbId',
+          ignoreDuplicates: false, // Update on conflict
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+      return player as Player
+    } catch (error) {
+      // Handle edge case: if upsert still fails due to timing, try to fetch and update
+      // This is a fallback for extremely rare race conditions
+      const existing = await this.findFirst({ mlbId: where.mlbId })
+      if (existing) {
+        return await this.update({ id: existing.id }, update)
+      }
+      throw error
     }
   },
 
@@ -521,7 +561,7 @@ export const teamDb = {
 
     if (teamError) throw teamError
 
-    // Create team players if provided
+    // Create team players if provided - with transaction-like rollback on failure
     if (teamPlayers?.create) {
       const players = teamPlayers.create.map((tp) => {
         const tpNow = new Date().toISOString()
@@ -537,7 +577,15 @@ export const teamDb = {
         .from('TeamPlayer')
         .insert(players)
 
-      if (playersError) throw playersError
+      if (playersError) {
+        // Rollback: Delete the orphaned team if player insertion fails
+        await supabaseAdmin
+          .from('Team')
+          .delete()
+          .eq('id', team.id)
+
+        throw playersError
+      }
     }
 
     // Return team with players
@@ -564,14 +612,26 @@ export const teamDb = {
 
     if (teamError) throw teamError
 
-    // Update team players if provided
+    // Update team players if provided - with transaction-like rollback on failure
     if (teamPlayers) {
-      // Delete existing players
+      // Fetch existing players before deletion (for potential rollback)
+      let existingPlayers: Array<{ playerId: string; position: number; createdAt: string }> = []
+
       if (teamPlayers.deleteMany) {
-        await supabaseAdmin
+        const { data: currentPlayers } = await supabaseAdmin
+          .from('TeamPlayer')
+          .select('playerId, position, createdAt')
+          .eq('teamId', where.id)
+
+        existingPlayers = (currentPlayers || []) as Array<{ playerId: string; position: number; createdAt: string }>
+
+        // Delete existing players
+        const { error: deleteError } = await supabaseAdmin
           .from('TeamPlayer')
           .delete()
           .eq('teamId', where.id)
+
+        if (deleteError) throw deleteError
       }
 
       // Create new players
@@ -584,9 +644,27 @@ export const teamDb = {
           createdAt: now
         }))
 
-        await supabaseAdmin
+        const { error: insertError } = await supabaseAdmin
           .from('TeamPlayer')
           .insert(players)
+
+        if (insertError) {
+          // Rollback: Restore the original team players if insertion fails
+          if (existingPlayers.length > 0) {
+            const rollbackPlayers = existingPlayers.map((tp) => ({
+              playerId: tp.playerId,
+              position: tp.position,
+              teamId: where.id,
+              createdAt: tp.createdAt
+            }))
+
+            await supabaseAdmin
+              .from('TeamPlayer')
+              .insert(rollbackPlayers)
+          }
+
+          throw insertError
+        }
       }
     }
 
@@ -686,13 +764,44 @@ export const playerSeasonStatsDb = {
   },
 
   async upsert(where: { playerId: string; seasonYear: number }, create: Partial<PlayerSeasonStats>, update: Partial<PlayerSeasonStats>): Promise<PlayerSeasonStats> {
-    // Check if exists
-    const existing = await this.findUnique(where)
+    // Use Supabase's native upsert with onConflict to handle race conditions atomically
+    // This prevents UNIQUE constraint violations when concurrent calls occur
+    // The unique constraint is on (playerId, seasonYear)
+    const now = new Date().toISOString()
 
-    if (existing) {
-      return await this.update(where, update)
-    } else {
-      return await this.create({ ...where, ...create })
+    // Merge where, create, and update data
+    const upsertData = {
+      ...create,
+      ...update,
+      playerId: where.playerId,
+      seasonYear: where.seasonYear,
+      updatedAt: now,
+    }
+
+    // Remove id from upsert data - let DB handle it for new records
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { id, ...dataWithoutId } = upsertData as Record<string, unknown>
+
+    try {
+      const { data: stats, error } = await supabaseAdmin
+        .from('PlayerSeasonStats')
+        .upsert(dataWithoutId, {
+          onConflict: 'playerId,seasonYear',
+          ignoreDuplicates: false, // Update on conflict
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+      return stats as PlayerSeasonStats
+    } catch (error) {
+      // Handle edge case: if upsert still fails due to timing, try to fetch and update
+      // This is a fallback for extremely rare race conditions
+      const existing = await this.findUnique(where)
+      if (existing) {
+        return await this.update(where, update)
+      }
+      throw error
     }
   },
 
@@ -866,8 +975,19 @@ export const playerSeasonStatsDb = {
 // ==================== TEAM PLAYER OPERATIONS ====================
 
 export const teamPlayerDb = {
+  /**
+   * Find TeamPlayer records, filtering out those belonging to soft-deleted Teams.
+   * This ensures consistency with the soft-delete pattern used across the application.
+   */
   async findMany(where: Record<string, unknown> = {}): Promise<TeamPlayer[]> {
-    let query = supabaseAdmin.from('TeamPlayer').select('*')
+    // Include team data to filter out soft-deleted teams
+    let query = supabaseAdmin.from('TeamPlayer').select(`
+      *,
+      team:Team!inner(
+        id,
+        deletedAt
+      )
+    `)
 
     // Apply filters
     Object.entries(where).forEach(([key, value]) => {
@@ -876,21 +996,40 @@ export const teamPlayerDb = {
       }
     })
 
+    // Filter out TeamPlayers whose parent Team is soft-deleted
+    query = query.is('team.deletedAt', null)
+
     const { data, error } = await query
 
     if (error) throw error
-    return (data || []) as TeamPlayer[]
+
+    // Remove the team property from results (it was only needed for filtering)
+    const results = (data || []).map(({ team, ...teamPlayer }) => teamPlayer)
+    return results as TeamPlayer[]
   },
 
   async findUnique(where: { id: string }): Promise<TeamPlayer | null> {
+    // Include team data to verify team is not soft-deleted
     const { data, error } = await supabaseAdmin
       .from('TeamPlayer')
-      .select('*')
+      .select(`
+        *,
+        team:Team!inner(
+          id,
+          deletedAt
+        )
+      `)
       .eq('id', where.id)
+      .is('team.deletedAt', null)
       .single()
 
     if (error && error.code !== 'PGRST116') throw error
-    return data as TeamPlayer | null
+
+    if (!data) return null
+
+    // Remove the team property from result
+    const { team, ...teamPlayer } = data
+    return teamPlayer as TeamPlayer
   },
 
   async create(data: Partial<TeamPlayer>): Promise<TeamPlayer> {
@@ -929,16 +1068,29 @@ export const teamPlayerDb = {
     if (error) throw error
   },
 
+  /**
+   * Count TeamPlayer records, excluding those belonging to soft-deleted Teams.
+   */
   async count(where: Record<string, unknown> = {}): Promise<number> {
+    // Include team data to filter out soft-deleted teams
     let query = supabaseAdmin
       .from('TeamPlayer')
-      .select('*', { count: 'exact', head: true })
+      .select(`
+        id,
+        team:Team!inner(
+          id,
+          deletedAt
+        )
+      `, { count: 'exact', head: true })
 
     Object.entries(where).forEach(([key, value]) => {
       if (value !== undefined) {
         query = query.eq(key, value)
       }
     })
+
+    // Filter out TeamPlayers whose parent Team is soft-deleted
+    query = query.is('team.deletedAt', null)
 
     const { count, error } = await query
 
@@ -1045,12 +1197,45 @@ export const playerStatsDb = {
     create: Partial<PlayerStats>,
     update: Partial<PlayerStats>
   ): Promise<PlayerStats> {
-    const existing = await this.findUnique(where)
+    // Use Supabase's native upsert with onConflict to handle race conditions atomically
+    // This prevents UNIQUE constraint violations when concurrent calls occur
+    // The unique constraint is on (playerId, seasonYear, date)
+    const now = new Date().toISOString()
 
-    if (existing) {
-      return await this.update(where, update)
-    } else {
-      return await this.create({ ...where, ...create })
+    // Merge where, create, and update data
+    const upsertData = {
+      ...create,
+      ...update,
+      playerId: where.playerId,
+      seasonYear: where.seasonYear,
+      date: where.date,
+      lastUpdated: now,
+    }
+
+    // Remove id from upsert data - let DB handle it for new records
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { id, ...dataWithoutId } = upsertData as Record<string, unknown>
+
+    try {
+      const { data: stats, error } = await supabaseAdmin
+        .from('PlayerStats')
+        .upsert(dataWithoutId, {
+          onConflict: 'playerId,seasonYear,date',
+          ignoreDuplicates: false, // Update on conflict
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+      return stats as PlayerStats
+    } catch (error) {
+      // Handle edge case: if upsert still fails due to timing, try to fetch and update
+      // This is a fallback for extremely rare race conditions
+      const existing = await this.findUnique(where)
+      if (existing) {
+        return await this.update(where, update)
+      }
+      throw error
     }
   },
 
@@ -1175,6 +1360,59 @@ export const leaderboardDb = {
     const { error } = await query
 
     if (error) throw error
+  },
+
+  /**
+   * Upsert a leaderboard entry with proper conflict handling
+   * Uses the unique constraint (teamId, leaderboardType, month) for conflict resolution
+   * This prevents duplicate entries from concurrent operations
+   */
+  async upsert(
+    where: { teamId: string; leaderboardType: string; seasonYear: number; month?: number | null },
+    create: Partial<Leaderboard>,
+    update: Partial<Leaderboard>
+  ): Promise<{ data: Leaderboard; created: boolean }> {
+    const now = new Date().toISOString()
+
+    // Build the complete insert data
+    const insertData = {
+      teamId: where.teamId,
+      leaderboardType: where.leaderboardType,
+      seasonYear: where.seasonYear,
+      month: where.month ?? null,
+      ...create,
+      calculatedAt: now,
+    }
+
+    // Use Supabase upsert with onConflict to handle race conditions atomically
+    // The unique constraint is on (teamId, leaderboardType, month)
+    const { data, error } = await supabaseAdmin
+      .from('Leaderboard')
+      .upsert(insertData, {
+        onConflict: 'teamId,leaderboardType,month',
+        ignoreDuplicates: false, // Update on conflict
+      })
+      .select()
+      .single()
+
+    if (error) {
+      // Handle specific PostgreSQL duplicate key error (code 23505)
+      // This can still happen in rare edge cases
+      if (error.code === '23505') {
+        // Duplicate key - fetch and return existing entry
+        const existing = await this.findUnique({
+          teamId: where.teamId,
+          leaderboardType: where.leaderboardType,
+          month: where.month,
+        })
+        if (existing) {
+          return { data: existing, created: false }
+        }
+      }
+      throw error
+    }
+
+    return { data: data as Leaderboard, created: true }
   },
 }
 

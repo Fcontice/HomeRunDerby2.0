@@ -71,7 +71,10 @@ vi.mock('../middleware/csrf.js', () => ({
 import cookieParser from 'cookie-parser'
 import authRoutes from './authRoutes.js'
 import { db } from '../services/db.js'
-import { comparePassword } from '../utils/password.js'
+import { hashPassword, comparePassword } from '../utils/password.js'
+import { sendVerificationEmail, sendPasswordResetEmail } from '../services/emailService.js'
+import { generateAccessToken, generateRefreshToken, generateRandomToken, createTokenExpiry } from '../utils/jwt.js'
+import { generateCSRFToken } from '../middleware/csrf.js'
 import { errorHandler } from '../middleware/errorHandler.js'
 
 // Create test app
@@ -83,7 +86,19 @@ app.use(errorHandler)
 
 describe('Auth Routes', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    // resetAllMocks clears BOTH call history AND mock implementations
+    // clearAllMocks only clears call history, leaving mock return values intact
+    vi.resetAllMocks()
+
+    // Restore default mock implementations after reset
+    vi.mocked(hashPassword).mockResolvedValue('hashed-password')
+    vi.mocked(sendVerificationEmail).mockResolvedValue(undefined)
+    vi.mocked(sendPasswordResetEmail).mockResolvedValue(undefined)
+    vi.mocked(generateAccessToken).mockReturnValue('mock-access-token')
+    vi.mocked(generateRefreshToken).mockReturnValue('mock-refresh-token')
+    vi.mocked(generateRandomToken).mockReturnValue('mock-random-token')
+    vi.mocked(createTokenExpiry).mockReturnValue(new Date(Date.now() + 86400000).toISOString())
+    vi.mocked(generateCSRFToken).mockReturnValue('mock-csrf-token')
   })
 
   describe('POST /api/auth/register', () => {
@@ -137,6 +152,7 @@ describe('Auth Routes', () => {
           email: 'test@example.com',
           password: 'Password123',
           username: 'testuser',
+          phoneNumber: '555-123-4567',
         })
 
       expect(response.status).toBe(409)
@@ -154,6 +170,7 @@ describe('Auth Routes', () => {
           email: 'test@example.com',
           password: 'Password123',
           username: 'testuser',
+          phoneNumber: '555-123-4567',
         })
 
       expect(response.status).toBe(409)
@@ -166,6 +183,7 @@ describe('Auth Routes', () => {
         id: 'new-user-id',
         email: 'test@example.com',
         username: 'testuser',
+        phoneNumber: '555-123-4567',
         emailVerified: false,
         role: 'user',
         createdAt: new Date(),
@@ -178,6 +196,7 @@ describe('Auth Routes', () => {
           email: 'test@example.com',
           password: 'Password123',
           username: 'testuser',
+          phoneNumber: '555-123-4567',
         })
 
       expect(response.status).toBe(201)

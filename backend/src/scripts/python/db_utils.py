@@ -107,8 +107,12 @@ class SupabaseDB:
         hrs_postseason: int = 0
     ) -> bool:
         """
-        Upsert player stats for a specific date
+        Upsert player stats for a specific date using atomic upsert
         Uses composite key: (playerId, seasonYear, date)
+
+        This method uses Supabase's native upsert with on_conflict to handle
+        race conditions atomically, preventing UNIQUE constraint violations
+        when concurrent calls occur.
 
         Args:
             player_id: Player UUID
@@ -122,12 +126,8 @@ class SupabaseDB:
             True if successful, False otherwise
         """
         try:
-            # Prisma uses camelCase column names
-            # Check if record exists
-            existing = self.client.table('PlayerStats').select('*').eq(
-                'playerId', player_id
-            ).eq('seasonYear', season_year).eq('date', date).execute()
-
+            # Use Supabase's native upsert with on_conflict for atomic operation
+            # This prevents race conditions that can cause UNIQUE constraint violations
             stats_data = {
                 'playerId': player_id,
                 'seasonYear': season_year,
@@ -138,17 +138,12 @@ class SupabaseDB:
                 'lastUpdated': datetime.utcnow().isoformat()
             }
 
-            if existing.data and len(existing.data) > 0:
-                # Update existing record
-                self.client.table('PlayerStats').update({
-                    'hrsTotal': hrs_total,
-                    'hrsRegularSeason': hrs_regular_season,
-                    'hrsPostseason': hrs_postseason,
-                    'lastUpdated': datetime.utcnow().isoformat()
-                }).eq('playerId', player_id).eq('seasonYear', season_year).eq('date', date).execute()
-            else:
-                # Insert new record
-                self.client.table('PlayerStats').insert(stats_data).execute()
+            # Atomic upsert - if record exists (based on unique constraint), update it
+            # The unique constraint is on (playerId, seasonYear, date)
+            self.client.table('PlayerStats').upsert(
+                stats_data,
+                on_conflict='playerId,seasonYear,date'
+            ).execute()
 
             return True
 

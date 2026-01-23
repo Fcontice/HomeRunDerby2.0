@@ -11,6 +11,10 @@ import {
   AuthenticationError,
 } from '../utils/errors.js'
 import {
+  validatePaymentTransition,
+  validateEntryTransition,
+} from '../utils/statusTransitions.js'
+import {
   verifyPasswordSchema,
   updateTeamPaymentStatusSchema,
   adminSendNotificationSchema,
@@ -25,7 +29,7 @@ import {
   sendPaymentReminderEmail,
   sendLockDeadlineReminderEmail,
 } from '../services/emailService.js'
-import { addTeamToLeaderboard } from '../services/leaderboardService.js'
+import { addTeamToLeaderboard, removeTeamFromLeaderboard } from '../services/leaderboardService.js'
 
 /**
  * GET /api/admin/stats
@@ -183,6 +187,9 @@ export async function updateTeamStatus(req: Request, res: Response, next: NextFu
       throw new NotFoundError('Team not found')
     }
 
+    // Validate payment status transition
+    validatePaymentTransition(team.paymentStatus, paymentStatus)
+
     // Update payment status, entry status, and notes if needed
     const updateData: Record<string, unknown> = { paymentStatus }
 
@@ -194,6 +201,8 @@ export async function updateTeamStatus(req: Request, res: Response, next: NextFu
     // If approving (paid), also set entry status to entered
     const isApproving = paymentStatus === 'paid' && team.entryStatus === 'draft'
     if (isApproving) {
+      // Validate entry status transition as well
+      validateEntryTransition(team.entryStatus, 'entered')
       updateData.entryStatus = 'entered'
     }
 
@@ -205,6 +214,17 @@ export async function updateTeamStatus(req: Request, res: Response, next: NextFu
         await addTeamToLeaderboard(id, team.seasonYear)
       } catch (leaderboardError) {
         console.error('Failed to add team to leaderboard:', leaderboardError)
+      }
+    }
+
+    // Remove team from leaderboard if refunding (paid -> refunded)
+    // Note: rejected only applies to pending status, not paid
+    const isRefunding = paymentStatus === 'refunded' && team.paymentStatus === 'paid'
+    if (isRefunding) {
+      try {
+        await removeTeamFromLeaderboard(id, team.seasonYear)
+      } catch (leaderboardError) {
+        console.error('Failed to remove team from leaderboard:', leaderboardError)
       }
     }
 
@@ -509,6 +529,8 @@ export async function endSeason(req: Request, res: Response, next: NextFunction)
 
     for (const team of teams) {
       if (team.entryStatus !== 'locked') {
+        // Validate transition before updating
+        validateEntryTransition(team.entryStatus, 'locked')
         await db.team.update(
           { id: team.id },
           { entryStatus: 'locked', lockedAt: now }
