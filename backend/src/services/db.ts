@@ -203,10 +203,13 @@ export const playerDb = {
     if (error && error.code !== 'PGRST116') throw error
 
     // Filter out teamPlayers with soft-deleted teams
-    if (data && include?.teamPlayers && data.teamPlayers) {
-      data.teamPlayers = (data.teamPlayers as Array<{ team: { deletedAt: string | null } }>).filter(
-        (tp) => tp.team?.deletedAt === null
-      )
+    if (data && include?.teamPlayers) {
+      const playerData = data as Player & { teamPlayers?: Array<{ team: { deletedAt: string | null } }> }
+      if (playerData.teamPlayers) {
+        playerData.teamPlayers = playerData.teamPlayers.filter(
+          (tp) => tp.team?.deletedAt === null
+        )
+      }
     }
 
     return data as Player | null
@@ -1370,7 +1373,7 @@ export const leaderboardDb = {
   async upsert(
     where: { teamId: string; leaderboardType: string; seasonYear: number; month?: number | null },
     create: Partial<Leaderboard>,
-    update: Partial<Leaderboard>
+    _update: Partial<Leaderboard>
   ): Promise<{ data: Leaderboard; created: boolean }> {
     const now = new Date().toISOString()
 
