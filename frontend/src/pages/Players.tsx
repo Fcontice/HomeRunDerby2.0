@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../components/ui/dialog'
-import { Search, Users, ChevronRight, Filter, X, Trophy, Target, TrendingUp, Loader2, Download, FileText, Columns } from 'lucide-react'
+import { Search, Users, ChevronRight, Filter, X, Trophy, Target, TrendingUp, Loader2, Download } from 'lucide-react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -77,7 +77,6 @@ export default function Players() {
   // React Query for player details - cached for 5 minutes
   const {
     data: selectedPlayer,
-    isLoading: isPlayerLoading,
     isError: isPlayerError
   } = useQuery({
     queryKey: ['player', selectedPlayerId],
