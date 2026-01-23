@@ -2,54 +2,30 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { adminApi, AdminTeam } from '../../services/api'
 import ReAuthModal from '../../components/admin/ReAuthModal'
-import { Button } from '../../components/ui/button'
-import { Input } from '../../components/ui/input'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../../components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../../components/ui/table'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../../components/ui/dropdown-menu'
-import { Badge } from '../../components/ui/badge'
-import { Textarea } from '../../components/ui/textarea'
-import { Label } from '../../components/ui/label'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '../../components/ui/dialog'
-import { Loader2, MoreHorizontal, Check, X, RefreshCw, Eye, StickyNote } from 'lucide-react'
+  Loader2,
+  MoreHorizontal,
+  Check,
+  X,
+  RefreshCw,
+  Eye,
+  StickyNote,
+  Search,
+  ChevronDown,
+} from 'lucide-react'
 
-const paymentStatusColors: Record<string, string> = {
-  draft: 'bg-slate-500',
-  pending: 'bg-yellow-500',
-  paid: 'bg-green-500',
-  rejected: 'bg-red-500',
-  refunded: 'bg-blue-500',
+const paymentStatusColors: Record<string, { bg: string; text: string; border: string }> = {
+  draft: { bg: 'bg-slate-500/10', text: 'text-slate-400', border: 'border-slate-500/30' },
+  pending: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30' },
+  paid: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30' },
+  rejected: { bg: 'bg-red-500/10', text: 'text-red-400', border: 'border-red-500/30' },
+  refunded: { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/30' },
 }
 
-const entryStatusColors: Record<string, string> = {
-  draft: 'bg-slate-500',
-  entered: 'bg-green-500',
-  locked: 'bg-purple-500',
+const entryStatusColors: Record<string, { bg: string; text: string; border: string }> = {
+  draft: { bg: 'bg-slate-500/10', text: 'text-slate-400', border: 'border-slate-500/30' },
+  entered: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30' },
+  locked: { bg: 'bg-violet-500/10', text: 'text-violet-400', border: 'border-violet-500/30' },
 }
 
 export default function AdminTeams() {
@@ -67,6 +43,7 @@ export default function AdminTeams() {
   const [showReAuth, setShowReAuth] = useState(false)
   const [pendingAction, setPendingAction] = useState<{ teamId: string; status: string; notes?: string } | null>(null)
   const [selectedTeam, setSelectedTeam] = useState<AdminTeam | null>(null)
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
 
   // Payment notes dialog state
   const [showPaymentNotesDialog, setShowPaymentNotesDialog] = useState(false)
@@ -77,6 +54,12 @@ export default function AdminTeams() {
   useEffect(() => {
     loadTeams()
   }, [paymentStatus, entryStatus])
+
+  useEffect(() => {
+    const handleClickOutside = () => setActiveDropdown(null)
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [])
 
   const loadTeams = async () => {
     try {
@@ -101,12 +84,11 @@ export default function AdminTeams() {
   }
 
   const handleStatusChange = (teamId: string, newStatus: string, team?: AdminTeam) => {
-    // Destructive actions require re-auth
+    setActiveDropdown(null)
     if (newStatus === 'rejected' || newStatus === 'refunded') {
       setPendingAction({ teamId, status: newStatus })
       setShowReAuth(true)
     } else if (newStatus === 'paid' && team) {
-      // Show payment notes dialog for approval
       setPaymentNotesTeam(team)
       setPaymentNotes(team.paymentNotes || '')
       setPendingPaymentStatus(newStatus)
@@ -155,56 +137,68 @@ export default function AdminTeams() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white">Team Management</h1>
-        <p className="text-slate-400">View and manage all teams</p>
+        <h1 className="text-2xl font-semibold text-white">Team Management</h1>
+        <p className="text-sm text-slate-400 mt-1">View and manage all teams</p>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-4">
-        <Select value={paymentStatus} onValueChange={setPaymentStatus}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Payment Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Payments</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="paid">Paid</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
-            <SelectItem value="refunded">Refunded</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="flex flex-wrap gap-3">
+        <div className="relative">
+          <select
+            value={paymentStatus}
+            onChange={(e) => setPaymentStatus(e.target.value)}
+            className="appearance-none bg-[#1e293b] border border-white/10 text-white text-sm pl-4 pr-10 py-2.5 focus:outline-none focus:border-cyan-500/50"
+          >
+            <option value="all">All Payments</option>
+            <option value="draft">Draft</option>
+            <option value="pending">Pending</option>
+            <option value="paid">Paid</option>
+            <option value="rejected">Rejected</option>
+            <option value="refunded">Refunded</option>
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+        </div>
 
-        <Select value={entryStatus} onValueChange={setEntryStatus}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Entry Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Entries</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="entered">Entered</SelectItem>
-            <SelectItem value="locked">Locked</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="relative">
+          <select
+            value={entryStatus}
+            onChange={(e) => setEntryStatus(e.target.value)}
+            className="appearance-none bg-[#1e293b] border border-white/10 text-white text-sm pl-4 pr-10 py-2.5 focus:outline-none focus:border-cyan-500/50"
+          >
+            <option value="all">All Entries</option>
+            <option value="draft">Draft</option>
+            <option value="entered">Entered</option>
+            <option value="locked">Locked</option>
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+        </div>
 
         <div className="flex gap-2 flex-1">
-          <Input
-            placeholder="Search by team or username..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            className="max-w-sm"
-          />
-          <Button onClick={handleSearch} variant="secondary">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by team or username..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              className="w-full bg-[#1e293b] border border-white/10 text-white text-sm pl-10 pr-4 py-2.5 placeholder-slate-500 focus:outline-none focus:border-cyan-500/50"
+            />
+          </div>
+          <button
+            onClick={handleSearch}
+            className="px-4 py-2.5 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-sm hover:bg-cyan-500/20 transition-colors"
+          >
             Search
-          </Button>
+          </button>
         </div>
       </div>
 
       {/* Error */}
       {error && (
-        <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 text-red-400">
+        <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
           {error}
         </div>
       )}
@@ -212,108 +206,125 @@ export default function AdminTeams() {
       {/* Table */}
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
         </div>
       ) : (
-        <div className="rounded-lg border border-slate-700 overflow-hidden">
-          <Table>
-            <TableHeader className="bg-slate-800">
-              <TableRow>
-                <TableHead className="text-slate-300">Team Name</TableHead>
-                <TableHead className="text-slate-300">Owner</TableHead>
-                <TableHead className="text-slate-300">Players</TableHead>
-                <TableHead className="text-slate-300">HR Cap</TableHead>
-                <TableHead className="text-slate-300">Payment</TableHead>
-                <TableHead className="text-slate-300">Entry</TableHead>
-                <TableHead className="text-slate-300">Created</TableHead>
-                <TableHead className="text-slate-300">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTeams.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center text-slate-400 py-8">
-                    No teams found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredTeams.map((team) => (
-                  <TableRow key={team.id} className="bg-slate-800/50 hover:bg-slate-800">
-                    <TableCell className="font-medium text-white">
-                      {team.name}
-                    </TableCell>
-                    <TableCell className="text-slate-300">
-                      <div>
-                        <p>{team.user?.username}</p>
-                        <p className="text-xs text-slate-500">{team.user?.email}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-slate-300">
-                      {team.teamPlayers?.length || 0}/8
-                    </TableCell>
-                    <TableCell className="text-slate-300">
-                      {team.totalHrs2024}/172
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={paymentStatusColors[team.paymentStatus]}>
-                        {team.paymentStatus}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={`border-2 ${entryStatusColors[team.entryStatus].replace('bg-', 'border-')}`}>
-                        {team.entryStatus}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-slate-400">
-                      {new Date(team.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setSelectedTeam(team)}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details
-                          </DropdownMenuItem>
-                          {(team.paymentStatus === 'pending' || team.paymentStatus === 'draft') && (
-                            <DropdownMenuItem
-                              onClick={() => handleStatusChange(team.id, 'paid', team)}
-                              className="text-green-400"
+        <div className="bg-[#1e293b] border border-white/5 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-white/5">
+                  <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-5 py-4">Team Name</th>
+                  <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-5 py-4">Owner</th>
+                  <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-5 py-4">Players</th>
+                  <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-5 py-4">HR Cap</th>
+                  <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-5 py-4">Payment</th>
+                  <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-5 py-4">Entry</th>
+                  <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-5 py-4">Created</th>
+                  <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-5 py-4">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {filteredTeams.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="text-center text-slate-400 py-12">
+                      No teams found
+                    </td>
+                  </tr>
+                ) : (
+                  filteredTeams.map((team) => {
+                    const paymentColors = paymentStatusColors[team.paymentStatus] || paymentStatusColors.draft
+                    const entryColors = entryStatusColors[team.entryStatus] || entryStatusColors.draft
+                    return (
+                      <tr key={team.id} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="px-5 py-4">
+                          <span className="text-sm font-medium text-white">{team.name}</span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div>
+                            <p className="text-sm text-slate-300">{team.user?.username}</p>
+                            <p className="text-xs text-slate-500">{team.user?.email}</p>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="text-sm text-slate-300 font-mono">{team.teamPlayers?.length || 0}/8</span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="text-sm text-slate-300 font-mono">{team.totalHrs2024}/172</span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className={`inline-flex px-2 py-1 text-xs font-medium ${paymentColors.bg} ${paymentColors.text} border ${paymentColors.border}`}>
+                            {team.paymentStatus}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className={`inline-flex px-2 py-1 text-xs font-medium ${entryColors.bg} ${entryColors.text} border ${entryColors.border}`}>
+                            {team.entryStatus}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="text-sm text-slate-400">
+                            {new Date(team.createdAt).toLocaleDateString()}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="relative">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setActiveDropdown(activeDropdown === team.id ? null : team.id)
+                              }}
+                              className="p-2 text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
                             >
-                              <Check className="mr-2 h-4 w-4" />
-                              Approve Payment
-                            </DropdownMenuItem>
-                          )}
-                          {(team.paymentStatus === 'pending' || team.paymentStatus === 'draft') && (
-                            <DropdownMenuItem
-                              onClick={() => handleStatusChange(team.id, 'rejected')}
-                              className="text-red-400"
-                            >
-                              <X className="mr-2 h-4 w-4" />
-                              Reject
-                            </DropdownMenuItem>
-                          )}
-                          {team.paymentStatus === 'paid' && (
-                            <DropdownMenuItem
-                              onClick={() => handleStatusChange(team.id, 'refunded')}
-                              className="text-blue-400"
-                            >
-                              <RefreshCw className="mr-2 h-4 w-4" />
-                              Mark Refunded
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                              <MoreHorizontal className="w-4 h-4" />
+                            </button>
+                            {activeDropdown === team.id && (
+                              <div className="absolute right-0 top-full mt-1 w-48 bg-[#0f172a] border border-white/10 shadow-xl z-10">
+                                <button
+                                  onClick={() => { setSelectedTeam(team); setActiveDropdown(null) }}
+                                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-white/5 transition-colors"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                  View Details
+                                </button>
+                                {(team.paymentStatus === 'pending' || team.paymentStatus === 'draft') && (
+                                  <>
+                                    <button
+                                      onClick={() => handleStatusChange(team.id, 'paid', team)}
+                                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+                                    >
+                                      <Check className="w-4 h-4" />
+                                      Approve Payment
+                                    </button>
+                                    <button
+                                      onClick={() => handleStatusChange(team.id, 'rejected')}
+                                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                                    >
+                                      <X className="w-4 h-4" />
+                                      Reject
+                                    </button>
+                                  </>
+                                )}
+                                {team.paymentStatus === 'paid' && (
+                                  <button
+                                    onClick={() => handleStatusChange(team.id, 'refunded')}
+                                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-blue-400 hover:bg-blue-500/10 transition-colors"
+                                  >
+                                    <RefreshCw className="w-4 h-4" />
+                                    Mark Refunded
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -330,87 +341,102 @@ export default function AdminTeams() {
       />
 
       {/* Team Details Modal */}
-      <Dialog open={!!selectedTeam} onOpenChange={() => setSelectedTeam(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{selectedTeam?.name}</DialogTitle>
-          </DialogHeader>
-          {selectedTeam && (
-            <div className="space-y-4">
+      {selectedTeam && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1e293b] border border-white/10 w-full max-w-2xl max-h-[80vh] overflow-auto">
+            <div className="p-5 border-b border-white/5 flex items-center justify-between">
+              <h3 className="font-semibold text-white">{selectedTeam.name}</h3>
+              <button
+                onClick={() => setSelectedTeam(null)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-5">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-slate-400">Owner</p>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Owner</p>
                   <p className="text-white">{selectedTeam.user?.username}</p>
                   <p className="text-sm text-slate-500">{selectedTeam.user?.email}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-400">HR Cap</p>
-                  <p className="text-white">{selectedTeam.totalHrs2024}/172</p>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">HR Cap</p>
+                  <p className="text-white font-mono">{selectedTeam.totalHrs2024}/172</p>
                 </div>
               </div>
               <div>
-                <p className="text-sm text-slate-400 mb-2">Players</p>
+                <p className="text-xs text-slate-400 uppercase tracking-wider mb-3">Players</p>
                 <div className="grid grid-cols-2 gap-2">
                   {selectedTeam.teamPlayers?.map((tp: any) => (
                     <div
                       key={tp.id}
-                      className="bg-slate-700/50 rounded p-2 flex justify-between"
+                      className="bg-[#0f172a] border border-white/5 p-3 flex justify-between items-center"
                     >
-                      <span className="text-white">{tp.player?.name || 'Unknown'}</span>
-                      <span className="text-slate-400">{tp.player?.hrsTotal || 0} HR</span>
+                      <span className="text-sm text-white">{tp.player?.name || 'Unknown'}</span>
+                      <span className="text-sm text-cyan-400 font-mono">{tp.player?.hrsTotal || 0} HR</span>
                     </div>
                   ))}
                 </div>
               </div>
               {selectedTeam.paymentNotes && (
                 <div>
-                  <p className="text-sm text-slate-400 flex items-center gap-1">
-                    <StickyNote className="h-3 w-3" />
+                  <p className="text-xs text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <StickyNote className="w-3 h-3" />
                     Payment Notes
                   </p>
-                  <p className="text-white text-sm bg-slate-700/50 p-2 rounded mt-1">{selectedTeam.paymentNotes}</p>
+                  <p className="text-sm text-slate-300 bg-[#0f172a] border border-white/5 p-3">
+                    {selectedTeam.paymentNotes}
+                  </p>
                 </div>
               )}
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
 
       {/* Payment Notes Dialog */}
-      <Dialog open={showPaymentNotesDialog} onOpenChange={setShowPaymentNotesDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Approve Payment</DialogTitle>
-            <DialogDescription>
-              Mark team "{paymentNotesTeam?.name}" as paid. Add optional payment notes for tracking.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="paymentNotes">Payment Notes (optional)</Label>
-              <Textarea
-                id="paymentNotes"
+      {showPaymentNotesDialog && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1e293b] border border-white/10 w-full max-w-md">
+            <div className="p-5 border-b border-white/5">
+              <h3 className="font-semibold text-white">Approve Payment</h3>
+              <p className="text-sm text-slate-400 mt-1">
+                Mark team "{paymentNotesTeam?.name}" as paid. Add optional payment notes for tracking.
+              </p>
+            </div>
+            <div className="p-5">
+              <label className="block text-xs text-slate-400 uppercase tracking-wider mb-2">
+                Payment Notes (optional)
+              </label>
+              <textarea
                 placeholder="e.g., Venmo payment received 1/15, Zelle from john@email.com"
                 value={paymentNotes}
                 onChange={(e) => setPaymentNotes(e.target.value)}
-                className="min-h-[100px]"
+                className="w-full bg-[#0f172a] border border-white/10 text-white text-sm px-4 py-3 min-h-[100px] placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 resize-none"
               />
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 mt-2">
                 Record how payment was received for future reference
               </p>
             </div>
+            <div className="p-5 border-t border-white/5 flex justify-end gap-3">
+              <button
+                onClick={() => setShowPaymentNotesDialog(false)}
+                className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePaymentNotesConfirm}
+                className="px-4 py-2 text-sm bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30 transition-colors flex items-center gap-2"
+              >
+                <Check className="w-4 h-4" />
+                Approve Payment
+              </button>
+            </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPaymentNotesDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handlePaymentNotesConfirm} className="bg-green-600 hover:bg-green-700">
-              <Check className="mr-2 h-4 w-4" />
-              Approve Payment
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   )
 }
