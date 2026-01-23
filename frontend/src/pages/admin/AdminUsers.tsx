@@ -1,30 +1,6 @@
 import { useState, useEffect } from 'react'
 import { adminApi, AdminUser } from '../../services/api'
 import ReAuthModal from '../../components/admin/ReAuthModal'
-import { Button } from '../../components/ui/button'
-import { Input } from '../../components/ui/input'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../../components/ui/table'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../../components/ui/dropdown-menu'
-import { Badge } from '../../components/ui/badge'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '../../components/ui/dialog'
 import {
   Loader2,
   MoreHorizontal,
@@ -33,6 +9,8 @@ import {
   Trash2,
   Eye,
   AlertTriangle,
+  Search,
+  X,
 } from 'lucide-react'
 
 export default function AdminUsers() {
@@ -48,9 +26,16 @@ export default function AdminUsers() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
   const [actionSuccess, setActionSuccess] = useState('')
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
 
   useEffect(() => {
     loadUsers()
+  }, [])
+
+  useEffect(() => {
+    const handleClickOutside = () => setActiveDropdown(null)
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
   }, [])
 
   const loadUsers = async () => {
@@ -72,6 +57,7 @@ export default function AdminUsers() {
   }
 
   const handleVerifyEmail = async (userId: string) => {
+    setActiveDropdown(null)
     setActionLoading(true)
     try {
       const result = await adminApi.verifyUserEmail(userId)
@@ -88,6 +74,7 @@ export default function AdminUsers() {
   }
 
   const handleSendPasswordReset = async (userId: string) => {
+    setActiveDropdown(null)
     setActionLoading(true)
     try {
       const result = await adminApi.sendPasswordReset(userId)
@@ -103,6 +90,7 @@ export default function AdminUsers() {
   }
 
   const handleDeleteClick = (userId: string) => {
+    setActiveDropdown(null)
     setPendingDelete(userId)
     setShowReAuth(true)
   }
@@ -139,156 +127,178 @@ export default function AdminUsers() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white">User Management</h1>
-        <p className="text-slate-400">View and manage all users</p>
+        <h1 className="text-2xl font-semibold text-white">User Management</h1>
+        <p className="text-sm text-slate-400 mt-1">View and manage all users</p>
       </div>
 
       {/* Search */}
       <div className="flex gap-2">
-        <Input
-          placeholder="Search by username or email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-          className="max-w-sm"
-        />
-        <Button onClick={handleSearch} variant="secondary">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search by username or email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            className="w-full bg-[#1e293b] border border-white/10 text-white text-sm pl-10 pr-4 py-2.5 placeholder-slate-500 focus:outline-none focus:border-cyan-500/50"
+          />
+        </div>
+        <button
+          onClick={handleSearch}
+          className="px-4 py-2.5 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-sm hover:bg-cyan-500/20 transition-colors"
+        >
           Search
-        </Button>
+        </button>
       </div>
 
       {/* Success Message */}
       {actionSuccess && (
-        <div className="bg-green-500/10 border border-green-500/50 rounded-lg p-4 text-green-400">
+        <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm flex items-center gap-2">
+          <CheckCircle className="w-4 h-4" />
           {actionSuccess}
         </div>
       )}
 
       {/* Error */}
       {error && (
-        <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 text-red-400">
-          {error}
-          <Button
-            variant="ghost"
-            size="sm"
+        <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center justify-between">
+          <span>{error}</span>
+          <button
             onClick={() => setError('')}
-            className="ml-4"
+            className="text-red-400 hover:text-red-300"
           >
-            Dismiss
-          </Button>
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
       {/* Table */}
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
         </div>
       ) : (
-        <div className="rounded-lg border border-slate-700 overflow-hidden">
-          <Table>
-            <TableHeader className="bg-slate-800">
-              <TableRow>
-                <TableHead className="text-slate-300">Username</TableHead>
-                <TableHead className="text-slate-300">Email</TableHead>
-                <TableHead className="text-slate-300">Phone</TableHead>
-                <TableHead className="text-slate-300">Status</TableHead>
-                <TableHead className="text-slate-300">Role</TableHead>
-                <TableHead className="text-slate-300">Teams</TableHead>
-                <TableHead className="text-slate-300">Joined</TableHead>
-                <TableHead className="text-slate-300">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center text-slate-400 py-8">
-                    No users found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredUsers.map((user) => (
-                  <TableRow key={user.id} className="bg-slate-800/50 hover:bg-slate-800">
-                    <TableCell className="font-medium text-white">
-                      {user.username}
-                    </TableCell>
-                    <TableCell className="text-slate-300">
-                      {user.email}
-                    </TableCell>
-                    <TableCell className="text-slate-300">
-                      {user.phoneNumber || '-'}
-                    </TableCell>
-                    <TableCell>
-                      {user.emailVerified ? (
-                        <Badge className="bg-green-500">Verified</Badge>
-                      ) : (
-                        <Badge className="bg-yellow-500">Unverified</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={
+        <div className="bg-[#1e293b] border border-white/5 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-white/5">
+                  <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-5 py-4">Username</th>
+                  <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-5 py-4">Email</th>
+                  <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-5 py-4">Phone</th>
+                  <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-5 py-4">Status</th>
+                  <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-5 py-4">Role</th>
+                  <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-5 py-4">Teams</th>
+                  <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-5 py-4">Joined</th>
+                  <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-5 py-4">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {filteredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="text-center text-slate-400 py-12">
+                      No users found
+                    </td>
+                  </tr>
+                ) : (
+                  filteredUsers.map((user) => (
+                    <tr key={user.id} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="px-5 py-4">
+                        <span className="text-sm font-medium text-white">{user.username}</span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="text-sm text-slate-300">{user.email}</span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="text-sm text-slate-400">{user.phoneNumber || '-'}</span>
+                      </td>
+                      <td className="px-5 py-4">
+                        {user.emailVerified ? (
+                          <span className="inline-flex px-2 py-1 text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                            Verified
+                          </span>
+                        ) : (
+                          <span className="inline-flex px-2 py-1 text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                            Unverified
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium ${
                           user.role === 'admin'
-                            ? 'border-purple-500 text-purple-400'
-                            : 'border-slate-500 text-slate-400'
-                        }
-                      >
-                        {user.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-slate-300">
-                      {user.teamCount || 0}
-                    </TableCell>
-                    <TableCell className="text-slate-400">
-                      {new Date(user.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" disabled={actionLoading}>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setSelectedUser(user)}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details
-                          </DropdownMenuItem>
-                          {!user.emailVerified && (
-                            <DropdownMenuItem
-                              onClick={() => handleVerifyEmail(user.id)}
-                              className="text-green-400"
-                            >
-                              <CheckCircle className="mr-2 h-4 w-4" />
-                              Verify Email
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem
-                            onClick={() => handleSendPasswordReset(user.id)}
-                            className="text-blue-400"
+                            ? 'bg-violet-500/10 text-violet-400 border border-violet-500/30'
+                            : 'bg-slate-500/10 text-slate-400 border border-slate-500/30'
+                        }`}>
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="text-sm text-slate-300 font-mono">{user.teamCount || 0}</span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="text-sm text-slate-400">
+                          {new Date(user.createdAt).toLocaleDateString()}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="relative">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setActiveDropdown(activeDropdown === user.id ? null : user.id)
+                            }}
+                            disabled={actionLoading}
+                            className="p-2 text-slate-400 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
                           >
-                            <Mail className="mr-2 h-4 w-4" />
-                            Send Password Reset
-                          </DropdownMenuItem>
-                          {user.role !== 'admin' && (
-                            <DropdownMenuItem
-                              onClick={() => handleDeleteClick(user.id)}
-                              className="text-red-400"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete User
-                            </DropdownMenuItem>
+                            <MoreHorizontal className="w-4 h-4" />
+                          </button>
+                          {activeDropdown === user.id && (
+                            <div className="absolute right-0 top-full mt-1 w-48 bg-[#0f172a] border border-white/10 shadow-xl z-10">
+                              <button
+                                onClick={() => { setSelectedUser(user); setActiveDropdown(null) }}
+                                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-white/5 transition-colors"
+                              >
+                                <Eye className="w-4 h-4" />
+                                View Details
+                              </button>
+                              {!user.emailVerified && (
+                                <button
+                                  onClick={() => handleVerifyEmail(user.id)}
+                                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                  Verify Email
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleSendPasswordReset(user.id)}
+                                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-blue-400 hover:bg-blue-500/10 transition-colors"
+                              >
+                                <Mail className="w-4 h-4" />
+                                Send Password Reset
+                              </button>
+                              {user.role !== 'admin' && (
+                                <button
+                                  onClick={() => handleDeleteClick(user.id)}
+                                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                  Delete User
+                                </button>
+                              )}
+                            </div>
                           )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -305,87 +315,89 @@ export default function AdminUsers() {
       />
 
       {/* Delete Confirmation Modal */}
-      <Dialog
-        open={showDeleteConfirm}
-        onOpenChange={(open) => {
-          setShowDeleteConfirm(open)
-          if (!open) setPendingDelete(null)
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-500">
-              <AlertTriangle className="h-5 w-5" />
-              Confirm Delete User
-            </DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this user? This will soft-delete the user
-              and all their associated data. This action can be reversed by an admin.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-3 pt-4">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowDeleteConfirm(false)
-                setPendingDelete(null)
-              }}
-              disabled={actionLoading}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={executeDelete}
-              disabled={actionLoading}
-            >
-              {actionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete User
-            </Button>
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1e293b] border border-white/10 w-full max-w-md">
+            <div className="p-5 border-b border-white/5">
+              <div className="flex items-center gap-3 text-red-400">
+                <AlertTriangle className="w-5 h-5" />
+                <h3 className="font-semibold">Confirm Delete User</h3>
+              </div>
+            </div>
+            <div className="p-5">
+              <p className="text-sm text-slate-300">
+                Are you sure you want to delete this user? This will soft-delete the user
+                and all their associated data. This action can be reversed by an admin.
+              </p>
+            </div>
+            <div className="p-5 border-t border-white/5 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false)
+                  setPendingDelete(null)
+                }}
+                disabled={actionLoading}
+                className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeDelete}
+                disabled={actionLoading}
+                className="px-4 py-2 text-sm bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                Delete User
+              </button>
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
 
       {/* User Details Modal */}
-      <Dialog open={!!selectedUser} onOpenChange={() => setSelectedUser(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{selectedUser?.username}</DialogTitle>
-          </DialogHeader>
-          {selectedUser && (
-            <div className="space-y-4">
+      {selectedUser && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1e293b] border border-white/10 w-full max-w-md">
+            <div className="p-5 border-b border-white/5 flex items-center justify-between">
+              <h3 className="font-semibold text-white">{selectedUser.username}</h3>
+              <button
+                onClick={() => setSelectedUser(null)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-slate-400">Email</p>
-                  <p className="text-white">{selectedUser.email}</p>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Email</p>
+                  <p className="text-sm text-white">{selectedUser.email}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-400">Phone</p>
-                  <p className="text-white">{selectedUser.phoneNumber || '-'}</p>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Phone</p>
+                  <p className="text-sm text-white">{selectedUser.phoneNumber || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-400">Email Verified</p>
-                  <p className="text-white">
-                    {selectedUser.emailVerified ? 'Yes' : 'No'}
-                  </p>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Email Verified</p>
+                  <p className="text-sm text-white">{selectedUser.emailVerified ? 'Yes' : 'No'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-400">Role</p>
-                  <p className="text-white capitalize">{selectedUser.role}</p>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Role</p>
+                  <p className="text-sm text-white capitalize">{selectedUser.role}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-400">Teams</p>
-                  <p className="text-white">{selectedUser.teamCount || 0}</p>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Teams</p>
+                  <p className="text-sm text-white font-mono">{selectedUser.teamCount || 0}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-400">Joined</p>
-                  <p className="text-white">
+                  <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Joined</p>
+                  <p className="text-sm text-white">
                     {new Date(selectedUser.createdAt).toLocaleDateString()}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-400">Last Login</p>
-                  <p className="text-white">
+                  <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Last Login</p>
+                  <p className="text-sm text-white">
                     {selectedUser.lastLoginAt
                       ? new Date(selectedUser.lastLoginAt).toLocaleDateString()
                       : 'Never'}
@@ -394,14 +406,16 @@ export default function AdminUsers() {
               </div>
               {selectedUser.googleId && (
                 <div>
-                  <p className="text-sm text-slate-400">Google Account</p>
-                  <Badge className="bg-blue-500">Connected</Badge>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider mb-2">Google Account</p>
+                  <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/30">
+                    Connected
+                  </span>
                 </div>
               )}
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

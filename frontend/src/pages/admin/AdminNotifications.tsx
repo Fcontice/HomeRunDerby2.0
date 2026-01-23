@@ -1,21 +1,18 @@
 import { useState, useEffect } from 'react'
 import { adminApi, RecipientCounts, ReminderStatus } from '../../services/api'
 import ReAuthModal from '../../components/admin/ReAuthModal'
-import { Button } from '../../components/ui/button'
-import { Input } from '../../components/ui/input'
-import { Label } from '../../components/ui/label'
-import { Textarea } from '../../components/ui/textarea'
-import { Checkbox } from '../../components/ui/checkbox'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../../components/ui/select'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card'
-import { Badge } from '../../components/ui/badge'
-import { Loader2, Send, Users, Mail, CheckCircle, Bell, Calendar, CreditCard, Clock } from 'lucide-react'
+  Loader2,
+  Send,
+  Users,
+  Mail,
+  CheckCircle,
+  Bell,
+  Calendar,
+  CreditCard,
+  Clock,
+  ChevronDown,
+} from 'lucide-react'
 
 type PendingAction =
   | { type: 'notification'; recipientCount: number }
@@ -156,7 +153,6 @@ export default function AdminNotifications() {
           } else {
             setSuccess(`Successfully sent ${sentCount} payment reminder${sentCount === 1 ? '' : 's'}!`)
           }
-          // Reload reminder status
           const statusResult = await adminApi.getReminderStatus()
           if (statusResult.success && statusResult.data) {
             setReminderStatus(statusResult.data)
@@ -172,7 +168,6 @@ export default function AdminNotifications() {
           } else {
             setSuccess(`Successfully sent ${sentCount} lock deadline reminder${sentCount === 1 ? '' : 's'}!`)
           }
-          // Reload reminder status
           const statusResult = await adminApi.getReminderStatus()
           if (statusResult.success && statusResult.data) {
             setReminderStatus(statusResult.data)
@@ -220,307 +215,276 @@ export default function AdminNotifications() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white">Notifications & Reminders</h1>
-        <p className="text-slate-400">Send email notifications and reminders to users</p>
+        <h1 className="text-2xl font-semibold text-white">Notifications & Reminders</h1>
+        <p className="text-sm text-slate-400 mt-1">Send email notifications and reminders to users</p>
       </div>
 
       {/* Recipient Counts */}
       {loading ? (
         <div className="flex justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
         </div>
       ) : (
         recipientCounts && (
           <div className="grid gap-4 md:grid-cols-3">
-            <Card className="bg-slate-800 border-slate-700">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <Users className="h-8 w-8 text-blue-400" />
-                  <div>
-                    <p className="text-2xl font-bold text-white">
-                      {recipientCounts.all}
-                    </p>
-                    <p className="text-sm text-slate-400">All Users</p>
-                  </div>
+            <div className="bg-cyan-500/10 border border-cyan-500/20 p-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-cyan-500/10 border border-cyan-500/20">
+                  <Users className="w-5 h-5 text-cyan-400" />
                 </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-slate-800 border-slate-700">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <Users className="h-8 w-8 text-yellow-400" />
-                  <div>
-                    <p className="text-2xl font-bold text-white">
-                      {recipientCounts.unpaid}
-                    </p>
-                    <p className="text-sm text-slate-400">Unpaid Teams</p>
-                  </div>
+                <div>
+                  <p className="text-2xl font-semibold text-cyan-400 font-mono">
+                    {recipientCounts.all}
+                  </p>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider">All Users</p>
                 </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-slate-800 border-slate-700">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <Users className="h-8 w-8 text-green-400" />
-                  <div>
-                    <p className="text-2xl font-bold text-white">
-                      {recipientCounts.paid}
-                    </p>
-                    <p className="text-sm text-slate-400">Paid Teams</p>
-                  </div>
+              </div>
+            </div>
+            <div className="bg-amber-500/10 border border-amber-500/20 p-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-500/10 border border-amber-500/20">
+                  <Users className="w-5 h-5 text-amber-400" />
                 </div>
-              </CardContent>
-            </Card>
+                <div>
+                  <p className="text-2xl font-semibold text-amber-400 font-mono">
+                    {recipientCounts.unpaid}
+                  </p>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider">Unpaid Teams</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-emerald-500/10 border border-emerald-500/20 p-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-500/10 border border-emerald-500/20">
+                  <Users className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-2xl font-semibold text-emerald-400 font-mono">
+                    {recipientCounts.paid}
+                  </p>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider">Paid Teams</p>
+                </div>
+              </div>
+            </div>
           </div>
         )
       )}
 
       {/* Success Message */}
       {success && (
-        <div className="bg-green-500/10 border border-green-500/50 rounded-lg p-4 text-green-400 flex items-center gap-2">
-          <CheckCircle className="h-5 w-5" />
+        <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm flex items-center gap-2">
+          <CheckCircle className="w-4 h-4" />
           {success}
         </div>
       )}
 
       {/* Error */}
       {error && (
-        <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 text-red-400">
+        <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
           {error}
         </div>
       )}
 
       {/* Quick Reminders */}
-      <Card className="bg-slate-800 border-slate-700">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <Bell className="h-5 w-5" />
-            Quick Reminders
-          </CardTitle>
-          <CardDescription>
-            Send pre-configured reminder emails to users
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <div className="bg-[#1e293b] border border-white/5">
+        <div className="px-5 py-4 border-b border-white/5 flex items-center gap-2">
+          <Bell className="w-4 h-4 text-cyan-400" />
+          <h2 className="text-sm font-semibold text-white">Quick Reminders</h2>
+        </div>
+        <div className="p-5 space-y-5">
           {/* Payment Reminder */}
-          <div className="border border-slate-700 rounded-lg p-4 space-y-4">
+          <div className="bg-[#0f172a] border border-white/5 p-5 space-y-4">
             <div className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-yellow-400" />
-              <h3 className="font-semibold text-white">Payment Reminder</h3>
+              <CreditCard className="w-4 h-4 text-amber-400" />
+              <h3 className="text-sm font-medium text-white">Payment Reminder</h3>
             </div>
 
             <div className="space-y-3">
-              <Label className="text-slate-300">Target teams with status:</Label>
+              <p className="text-xs text-slate-400 uppercase tracking-wider">Target teams with status:</p>
               <div className="flex gap-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="draft"
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
                     checked={paymentStatuses.draft}
-                    onCheckedChange={(checked) =>
-                      setPaymentStatuses((prev) => ({ ...prev, draft: checked === true }))
-                    }
+                    onChange={(e) => setPaymentStatuses((prev) => ({ ...prev, draft: e.target.checked }))}
+                    className="w-4 h-4 bg-[#1e293b] border border-white/20 rounded-none accent-cyan-500"
                   />
-                  <Label htmlFor="draft" className="text-sm text-slate-300 cursor-pointer">
-                    Draft
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="pending"
+                  <span className="text-sm text-slate-300">Draft</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
                     checked={paymentStatuses.pending}
-                    onCheckedChange={(checked) =>
-                      setPaymentStatuses((prev) => ({ ...prev, pending: checked === true }))
-                    }
+                    onChange={(e) => setPaymentStatuses((prev) => ({ ...prev, pending: e.target.checked }))}
+                    className="w-4 h-4 bg-[#1e293b] border border-white/20 rounded-none accent-cyan-500"
                   />
-                  <Label htmlFor="pending" className="text-sm text-slate-300 cursor-pointer">
-                    Pending
-                  </Label>
-                </div>
+                  <span className="text-sm text-slate-300">Pending</span>
+                </label>
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-slate-400">
-                <Clock className="h-4 w-4" />
+            <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <Clock className="w-3 h-3" />
                 {reminderStatus?.payment ? (
-                  <span>
-                    Last sent: {formatDate(reminderStatus.payment.sentAt)} ({reminderStatus.payment.recipientCount} recipients)
-                  </span>
+                  <span>Last sent: {formatDate(reminderStatus.payment.sentAt)} ({reminderStatus.payment.recipientCount} recipients)</span>
                 ) : (
                   <span>Never sent</span>
                 )}
               </div>
-              <Button
+              <button
                 onClick={handlePaymentReminderClick}
                 disabled={sending}
-                variant="outline"
-                className="border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10"
+                className="px-4 py-2 text-sm bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-colors disabled:opacity-50 flex items-center gap-2"
               >
                 {sending && pendingAction?.type === 'payment_reminder' ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <Send className="mr-2 h-4 w-4" />
+                  <Send className="w-4 h-4" />
                 )}
                 Send Payment Reminder
-              </Button>
+              </button>
             </div>
           </div>
 
           {/* Lock Deadline Reminder */}
-          <div className="border border-slate-700 rounded-lg p-4 space-y-4">
+          <div className="bg-[#0f172a] border border-white/5 p-5 space-y-4">
             <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-blue-400" />
-              <h3 className="font-semibold text-white">Lock Deadline Reminder</h3>
+              <Calendar className="w-4 h-4 text-blue-400" />
+              <h3 className="text-sm font-medium text-white">Lock Deadline Reminder</h3>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="lockDate" className="text-slate-300">Lock date:</Label>
-              <Input
-                id="lockDate"
+              <label className="text-xs text-slate-400 uppercase tracking-wider">Lock date:</label>
+              <input
                 type="date"
                 value={lockDate}
                 onChange={(e) => setLockDate(e.target.value)}
-                className="max-w-[200px]"
+                className="bg-[#1e293b] border border-white/10 text-white text-sm px-4 py-2.5 focus:outline-none focus:border-cyan-500/50 max-w-[200px]"
               />
               <p className="text-xs text-slate-500">
                 Personalized emails will be sent based on each user's team status
               </p>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-slate-400">
-                <Clock className="h-4 w-4" />
+            <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <Clock className="w-3 h-3" />
                 {reminderStatus?.lock_deadline ? (
-                  <span>
-                    Last sent: {formatDate(reminderStatus.lock_deadline.sentAt)} ({reminderStatus.lock_deadline.recipientCount} recipients)
-                  </span>
+                  <span>Last sent: {formatDate(reminderStatus.lock_deadline.sentAt)} ({reminderStatus.lock_deadline.recipientCount} recipients)</span>
                 ) : (
                   <span>Never sent</span>
                 )}
               </div>
-              <Button
+              <button
                 onClick={handleLockReminderClick}
                 disabled={sending}
-                variant="outline"
-                className="border-blue-500/50 text-blue-400 hover:bg-blue-500/10"
+                className="px-4 py-2 text-sm bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition-colors disabled:opacity-50 flex items-center gap-2"
               >
                 {sending && pendingAction?.type === 'lock_reminder' ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <Send className="mr-2 h-4 w-4" />
+                  <Send className="w-4 h-4" />
                 )}
                 Send Lock Reminder
-              </Button>
+              </button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Custom Notification Form */}
-      <Card className="bg-slate-800 border-slate-700">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <Mail className="h-5 w-5" />
-            Compose Custom Notification
-          </CardTitle>
-          <CardDescription>
-            Send a custom email to specific users or groups
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="bg-[#1e293b] border border-white/5">
+        <div className="px-5 py-4 border-b border-white/5 flex items-center gap-2">
+          <Mail className="w-4 h-4 text-cyan-400" />
+          <h2 className="text-sm font-semibold text-white">Compose Custom Notification</h2>
+        </div>
+        <div className="p-5">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {/* Recipient Type */}
             <div className="space-y-2">
-              <Label>Recipient Type</Label>
-              <Select
-                value={recipientType}
-                onValueChange={(v) => setRecipientType(v as 'group' | 'individual')}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select recipient type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="group">User Group</SelectItem>
-                  <SelectItem value="individual">Individual User</SelectItem>
-                </SelectContent>
-              </Select>
+              <label className="text-xs text-slate-400 uppercase tracking-wider">Recipient Type</label>
+              <div className="relative">
+                <select
+                  value={recipientType}
+                  onChange={(e) => setRecipientType(e.target.value as 'group' | 'individual')}
+                  className="appearance-none w-full bg-[#0f172a] border border-white/10 text-white text-sm pl-4 pr-10 py-2.5 focus:outline-none focus:border-cyan-500/50"
+                >
+                  <option value="group">User Group</option>
+                  <option value="individual">Individual User</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              </div>
             </div>
 
             {/* Recipient Selection */}
             {recipientType === 'group' ? (
               <div className="space-y-2">
-                <Label>Recipient Group</Label>
-                <Select
-                  value={recipientGroup}
-                  onValueChange={(v) => setRecipientGroup(v as 'all' | 'unpaid' | 'paid')}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select group" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">
-                      All Users ({recipientCounts?.all || 0})
-                    </SelectItem>
-                    <SelectItem value="unpaid">
-                      Users with Unpaid Teams ({recipientCounts?.unpaid || 0})
-                    </SelectItem>
-                    <SelectItem value="paid">
-                      Users with Paid Teams ({recipientCounts?.paid || 0})
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <label className="text-xs text-slate-400 uppercase tracking-wider">Recipient Group</label>
+                <div className="relative">
+                  <select
+                    value={recipientGroup}
+                    onChange={(e) => setRecipientGroup(e.target.value as 'all' | 'unpaid' | 'paid')}
+                    className="appearance-none w-full bg-[#0f172a] border border-white/10 text-white text-sm pl-4 pr-10 py-2.5 focus:outline-none focus:border-cyan-500/50"
+                  >
+                    <option value="all">All Users ({recipientCounts?.all || 0})</option>
+                    <option value="unpaid">Users with Unpaid Teams ({recipientCounts?.unpaid || 0})</option>
+                    <option value="paid">Users with Paid Teams ({recipientCounts?.paid || 0})</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                </div>
               </div>
             ) : (
               <div className="space-y-2">
-                <Label htmlFor="userEmail">User Email</Label>
-                <Input
-                  id="userEmail"
+                <label className="text-xs text-slate-400 uppercase tracking-wider">User Email</label>
+                <input
                   type="email"
                   value={userEmail}
                   onChange={(e) => setUserEmail(e.target.value)}
                   placeholder="user@example.com"
+                  className="w-full bg-[#0f172a] border border-white/10 text-white text-sm px-4 py-2.5 placeholder-slate-500 focus:outline-none focus:border-cyan-500/50"
                 />
               </div>
             )}
 
             {/* Subject */}
             <div className="space-y-2">
-              <Label htmlFor="subject">Subject</Label>
-              <Input
-                id="subject"
+              <label className="text-xs text-slate-400 uppercase tracking-wider">Subject</label>
+              <input
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder="Email subject..."
                 maxLength={200}
+                className="w-full bg-[#0f172a] border border-white/10 text-white text-sm px-4 py-2.5 placeholder-slate-500 focus:outline-none focus:border-cyan-500/50"
               />
               <p className="text-xs text-slate-500">{subject.length}/200 characters</p>
             </div>
 
             {/* Body */}
             <div className="space-y-2">
-              <Label htmlFor="body">Message</Label>
-              <Textarea
-                id="body"
+              <label className="text-xs text-slate-400 uppercase tracking-wider">Message</label>
+              <textarea
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="Email message content..."
-                className="min-h-[200px]"
                 maxLength={10000}
+                className="w-full bg-[#0f172a] border border-white/10 text-white text-sm px-4 py-3 placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 min-h-[200px] resize-none"
               />
               <p className="text-xs text-slate-500">{body.length}/10000 characters</p>
             </div>
 
             {/* Preview */}
-            <div className="bg-slate-700/50 rounded-lg p-4 space-y-2">
-              <p className="text-sm text-slate-400">
+            <div className="bg-[#0f172a] border border-white/5 p-4 space-y-2">
+              <p className="text-xs text-slate-400">
                 Recipients:{' '}
-                <Badge variant="outline" className="ml-1">
+                <span className="inline-flex px-2 py-0.5 text-xs font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 ml-1">
                   {getRecipientCount()} user{getRecipientCount() === 1 ? '' : 's'}
-                </Badge>
+                </span>
               </p>
               {recipientType === 'individual' && userEmail && (
-                <p className="text-sm text-slate-400">
+                <p className="text-xs text-slate-400">
                   Sending to: <span className="text-white">{userEmail}</span>
                 </p>
               )}
@@ -528,23 +492,27 @@ export default function AdminNotifications() {
 
             {/* Submit */}
             <div className="flex justify-end">
-              <Button type="submit" disabled={sending} className="min-w-[150px]">
+              <button
+                type="submit"
+                disabled={sending}
+                className="px-6 py-2.5 text-sm bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/30 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
                 {sending && pendingAction?.type === 'notification' ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     Sending...
                   </>
                 ) : (
                   <>
-                    <Send className="mr-2 h-4 w-4" />
+                    <Send className="w-4 h-4" />
                     Send Notification
                   </>
                 )}
-              </Button>
+              </button>
             </div>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Re-Auth Modal */}
       <ReAuthModal

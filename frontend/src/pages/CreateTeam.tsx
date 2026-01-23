@@ -231,7 +231,7 @@ export default function CreateTeam() {
           )}
           <div className="flex gap-4 justify-center">
             <Link to="/dashboard">
-              <Button variant="outline" className="border-white/20 text-gray-300 hover:bg-white/5">
+              <Button variant="outline" className="border-white/20 text-gray-300 hover:bg-white/5 rounded-none">
                 Back to Dashboard
               </Button>
             </Link>
@@ -312,7 +312,7 @@ export default function CreateTeam() {
 
             {/* Cap Progress Bar */}
             <div className="flex-1 max-w-md">
-              <div className="h-3 bg-[#0c0c0c] rounded-full overflow-hidden border border-white/10">
+              <div className="h-3 bg-[#0c0c0c] overflow-hidden border border-white/10">
                 <div
                   className={`h-full transition-all duration-300 ${
                     totalHRs > MAX_HRS ? 'bg-red-500' : totalHRs > MAX_HRS * 0.9 ? 'bg-[#d97706]' : 'bg-[#b91c1c]'
