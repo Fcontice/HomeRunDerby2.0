@@ -11,7 +11,6 @@ import {
   Eye,
   StickyNote,
   Search,
-  Filter,
   ChevronDown,
 } from 'lucide-react'
 
