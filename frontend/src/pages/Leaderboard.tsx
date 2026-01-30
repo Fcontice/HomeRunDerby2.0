@@ -5,6 +5,7 @@ import { LeaderboardTable } from '../components/leaderboard/LeaderboardTable'
 import { Navbar } from '../components/Navbar'
 import { Button } from '../components/ui/button'
 import { Trophy, TrendingUp } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
 
 type TabType = 'overall' | 'monthly'
 
@@ -19,13 +20,23 @@ const MONTHS = [
 ]
 
 export default function Leaderboard() {
+  const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const highlightTeamId = searchParams.get('teamId')
+  const tabParam = searchParams.get('tab')
+  const monthParam = searchParams.get('month')
 
-  const [activeTab, setActiveTab] = useState<TabType>('overall')
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    return tabParam === 'monthly' ? 'monthly' : 'overall'
+  })
   const [selectedMonth, setSelectedMonth] = useState<number>(() => {
+    if (monthParam) {
+      const parsed = parseInt(monthParam, 10)
+      if (parsed >= 3 && parsed <= 9) return parsed
+    }
     const currentMonth = new Date().getMonth() + 1
-    return currentMonth >= 3 && currentMonth <= 9 ? currentMonth : 9
+    // Default to current month if in season (Mar-Sep), otherwise March
+    return currentMonth >= 3 && currentMonth <= 9 ? currentMonth : 3
   })
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -90,7 +101,11 @@ export default function Leaderboard() {
         {hasEnoughEntries && !isLoading && (
           <div className="mb-8 grid grid-cols-3 gap-4">
             {/* 2nd Place */}
-            <div className="bg-[#18181b] border border-white/10 p-4 mt-8">
+            <div className={`bg-[#18181b] border p-4 mt-8 ${
+              topThree[1]?.userId === user?.id
+                ? 'border-[#b91c1c] ring-2 ring-[#b91c1c] bg-[#b91c1c]/10'
+                : 'border-white/10'
+            }`}>
               <div className="text-center">
                 <div className="w-10 h-10 mx-auto mb-2 bg-gray-400 flex items-center justify-center">
                   <span className="font-broadcast text-xl text-[#0c0c0c]">2</span>
@@ -103,7 +118,11 @@ export default function Leaderboard() {
             </div>
 
             {/* 1st Place */}
-            <div className="bg-[#18181b] border-2 border-[#d97706]/50 p-4 relative">
+            <div className={`bg-[#18181b] border-2 p-4 relative ${
+              topThree[0]?.userId === user?.id
+                ? 'border-[#b91c1c] ring-2 ring-[#b91c1c] bg-[#b91c1c]/10'
+                : 'border-[#d97706]/50'
+            }`}>
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#d97706] px-3 py-1">
                 <Trophy className="h-4 w-4 text-[#0c0c0c]" />
               </div>
@@ -119,7 +138,11 @@ export default function Leaderboard() {
             </div>
 
             {/* 3rd Place */}
-            <div className="bg-[#18181b] border border-white/10 p-4 mt-12">
+            <div className={`bg-[#18181b] border p-4 mt-12 ${
+              topThree[2]?.userId === user?.id
+                ? 'border-[#b91c1c] ring-2 ring-[#b91c1c] bg-[#b91c1c]/10'
+                : 'border-white/10'
+            }`}>
               <div className="text-center">
                 <div className="w-10 h-10 mx-auto mb-2 bg-amber-700 flex items-center justify-center">
                   <span className="font-broadcast text-xl text-[#0c0c0c]">3</span>
@@ -207,6 +230,7 @@ export default function Leaderboard() {
               isLoading={isLoading}
               onRefresh={fetchLeaderboard}
               highlightTeamId={highlightTeamId}
+              currentUserId={user?.id}
             />
           )}
         </div>

@@ -102,6 +102,7 @@ class SupabaseDB:
         player_id: str,
         season_year: int,
         date: str,
+        hrs_daily: int,
         hrs_total: int,
         hrs_regular_season: int,
         hrs_postseason: int = 0
@@ -118,6 +119,7 @@ class SupabaseDB:
             player_id: Player UUID
             season_year: Season year (e.g., 2026)
             date: Date in YYYY-MM-DD format
+            hrs_daily: Home runs hit on this specific date (not cumulative)
             hrs_total: Cumulative home runs for season
             hrs_regular_season: Regular season home runs only
             hrs_postseason: Postseason home runs (always 0 for our contest)
@@ -132,6 +134,7 @@ class SupabaseDB:
                 'playerId': player_id,
                 'seasonYear': season_year,
                 'date': date,
+                'hrsDaily': hrs_daily,
                 'hrsTotal': hrs_total,
                 'hrsRegularSeason': hrs_regular_season,
                 'hrsPostseason': hrs_postseason,
@@ -206,7 +209,7 @@ class SupabaseDB:
 
         Args:
             stats_records: List of stats dictionaries with Python-friendly keys:
-                           player_id, season_year, date, hrs_total, hrs_regular_season, hrs_postseason
+                           player_id, season_year, date, hrs_daily, hrs_total, hrs_regular_season, hrs_postseason
 
         Returns:
             Tuple of (successful_count, error_count)
@@ -219,6 +222,7 @@ class SupabaseDB:
                 player_id=record['player_id'],
                 season_year=record['season_year'],
                 date=record['date'],
+                hrs_daily=record.get('hrs_daily', 0),
                 hrs_total=record['hrs_total'],
                 hrs_regular_season=record['hrs_regular_season'],
                 hrs_postseason=record.get('hrs_postseason', 0)

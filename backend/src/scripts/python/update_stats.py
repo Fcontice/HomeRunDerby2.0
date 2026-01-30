@@ -235,6 +235,7 @@ class MLBStatsUpdater:
                 player_id=player_id,
                 season_year=self.season_year,
                 date=date_str,
+                hrs_daily=daily_hr_count,  # HRs hit on this specific date
                 hrs_total=new_total,
                 hrs_regular_season=new_total,  # Only regular season games included
                 hrs_postseason=0  # Always 0 for our contest

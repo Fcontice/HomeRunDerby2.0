@@ -466,11 +466,13 @@ export const teamDb = {
       )
     `)
 
-    // Filter by userId
+    // Filter by fields
     if (where.userId) query = query.eq('userId', where.userId as string)
     if (where.seasonYear) query = query.eq('seasonYear', where.seasonYear as number)
     if (where.paymentStatus) query = query.eq('paymentStatus', where.paymentStatus as string)
     if (where.entryStatus) query = query.eq('entryStatus', where.entryStatus as string)
+    if (where.name) query = query.eq('name', where.name as string)
+    if (where.id) query = query.eq('id', where.id as string)
 
     // Handle deletedAt filter
     if (where.deletedAt === null || where.deletedAt === undefined) {

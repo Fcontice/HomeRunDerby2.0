@@ -125,100 +125,104 @@ export default function Dashboard() {
 
         {/* Main Content Grid */}
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* My Teams Section */}
-          <div className="bg-[#18181b] border border-white/10">
-            {/* Section Header */}
-            <div className="p-4 border-b border-white/10 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-1 h-5 bg-[#b91c1c]" />
-                <h2 className="font-broadcast text-xl text-white">MY TEAMS</h2>
-              </div>
-              {isRegistrationOpen && teams.length > 0 && (
-                <Button
-                  onClick={() => navigate('/create-team')}
-                  className="bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-none h-8 px-3 text-sm"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  New Team
-                </Button>
-              )}
-            </div>
-
-            {/* Teams List */}
-            <div className="p-4">
-              {teamsLoading ? (
-                <div className="space-y-3">
-                  {[1, 2].map((i) => (
-                    <div key={i} className="p-4 bg-[#0c0c0c] border border-white/5 animate-pulse">
-                      <div className="h-4 w-32 bg-white/5 mb-2"></div>
-                      <div className="h-3 w-24 bg-white/5"></div>
-                    </div>
-                  ))}
+          {/* My Teams Section - Only show if no teams or some teams not entered */}
+          {(teamsLoading || teams.length === 0 || teams.some(t => t.paymentStatus !== 'paid')) && (
+            <div className="bg-[#18181b] border border-white/10">
+              {/* Section Header */}
+              <div className="p-4 border-b border-white/10 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-5 bg-[#b91c1c]" />
+                  <h2 className="font-broadcast text-xl text-white">MY TEAMS</h2>
                 </div>
-              ) : teams.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-white/5 flex items-center justify-center">
-                    <span className="text-3xl">⚾</span>
-                  </div>
-                  <h3 className="font-broadcast text-xl text-white mb-2">STEP UP TO THE PLATE</h3>
-                  <p className="text-gray-500 text-sm mb-6 max-w-xs mx-auto">
-                    Draft your first lineup and join the competition. Pick 8 players and compete for the top spot.
-                  </p>
+                {isRegistrationOpen && teams.length > 0 && (
                   <Button
                     onClick={() => navigate('/create-team')}
-                    className="bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-none"
+                    className="bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-none h-8 px-3 text-sm"
                   >
-                    Create Your Team
+                    <Plus className="h-4 w-4 mr-1" />
+                    New Team
                   </Button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {teams.map((team) => (
-                    <Link
-                      key={team.id}
-                      to="/my-teams"
-                      className="block p-4 bg-[#0c0c0c] border border-white/5 hover:border-white/20 hover:bg-white/5 transition-all"
+                )}
+              </div>
+
+              {/* Teams List */}
+              <div className="p-4">
+                {teamsLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2].map((i) => (
+                      <div key={i} className="p-4 bg-[#0c0c0c] border border-white/5 animate-pulse">
+                        <div className="h-4 w-32 bg-white/5 mb-2"></div>
+                        <div className="h-3 w-24 bg-white/5"></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : teams.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 mx-auto mb-4 bg-white/5 flex items-center justify-center">
+                      <span className="text-3xl">⚾</span>
+                    </div>
+                    <h3 className="font-broadcast text-xl text-white mb-2">STEP UP TO THE PLATE</h3>
+                    <p className="text-gray-500 text-sm mb-6 max-w-xs mx-auto">
+                      Draft your first lineup and join the competition. Pick 8 players and compete for the top spot.
+                    </p>
+                    <Button
+                      onClick={() => navigate('/create-team')}
+                      className="bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-none"
                     >
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-10 h-10 bg-[#b91c1c] flex items-center justify-center flex-shrink-0">
-                            <span className="font-broadcast text-sm text-white">
-                              {team.name.charAt(0).toUpperCase()}
-                            </span>
+                      Create Your Team
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {/* Only show teams that need attention (not paid) */}
+                    {teams.filter(t => t.paymentStatus !== 'paid').map((team) => (
+                      <Link
+                        key={team.id}
+                        to="/my-teams"
+                        className="block p-4 bg-[#0c0c0c] border border-white/5 hover:border-white/20 hover:bg-white/5 transition-all"
+                      >
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 bg-[#b91c1c] flex items-center justify-center flex-shrink-0">
+                              <span className="font-broadcast text-sm text-white">
+                                {team.name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-medium text-white truncate">{team.name}</p>
+                              <p className="text-xs text-gray-500">
+                                {team.seasonYear} Season
+                              </p>
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <p className="font-medium text-white truncate">{team.name}</p>
-                            <p className="text-xs text-gray-500">
-                              {team.seasonYear} Season
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="text-right">
-                            <p className="font-broadcast text-2xl text-[#d97706]">{team.totalHrs2024 || 0}</p>
-                            <p className="text-xs text-gray-500">HRs</p>
-                          </div>
-                          <div className={`px-2 py-1 text-xs uppercase tracking-wider ${
-                            team.paymentStatus === 'paid'
-                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                              : team.paymentStatus === 'pending'
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              <p className="font-broadcast text-2xl text-[#d97706]">{team.totalHrs2024 || 0}</p>
+                              <p className="text-xs text-gray-500">HRs</p>
+                            </div>
+                            <div className={`px-2 py-1 text-xs uppercase tracking-wider ${
+                              team.paymentStatus === 'pending'
                                 ? 'bg-[#d97706]/20 text-[#d97706] border border-[#d97706]/30'
                                 : 'bg-white/5 text-gray-500 border border-white/10'
-                          }`}>
-                            {team.paymentStatus}
+                            }`}>
+                              {team.paymentStatus}
+                            </div>
+                            <ChevronRight className="h-5 w-5 text-gray-600" />
                           </div>
-                          <ChevronRight className="h-5 w-5 text-gray-600" />
                         </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Leaderboard Widget */}
-          <LeaderboardWidget userTeamIds={teams.map(t => t.id)} />
+          {/* Overall Leaderboard Widget */}
+          <LeaderboardWidget type="overall" userTeamIds={teams.map(t => t.id)} />
+
+          {/* Monthly Leaderboard Widget */}
+          <LeaderboardWidget type="monthly" userTeamIds={teams.map(t => t.id)} />
         </div>
       </main>
     </div>

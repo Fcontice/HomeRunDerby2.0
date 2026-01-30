@@ -89,6 +89,7 @@ model PlayerStats {
   playerId         String
   seasonYear       Int
   date             DateTime @db.Date
+  hrsDaily         Int      @default(0)  // HRs hit on this specific date (not cumulative)
   hrsTotal         Int      @default(0)
   hrsRegularSeason Int      @default(0)
   hrsPostseason    Int      @default(0)

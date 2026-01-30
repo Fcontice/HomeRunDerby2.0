@@ -9,7 +9,7 @@
 
 import cron from 'node-cron'
 import { updatePlayerStats } from './statsService.js'
-import { calculateOverallLeaderboard } from './leaderboardService.js'
+import { calculateOverallLeaderboard, calculateMonthlyLeaderboard } from './leaderboardService.js'
 import {
   logJobStart,
   logJobComplete,
@@ -87,12 +87,25 @@ export async function runStatsUpdateJob(
 
     console.log(`   ✅ Stats updated: ${statsResult.updated} updated, ${statsResult.created} created`)
 
-    // Step 2: Recalculate leaderboard if stats changed
+    // Step 2: Recalculate leaderboards if stats changed
     if (statsResult.updated > 0 || statsResult.created > 0) {
-      console.log('\n📈 Step 2: Recalculating leaderboard...')
+      console.log('\n📈 Step 2a: Recalculating overall leaderboard...')
       await calculateOverallLeaderboard(seasonYear)
+      console.log('   ✅ Overall leaderboard recalculated')
+
+      // Step 2b: Recalculate the current month's leaderboard
+      // Determine which month to update (from dateStr or current date)
+      const statsDate = dateStr ? new Date(dateStr) : new Date()
+      const currentMonth = statsDate.getMonth() + 1 // 1-12
+
+      // Only calculate monthly leaderboard for MLB season months (March-September = 3-9)
+      if (currentMonth >= 3 && currentMonth <= 9) {
+        console.log(`\n📈 Step 2b: Recalculating monthly leaderboard for month ${currentMonth}...`)
+        await calculateMonthlyLeaderboard(seasonYear, currentMonth)
+        console.log(`   ✅ Monthly leaderboard (month ${currentMonth}) recalculated`)
+      }
+
       leaderboardUpdated = true
-      console.log('   ✅ Leaderboard recalculated')
 
       // Step 3: Invalidate HTTP cache so users see fresh data immediately
       console.log('\n🔄 Step 3: Invalidating HTTP cache...')
