@@ -6,7 +6,18 @@ import { Button } from '../components/ui/button'
 import { LeaderboardWidget } from '../components/leaderboard'
 import { Navbar } from '../components/Navbar'
 import { teamsApi, Team } from '../services/api'
-import { Users, Trophy, Plus, ChevronRight, Calendar } from 'lucide-react'
+import {
+  Users,
+  Trophy,
+  Plus,
+  ChevronRight,
+  Calendar,
+  X,
+  ExternalLink,
+  FileEdit,
+  AlertCircle,
+  Maximize2,
+} from 'lucide-react'
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -15,8 +26,13 @@ export default function Dashboard() {
 
   const [teams, setTeams] = useState<Team[]>([])
   const [teamsLoading, setTeamsLoading] = useState(true)
+  const [showDraftModal, setShowDraftModal] = useState(false)
 
   const isRegistrationOpen = season?.phase === 'registration'
+
+  // Filter draft teams (unpaid)
+  const draftTeams = teams.filter(t => t.paymentStatus === 'draft')
+  const hasDraftTeams = draftTeams.length > 0
 
   useEffect(() => {
     const fetchTeams = async () => {
@@ -65,18 +81,41 @@ export default function Dashboard() {
         {/* Quick Stats Bar */}
         <div className="mb-8 bg-[#18181b] border border-white/10">
           <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-white/10">
-            {/* Teams Count */}
-            <div className="p-4 md:p-6">
+            {/* Teams Count - Always clickable */}
+            <button
+              onClick={() => {
+                if (hasDraftTeams) {
+                  setShowDraftModal(true)
+                } else if (teams.length === 0 && isRegistrationOpen) {
+                  navigate('/create-team')
+                } else {
+                  navigate('/my-teams')
+                }
+              }}
+              className="p-4 md:p-6 text-left hover:bg-white/5 transition-colors group"
+              aria-label={
+                hasDraftTeams
+                  ? `You have ${draftTeams.length} draft team${draftTeams.length > 1 ? 's' : ''}. Click to view.`
+                  : teams.length === 0
+                  ? 'Create your first team'
+                  : 'View your teams'
+              }
+            >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#b91c1c] flex items-center justify-center">
+                <div className="w-10 h-10 bg-[#b91c1c] flex items-center justify-center relative">
                   <Users className="h-5 w-5 text-white" />
+                  {/* Draft indicator dot */}
+                  {hasDraftTeams && (
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full border-2 border-[#18181b]" />
+                  )}
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">My Teams</p>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider group-hover:text-gray-400 transition-colors">My Teams</p>
                   <p className="font-broadcast text-2xl text-white">{teams.length}</p>
                 </div>
+                <ChevronRight className="h-4 w-4 text-gray-600 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all ml-auto" />
               </div>
-            </div>
+            </button>
 
             {/* Total HRs */}
             <div className="p-4 md:p-6">
@@ -123,108 +162,150 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Main Content Grid */}
+        {/* Main Content Grid - Leaderboards */}
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* My Teams Section - Only show if no teams or some teams not entered */}
-          {(teamsLoading || teams.length === 0 || teams.some(t => t.paymentStatus !== 'paid')) && (
-            <div className="bg-[#18181b] border border-white/10">
-              {/* Section Header */}
-              <div className="p-4 border-b border-white/10 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-1 h-5 bg-[#b91c1c]" />
-                  <h2 className="font-broadcast text-xl text-white">MY TEAMS</h2>
-                </div>
-                {isRegistrationOpen && teams.length > 0 && (
-                  <Button
-                    onClick={() => navigate('/create-team')}
-                    className="bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-none h-8 px-3 text-sm"
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    New Team
-                  </Button>
-                )}
-              </div>
-
-              {/* Teams List */}
-              <div className="p-4">
-                {teamsLoading ? (
-                  <div className="space-y-3">
-                    {[1, 2].map((i) => (
-                      <div key={i} className="p-4 bg-[#0c0c0c] border border-white/5 animate-pulse">
-                        <div className="h-4 w-32 bg-white/5 mb-2"></div>
-                        <div className="h-3 w-24 bg-white/5"></div>
-                      </div>
-                    ))}
-                  </div>
-                ) : teams.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 mx-auto mb-4 bg-white/5 flex items-center justify-center">
-                      <span className="text-3xl">⚾</span>
-                    </div>
-                    <h3 className="font-broadcast text-xl text-white mb-2">STEP UP TO THE PLATE</h3>
-                    <p className="text-gray-500 text-sm mb-6 max-w-xs mx-auto">
-                      Draft your first lineup and join the competition. Pick 8 players and compete for the top spot.
-                    </p>
-                    <Button
-                      onClick={() => navigate('/create-team')}
-                      className="bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-none"
-                    >
-                      Create Your Team
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {/* Only show teams that need attention (not paid) */}
-                    {teams.filter(t => t.paymentStatus !== 'paid').map((team) => (
-                      <Link
-                        key={team.id}
-                        to="/my-teams"
-                        className="block p-4 bg-[#0c0c0c] border border-white/5 hover:border-white/20 hover:bg-white/5 transition-all"
-                      >
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-10 h-10 bg-[#b91c1c] flex items-center justify-center flex-shrink-0">
-                              <span className="font-broadcast text-sm text-white">
-                                {team.name.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                            <div className="min-w-0">
-                              <p className="font-medium text-white truncate">{team.name}</p>
-                              <p className="text-xs text-gray-500">
-                                {team.seasonYear} Season
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className="text-right">
-                              <p className="font-broadcast text-2xl text-[#d97706]">{team.totalHrs2024 || 0}</p>
-                              <p className="text-xs text-gray-500">HRs</p>
-                            </div>
-                            <div className={`px-2 py-1 text-xs uppercase tracking-wider ${
-                              team.paymentStatus === 'pending'
-                                ? 'bg-[#d97706]/20 text-[#d97706] border border-[#d97706]/30'
-                                : 'bg-white/5 text-gray-500 border border-white/10'
-                            }`}>
-                              {team.paymentStatus}
-                            </div>
-                            <ChevronRight className="h-5 w-5 text-gray-600" />
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* Overall Leaderboard Widget */}
           <LeaderboardWidget type="overall" userTeamIds={teams.map(t => t.id)} />
 
           {/* Monthly Leaderboard Widget */}
           <LeaderboardWidget type="monthly" userTeamIds={teams.map(t => t.id)} />
         </div>
+
+        {/* No Teams CTA */}
+        {!teamsLoading && teams.length === 0 && isRegistrationOpen && (
+          <div className="mt-6 bg-[#18181b] border border-white/10 p-8 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-white/5 flex items-center justify-center">
+              <span className="text-3xl">⚾</span>
+            </div>
+            <h3 className="font-broadcast text-xl text-white mb-2">STEP UP TO THE PLATE</h3>
+            <p className="text-gray-500 text-sm mb-6 max-w-xs mx-auto">
+              Draft your first lineup and join the competition. Pick 8 players and compete for the top spot.
+            </p>
+            <Button
+              onClick={() => navigate('/create-team')}
+              className="bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-none"
+            >
+              Create Your Team
+            </Button>
+          </div>
+        )}
       </main>
+
+      {/* Draft Teams Modal */}
+      {showDraftModal && (
+        <div
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowDraftModal(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="draft-modal-title"
+        >
+          <div
+            className="bg-[#18181b] border border-white/10 w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-5 border-b border-white/10 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-1 h-6 bg-amber-500" />
+                <h2 id="draft-modal-title" className="font-broadcast text-xl text-white">
+                  DRAFT TEAMS
+                </h2>
+              </div>
+              <div className="flex items-center gap-1">
+                <Link
+                  to="/my-teams"
+                  onClick={() => setShowDraftModal(false)}
+                  className="p-2 text-gray-500 hover:text-white hover:bg-white/5 transition-colors"
+                  aria-label="Open full page"
+                  title="Open full page"
+                >
+                  <Maximize2 className="h-5 w-5" />
+                </Link>
+                <button
+                  onClick={() => setShowDraftModal(false)}
+                  className="p-2 text-gray-500 hover:text-white hover:bg-white/5 transition-colors"
+                  aria-label="Close modal"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-5 overflow-y-auto flex-1">
+              <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/20 mb-5">
+                <AlertCircle className="h-5 w-5 text-amber-400 mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-amber-200">
+                  These teams are in draft status. Complete your payment to enter the competition.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {draftTeams.map((team) => (
+                  <div
+                    key={team.id}
+                    className="p-4 bg-[#0c0c0c] border border-white/5"
+                  >
+                    {/* Team Name & HRs */}
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="font-medium text-white">{team.name}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="font-broadcast text-lg text-[#d97706]">{team.totalHrs2024 || 0}</span>
+                        <span className="text-xs text-gray-500">HRs</span>
+                      </div>
+                    </div>
+
+                    {/* Status & Actions */}
+                    <div className="flex items-center gap-3">
+                      <span className="text-amber-400 uppercase text-xs font-medium px-2 py-1 bg-amber-500/10 border border-amber-500/20">
+                        {team.paymentStatus}
+                      </span>
+                      <div className="flex-1" />
+                      <button
+                        onClick={() => {
+                          setShowDraftModal(false)
+                          navigate('/my-teams', { state: { editTeamId: team.id } })
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 text-white text-sm hover:bg-white/10 transition-colors"
+                      >
+                        <FileEdit className="h-3.5 w-3.5" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowDraftModal(false)
+                          navigate('/my-teams', { state: { expandTeamId: team.id } })
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#b91c1c] text-white text-sm hover:bg-[#991b1b] transition-colors"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        View Details
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            {isRegistrationOpen && (
+              <div className="p-5 border-t border-white/10 flex-shrink-0">
+                <Button
+                  onClick={() => {
+                    setShowDraftModal(false)
+                    navigate('/create-team')
+                  }}
+                  className="bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-none px-5"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Team
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -77,7 +77,7 @@ export default function Players() {
   // React Query for player details - cached for 5 minutes
   const {
     data: selectedPlayer,
-    isError: isPlayerError
+    isError: isPlayerError,
   } = useQuery({
     queryKey: ['player', selectedPlayerId],
     queryFn: async () => {
@@ -107,8 +107,9 @@ export default function Players() {
     })
   }
 
-  // Handle player card click
-  const handlePlayerClick = (playerId: string) => {
+  // Handle player card click - stop propagation so it doesn't trigger backdrop close
+  const handlePlayerClick = (e: React.MouseEvent, playerId: string) => {
+    e.stopPropagation()
     setSelectedPlayerId(playerId)
     setIsPanelOpen(true)
   }
@@ -390,12 +391,12 @@ export default function Players() {
               </Button>
             </div>
 
-            {/* Player Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {/* Player Cards Grid - z-[45] sits above backdrop (z-40) but below panel (z-50) */}
+            <div className="relative z-[45] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {players.map((player, index) => (
                 <button
                   key={player.id}
-                  onClick={() => handlePlayerClick(player.id)}
+                  onClick={(e) => handlePlayerClick(e, player.id)}
                   onMouseEnter={() => prefetchPlayer(player.id)}
                   className="opacity-0 animate-fade-up text-left"
                   style={{ animationDelay: `${Math.min(index * 30, 300)}ms`, animationFillMode: 'forwards' }}
@@ -456,7 +457,7 @@ export default function Players() {
       </main>
 
       {/* Player Details Slide-Out Panel */}
-      {/* Backdrop */}
+      {/* Backdrop - clicks close the panel, but player card clicks stop propagation */}
       <div
         className={`fixed inset-0 bg-black/60 z-40 transition-opacity duration-300 ${
           isPanelOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -466,7 +467,7 @@ export default function Players() {
 
       {/* Panel */}
       <div
-        className={`fixed top-0 right-0 h-full w-full max-w-md bg-[#0c0c0c] border-l border-white/10 z-50 transform transition-transform duration-300 ease-out ${
+        className={`fixed top-0 right-0 h-full w-full max-w-md bg-[#0c0c0c]/60 backdrop-blur-md border-l border-white/10 z-50 transform transition-transform duration-300 ease-out ${
           isPanelOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -486,8 +487,8 @@ export default function Players() {
 
         {/* Panel Content */}
         <div className="p-4 overflow-y-auto h-[calc(100%-60px)]">
-          {/* Show player details if we have data */}
-          {selectedPlayer ? (
+          {/* Show player details if we have data that matches selected player */}
+          {selectedPlayer && selectedPlayer.id === selectedPlayerId ? (
             <div className="space-y-4">
               {/* Player Header */}
               <div className="bg-[#18181b] border border-white/10 p-4">
@@ -587,47 +588,6 @@ export default function Players() {
                 </div>
               </div>
 
-              {/* Draft Context Section */}
-              <div className="bg-[#18181b] border border-white/10">
-                <div className="p-3 border-b border-white/10 flex items-center gap-2">
-                  <div className="w-1 h-4 bg-[#d97706]" />
-                  <h3 className="font-broadcast text-sm text-white">DRAFT CONTEXT</h3>
-                </div>
-                <div className="p-3 space-y-2">
-                  {/* Cap Impact */}
-                  <div className="flex items-center justify-between p-2 bg-[#0c0c0c] border border-white/5">
-                    <span className="text-xs text-gray-400">Cap Impact</span>
-                    <span className="text-sm text-white">
-                      <span className="font-broadcast text-[#d97706]">{selectedPlayer.latestSeasonStats?.hrsTotal || 0}</span> of 172
-                    </span>
-                  </div>
-
-                  {/* Budget Usage */}
-                  <div className="flex items-center justify-between p-2 bg-[#0c0c0c] border border-white/5">
-                    <span className="text-xs text-gray-400">Budget</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-20 h-1.5 bg-white/10">
-                        <div
-                          className="h-full bg-[#d97706]"
-                          style={{ width: `${Math.min(Number(selectedPlayer.capPercentage), 100)}%` }}
-                        />
-                      </div>
-                      <span className="font-broadcast text-sm text-white">{selectedPlayer.capPercentage}%</span>
-                    </div>
-                  </div>
-
-                  {/* Popularity */}
-                  <div className="flex items-center justify-between p-2 bg-[#0c0c0c] border border-white/5">
-                    <span className="text-xs text-gray-400">Popularity</span>
-                    <span className="text-sm text-white">
-                      {selectedPlayer.draftCount === 0
-                        ? 'Not drafted'
-                        : `${selectedPlayer.draftCount} team${selectedPlayer.draftCount !== 1 ? 's' : ''}`
-                      }
-                    </span>
-                  </div>
-                </div>
-              </div>
             </div>
           ) : isPlayerError ? (
             /* Show error if fetch failed */

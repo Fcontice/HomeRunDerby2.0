@@ -46,9 +46,7 @@ export async function getStats(req: Request, res: Response, next: NextFunction) 
 
     const teamsByPaymentStatus = {
       draft: 0,
-      pending: 0,
       paid: 0,
-      rejected: 0,
       refunded: 0,
     }
 
@@ -81,7 +79,7 @@ export async function getStats(req: Request, res: Response, next: NextFunction) 
       success: true,
       data: {
         totalTeams: teams.length,
-        pendingApprovals: teamsByPaymentStatus.pending,
+        pendingApprovals: teamsByPaymentStatus.draft, // Legacy: now tracks unpaid/draft teams
         revenue,
         activeUsers: verifiedUsers.length,
         totalUsers: users.length,

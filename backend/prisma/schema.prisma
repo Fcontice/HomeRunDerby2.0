@@ -24,6 +24,7 @@ model User {
   updatedAt               DateTime       @updatedAt
   deletedAt               DateTime?
   phoneNumber             String?        @db.VarChar(20)
+  profileCompleted        Boolean        @default(true)
   notifications           Notification[]
   reminderLogs            ReminderLog[]
   seasonConfigChanges     SeasonConfig[] @relation("SeasonConfigChangedBy")
@@ -89,11 +90,11 @@ model PlayerStats {
   playerId         String
   seasonYear       Int
   date             DateTime @db.Date
-  hrsDaily         Int      @default(0)  // HRs hit on this specific date (not cumulative)
   hrsTotal         Int      @default(0)
   hrsRegularSeason Int      @default(0)
   hrsPostseason    Int      @default(0)
   lastUpdated      DateTime @updatedAt
+  hrsDaily         Int      @default(0)
   player           Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@unique([playerId, seasonYear, date])
@@ -101,6 +102,7 @@ model PlayerStats {
   @@index([seasonYear])
   @@index([date])
   @@index([playerId, seasonYear, date(sort: Desc)], map: "idx_player_stats_player_season_date")
+  @@index([seasonYear, date, hrsDaily, playerId], map: "idx_player_stats_monthly_sum")
 }
 
 model Leaderboard {
@@ -216,9 +218,7 @@ enum UserRole {
 
 enum PaymentStatus {
   draft
-  pending
   paid
-  rejected
   refunded
 }
 

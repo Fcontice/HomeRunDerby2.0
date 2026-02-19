@@ -115,8 +115,8 @@ export default function CreateTeam() {
       })
 
       if (response.success && response.data) {
-        // Success! Navigate to my teams page
-        navigate('/my-teams')
+        // Success! Navigate to setup page for payment instructions
+        navigate('/setup')
       } else {
         setError(response.error?.message || 'Failed to create team')
       }

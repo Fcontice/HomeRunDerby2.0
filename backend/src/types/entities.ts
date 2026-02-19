@@ -7,7 +7,7 @@
 
 export type AuthProvider = 'email' | 'google'
 export type UserRole = 'user' | 'admin'
-export type PaymentStatus = 'draft' | 'pending' | 'paid' | 'rejected' | 'refunded'
+export type PaymentStatus = 'draft' | 'paid' | 'refunded'
 export type EntryStatus = 'draft' | 'entered' | 'locked'
 export type LeaderboardType = 'overall' | 'monthly' | 'allstar'
 export type NotificationType = 'email' | 'in_app'
@@ -28,6 +28,7 @@ export interface User {
   role: UserRole
   avatarUrl: string | null
   phoneNumber: string | null
+  profileCompleted: boolean
   verificationToken: string | null
   verificationTokenExpiry: string | null
   resetToken: string | null

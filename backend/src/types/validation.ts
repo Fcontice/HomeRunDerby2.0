@@ -63,6 +63,20 @@ export const updateProfileSchema = z.object({
   avatarUrl: z.string().url('Invalid avatar URL').optional(),
 })
 
+export const completeProfileSchema = z.object({
+  username: z
+    .string()
+    .min(3, 'Username must be at least 3 characters')
+    .max(30, 'Username must be at most 30 characters')
+    .regex(
+      /^[a-zA-Z0-9_-]+$/,
+      'Username can only contain letters, numbers, underscores, and hyphens'
+    ),
+  phoneNumber: z
+    .string()
+    .regex(/^\d{3}-\d{3}-\d{4}$/, 'Phone number must be in format xxx-xxx-xxxx'),
+})
+
 /**
  * Team validation schemas
  */
@@ -95,7 +109,7 @@ export const updateTeamSchema = z.object({
  */
 
 export const updateTeamStatusSchema = z.object({
-  paymentStatus: z.enum(['draft', 'pending', 'paid', 'rejected', 'refunded']),
+  paymentStatus: z.enum(['draft', 'paid', 'refunded']),
   entryStatus: z.enum(['draft', 'entered', 'locked']).optional(),
   paymentNotes: z.string().max(500).optional(),
 })
@@ -116,7 +130,7 @@ export const verifyPasswordSchema = z.object({
 })
 
 export const updateTeamPaymentStatusSchema = z.object({
-  paymentStatus: z.enum(['draft', 'pending', 'paid', 'rejected', 'refunded']),
+  paymentStatus: z.enum(['draft', 'paid', 'refunded']),
   paymentNotes: z.string().max(500).optional(),
 })
 
@@ -133,7 +147,7 @@ export const lockTeamsSchema = z.object({
 })
 
 export const sendPaymentReminderSchema = z.object({
-  statuses: z.array(z.enum(['draft', 'pending'])).min(1, 'At least one status is required'),
+  statuses: z.array(z.enum(['draft'])).min(1, 'At least one status is required'),
 })
 
 export const sendLockReminderSchema = z.object({
@@ -190,6 +204,7 @@ export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>
+export type CompleteProfileInput = z.infer<typeof completeProfileSchema>
 export type CreateTeamInput = z.infer<typeof createTeamSchema>
 export type UpdateTeamInput = z.infer<typeof updateTeamSchema>
 export type UpdateTeamStatusInput = z.infer<typeof updateTeamStatusSchema>

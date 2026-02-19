@@ -13,6 +13,8 @@ import {
   Shield,
   Users,
   Zap,
+  BookOpen,
+  Award,
 } from 'lucide-react'
 
 interface NavbarProps {
@@ -36,8 +38,10 @@ export function Navbar({ showAuth = true }: NavbarProps) {
 
   const navLinks = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, requiresAuth: true },
+    { href: '/setup', label: 'How to Play', icon: BookOpen, requiresAuth: true },
     { href: '/players', label: 'Players', icon: Users, requiresAuth: false },
     { href: '/leaderboard', label: 'Leaderboard', icon: Trophy, requiresAuth: false },
+    { href: '/prizes', label: 'Prizes', icon: Award, requiresAuth: true },
   ]
 
   const isActive = (href: string) => location.pathname === href

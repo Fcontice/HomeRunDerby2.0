@@ -260,6 +260,8 @@ export async function login(req: Request, res: Response) {
         avatarUrl: user.avatarUrl,
         emailVerified: user.emailVerified,
         authProvider: user.authProvider,
+        phoneNumber: user.phoneNumber,
+        profileCompleted: user.profileCompleted,
         createdAt: user.createdAt,
       },
       // Include CSRF token in response for frontend to use in headers
@@ -407,6 +409,8 @@ export async function getProfile(req: Request, res: Response) {
     avatarUrl: foundUser.avatarUrl,
     authProvider: foundUser.authProvider,
     emailVerified: foundUser.emailVerified,
+    phoneNumber: foundUser.phoneNumber,
+    profileCompleted: foundUser.profileCompleted,
     createdAt: foundUser.createdAt,
   }
 

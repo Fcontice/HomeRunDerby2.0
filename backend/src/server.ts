@@ -7,6 +7,7 @@ import helmet from 'helmet'
 import cookieParser from 'cookie-parser'
 import passport from './config/passport.js'
 import authRoutes from './routes/authRoutes.js'
+import userRoutes from './routes/userRoutes.js'
 import playerRoutes from './routes/playerRoutes.js'
 import teamRoutes from './routes/teamRoutes.js'
 import leaderboardRoutes from './routes/leaderboardRoutes.js'
@@ -127,6 +128,9 @@ app.get('/api', (_req, res) => {
 
 // Authentication routes
 app.use('/api/auth', authRoutes)
+
+// User routes
+app.use('/api/users', userRoutes)
 
 // Player routes
 app.use('/api/players', playerRoutes)

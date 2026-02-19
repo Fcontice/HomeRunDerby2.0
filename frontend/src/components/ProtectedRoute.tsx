@@ -1,12 +1,21 @@
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
+  /**
+   * If true (default), redirects users with incomplete profiles to /complete-profile
+   * Set to false for the complete-profile page itself
+   */
+  requireCompletedProfile?: boolean
 }
 
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
+export default function ProtectedRoute({
+  children,
+  requireCompletedProfile = true,
+}: ProtectedRouteProps) {
   const { user, loading } = useAuth()
+  const location = useLocation()
 
   if (loading) {
     return (
@@ -18,6 +27,16 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!user) {
     return <Navigate to="/login" replace />
+  }
+
+  // Check if user needs to complete profile
+  // Only redirect if requireCompletedProfile is true and we're not already on complete-profile
+  if (
+    requireCompletedProfile &&
+    user.profileCompleted === false &&
+    location.pathname !== '/complete-profile'
+  ) {
+    return <Navigate to="/complete-profile" replace />
   }
 
   return <>{children}</>

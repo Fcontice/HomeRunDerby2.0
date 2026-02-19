@@ -381,6 +381,7 @@ export interface User {
   phoneNumber: string | null
   authProvider: 'email' | 'google'
   emailVerified: boolean
+  profileCompleted: boolean
   createdAt: string
 }
 
@@ -524,9 +525,7 @@ export interface AdminStats {
   totalUsers: number
   teamsByPaymentStatus: {
     draft: number
-    pending: number
     paid: number
-    rejected: number
     refunded: number
   }
   teamsByEntryStatus: {
@@ -755,6 +754,26 @@ export const authApi = {
 // ==================== USERS API ====================
 
 export const usersApi = {
+  /**
+   * Check if a username is available
+   */
+  checkUsernameAvailability: async (username: string): Promise<ApiResponse<{ available: boolean; message: string | null }>> => {
+    const response = await api.get(`/api/users/check-username/${encodeURIComponent(username)}`)
+    return response.data
+  },
+
+  /**
+   * Complete profile for new Google OAuth users
+   * Sets username and phone number
+   */
+  completeProfile: async (data: {
+    username: string
+    phoneNumber: string
+  }): Promise<ApiResponse<{ user: User }>> => {
+    const response = await api.post('/api/users/complete-profile', data)
+    return response.data
+  },
+
   updateProfile: async (data: {
     username?: string
     avatarUrl?: string

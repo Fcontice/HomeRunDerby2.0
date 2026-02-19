@@ -7,10 +7,13 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import VerifyEmail from './pages/VerifyEmail'
 import Dashboard from './pages/Dashboard'
+import CompleteProfile from './pages/CompleteProfile'
 import CreateTeam from './pages/CreateTeam'
 import MyTeams from './pages/MyTeams'
 import Leaderboard from './pages/Leaderboard'
 import Players from './pages/Players'
+import Setup from './pages/Setup'
+import PrizePayout from './pages/PrizePayout'
 // PlayerProfile removed - player details now shown in slide-out panel on Players page
 
 // Admin pages
@@ -43,6 +46,16 @@ function App() {
         <Route path="/teamrostercomponent-test" element={<TeamRosterCompTest />} />
 
 
+        {/* Complete profile route (for new Google OAuth users) */}
+        <Route
+          path="/complete-profile"
+          element={
+            <ProtectedRoute requireCompletedProfile={false}>
+              <CompleteProfile />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Protected routes */}
         <Route
           path="/dashboard"
@@ -65,6 +78,22 @@ function App() {
           element={
             <ProtectedRoute>
               <CreateTeam />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/setup"
+          element={
+            <ProtectedRoute>
+              <Setup />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/prizes"
+          element={
+            <ProtectedRoute>
+              <PrizePayout />
             </ProtectedRoute>
           }
         />

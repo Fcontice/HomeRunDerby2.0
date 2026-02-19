@@ -193,10 +193,11 @@ router.get(
     res.cookie(COOKIE_NAMES.REFRESH_TOKEN, refreshTokenValue, getRefreshTokenCookieOptions())
     res.cookie(COOKIE_NAMES.CSRF_TOKEN, csrfToken, getCSRFCookieOptions())
 
-    // Redirect to frontend dashboard
-    // Tokens are in cookies, not URL - browser auto-includes on next request
+    // Redirect based on whether this is a new user who needs to complete their profile
+    // New Google users have profileCompleted=false and need to set username/phone
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173'
-    res.redirect(`${frontendUrl}/dashboard`)
+    const redirectPath = user.isNewUser || user.profileCompleted === false ? '/complete-profile' : '/dashboard'
+    res.redirect(`${frontendUrl}${redirectPath}`)
   }
 )
 

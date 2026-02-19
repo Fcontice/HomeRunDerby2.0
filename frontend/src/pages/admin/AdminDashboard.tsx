@@ -12,7 +12,7 @@ import {
   Loader2,
   ArrowRight,
   Bell,
-  TrendingUp,
+  Lock,
 } from 'lucide-react'
 
 export default function AdminDashboard() {
@@ -77,7 +77,7 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-white" />
       </div>
     )
   }
@@ -85,14 +85,14 @@ export default function AdminDashboard() {
   if (error) {
     return (
       <div className="text-center py-8">
-        <div className="inline-flex items-center gap-2 px-4 py-3 bg-red-500/10 border border-red-500/20 text-red-400 mb-4">
+        <div className="inline-flex items-center gap-2 px-4 py-3 bg-[#1e293b] border border-white/10 text-red-400 mb-4">
           <AlertTriangle className="w-4 h-4" />
           {error}
         </div>
         <div>
           <button
             onClick={loadStats}
-            className="px-4 py-2 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20 transition-colors"
+            className="px-4 py-2 bg-white text-[#0f172a] text-sm font-medium hover:bg-white/90 transition-colors"
           >
             Retry
           </button>
@@ -103,42 +103,44 @@ export default function AdminDashboard() {
 
   if (!stats) return null
 
+  const unpaidCount = stats.teamsByPaymentStatus?.draft || 0
+
   const statCards = [
     {
       label: 'Total Teams',
       value: stats.totalTeams,
       icon: Trophy,
-      color: 'cyan',
-      bg: 'bg-cyan-500/10',
-      border: 'border-cyan-500/20',
-      text: 'text-cyan-400',
+      accent: 'bg-cyan-500',
+      iconBg: 'bg-cyan-500/20',
+      iconColor: 'text-cyan-400',
+      valueColor: 'text-cyan-400',
     },
     {
-      label: 'Pending Approvals',
-      value: stats.pendingApprovals,
+      label: 'Unpaid Teams',
+      value: unpaidCount,
       icon: Clock,
-      color: 'amber',
-      bg: stats.pendingApprovals > 0 ? 'bg-amber-500/10' : 'bg-slate-500/10',
-      border: stats.pendingApprovals > 0 ? 'border-amber-500/20' : 'border-slate-500/20',
-      text: stats.pendingApprovals > 0 ? 'text-amber-400' : 'text-slate-400',
+      accent: unpaidCount > 0 ? 'bg-amber-500' : 'bg-slate-600',
+      iconBg: unpaidCount > 0 ? 'bg-amber-500/20' : 'bg-slate-500/20',
+      iconColor: unpaidCount > 0 ? 'text-amber-400' : 'text-slate-400',
+      valueColor: unpaidCount > 0 ? 'text-amber-400' : 'text-slate-400',
     },
     {
       label: 'Revenue',
       value: `$${stats.revenue.toLocaleString()}`,
       icon: DollarSign,
-      color: 'emerald',
-      bg: 'bg-emerald-500/10',
-      border: 'border-emerald-500/20',
-      text: 'text-emerald-400',
+      accent: 'bg-emerald-500',
+      iconBg: 'bg-emerald-500/20',
+      iconColor: 'text-emerald-400',
+      valueColor: 'text-emerald-400',
     },
     {
       label: 'Active Users',
       value: stats.activeUsers,
       icon: Users,
-      color: 'violet',
-      bg: 'bg-violet-500/10',
-      border: 'border-violet-500/20',
-      text: 'text-violet-400',
+      accent: 'bg-violet-500',
+      iconBg: 'bg-violet-500/20',
+      iconColor: 'text-violet-400',
+      valueColor: 'text-violet-400',
       subtext: `${stats.totalUsers} total`,
     },
   ]
@@ -151,10 +153,6 @@ export default function AdminDashboard() {
           <h1 className="text-2xl font-semibold text-white">Dashboard</h1>
           <p className="text-sm text-slate-400 mt-1">Season {stats.seasonYear} Overview</p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/20">
-          <TrendingUp className="w-4 h-4 text-cyan-400" />
-          <span className="text-sm text-cyan-400">Live Data</span>
-        </div>
       </div>
 
       {/* Stats Grid */}
@@ -164,22 +162,25 @@ export default function AdminDashboard() {
           return (
             <div
               key={stat.label}
-              className={`${stat.bg} border ${stat.border} p-5`}
+              className="bg-[#1e293b] border border-white/5 flex items-stretch overflow-hidden"
             >
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    {stat.label}
-                  </p>
-                  <p className={`text-3xl font-semibold ${stat.text} mt-2 font-mono`}>
-                    {stat.value}
-                  </p>
-                  {stat.subtext && (
-                    <p className="text-xs text-slate-500 mt-1">{stat.subtext}</p>
-                  )}
-                </div>
-                <div className={`p-2 ${stat.bg} border ${stat.border}`}>
-                  <Icon className={`w-5 h-5 ${stat.text}`} />
+              <div className={`w-1.5 ${stat.accent}`} />
+              <div className="flex-1 p-5">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      {stat.label}
+                    </p>
+                    <p className={`text-3xl font-semibold mt-2 font-mono ${stat.valueColor}`}>
+                      {stat.value}
+                    </p>
+                    {stat.subtext && (
+                      <p className="text-xs text-slate-500 mt-1">{stat.subtext}</p>
+                    )}
+                  </div>
+                  <div className={`p-2.5 ${stat.iconBg} border border-white/10`}>
+                    <Icon className={`w-5 h-5 ${stat.iconColor}`} />
+                  </div>
                 </div>
               </div>
             </div>
@@ -196,23 +197,25 @@ export default function AdminDashboard() {
           <h2 className="text-sm font-semibold text-white">Teams by Payment Status</h2>
         </div>
         <div className="p-5">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-            {Object.entries(stats.teamsByPaymentStatus).map(([status, count]) => {
-              const statusColors: Record<string, { bg: string; text: string; border: string }> = {
-                draft: { bg: 'bg-slate-500/10', text: 'text-slate-400', border: 'border-slate-500/20' },
-                pending: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/20' },
-                paid: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/20' },
-                rejected: { bg: 'bg-red-500/10', text: 'text-red-400', border: 'border-red-500/20' },
-                refunded: { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20' },
+          <div className="grid grid-cols-3 gap-4">
+            {(['draft', 'paid', 'refunded'] as const).map((status) => {
+              const statusConfig: Record<string, { accent: string; text: string; label: string; labelColor: string }> = {
+                draft: { accent: 'bg-amber-500', text: 'text-amber-400', label: 'Unpaid', labelColor: 'text-amber-500/70' },
+                paid: { accent: 'bg-emerald-500', text: 'text-emerald-400', label: 'Paid', labelColor: 'text-emerald-500/70' },
+                refunded: { accent: 'bg-slate-500', text: 'text-slate-400', label: 'Refunded', labelColor: 'text-slate-500' },
               }
-              const colors = statusColors[status] || statusColors.draft
+              const config = statusConfig[status]
+              const count = stats.teamsByPaymentStatus[status] || 0
               return (
                 <div
                   key={status}
-                  className={`${colors.bg} border ${colors.border} p-4 text-center`}
+                  className="bg-[#0f172a] border border-white/5 flex items-center overflow-hidden"
                 >
-                  <p className={`text-2xl font-semibold font-mono ${colors.text}`}>{count}</p>
-                  <p className="text-xs text-slate-500 capitalize mt-1">{status}</p>
+                  <div className={`w-1.5 self-stretch ${config.accent}`} />
+                  <div className="flex-1 px-4 py-4">
+                    <p className={`text-3xl font-semibold font-mono ${config.text}`}>{count}</p>
+                    <p className={`text-xs mt-1 ${config.labelColor}`}>{config.label}</p>
+                  </div>
                 </div>
               )
             })}
@@ -227,16 +230,16 @@ export default function AdminDashboard() {
         </div>
         <div className="p-5 flex flex-wrap gap-3">
           <Link
-            to="/admin/teams?paymentStatus=pending"
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-colors group"
+            to="/admin/teams?paymentStatus=draft"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 transition-colors group"
           >
             <Clock className="w-4 h-4" />
-            <span className="text-sm">View Pending Teams ({stats.pendingApprovals})</span>
+            <span className="text-sm">View Unpaid Teams ({unpaidCount})</span>
             <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
           </Link>
           <Link
             to="/admin/notifications"
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 transition-colors group"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/20 transition-colors group"
           >
             <Bell className="w-4 h-4" />
             <span className="text-sm">Send Notification</span>
@@ -244,9 +247,9 @@ export default function AdminDashboard() {
           </Link>
           <button
             onClick={handleLockTeamsClick}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors"
           >
-            <AlertTriangle className="w-4 h-4" />
+            <Lock className="w-4 h-4" />
             <span className="text-sm">Lock Teams</span>
           </button>
         </div>
@@ -266,8 +269,8 @@ export default function AdminDashboard() {
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-[#1e293b] border border-white/10 w-full max-w-md">
             <div className="p-5 border-b border-white/5">
-              <div className="flex items-center gap-3 text-red-400">
-                <AlertTriangle className="w-5 h-5" />
+              <div className="flex items-center gap-3 text-white">
+                <AlertTriangle className="w-5 h-5 text-red-400" />
                 <h3 className="font-semibold">Lock All Teams?</h3>
               </div>
             </div>
@@ -291,7 +294,7 @@ export default function AdminDashboard() {
                   value={lockTeamsConfirm}
                   onChange={(e) => setLockTeamsConfirm(e.target.value)}
                   placeholder="LOCK TEAMS"
-                  className="w-full bg-[#0f172a] border border-white/10 text-white px-4 py-2.5 focus:outline-none focus:border-red-500/50"
+                  className="w-full bg-[#0f172a] border border-white/10 text-white px-4 py-2.5 focus:outline-none focus:border-white/30"
                 />
               </div>
             </div>
@@ -308,7 +311,7 @@ export default function AdminDashboard() {
               <button
                 onClick={handleLockTeams}
                 disabled={lockTeamsConfirm !== 'LOCK TEAMS' || lockingTeams}
-                className="px-4 py-2 text-sm bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 text-sm bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {lockingTeams && <Loader2 className="w-4 h-4 animate-spin" />}
                 Lock Teams

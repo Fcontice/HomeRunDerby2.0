@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useSeason } from '../contexts/SeasonContext'
 import { Navbar } from '../components/Navbar'
@@ -19,39 +19,30 @@ import {
   Users,
   Plus,
   Trophy,
-  Clock,
   CheckCircle,
-  XCircle,
   AlertCircle,
   Edit,
   Lock,
   ChevronDown,
   ChevronUp,
   Trash2,
-  DollarSign,
   X,
   Calendar,
-  Copy,
-  Check,
+  BookOpen,
 } from 'lucide-react'
 
 const MAX_HRS = 172
-const ENTRY_FEE = 100
-
-const PAYMENT_OPTIONS = [
-  { name: 'Venmo', handle: '@YourVenmoHandle', copyable: true },
-  { name: 'Zelle', handle: 'your-email@example.com', copyable: true },
-  { name: 'In-Person', handle: 'Contact admin to arrange cash pickup', copyable: false },
-]
 
 export default function MyTeams() {
   const { user } = useAuth()
   const { season } = useSeason()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const [teams, setTeams] = useState<Team[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null)
+  const [pendingAction, setPendingAction] = useState<{ type: 'expand' | 'edit'; teamId: string } | null>(null)
 
   // Edit mode state
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null)
@@ -65,11 +56,6 @@ export default function MyTeams() {
   const [teamToDelete, setTeamToDelete] = useState<Team | null>(null)
   const [deleting, setDeleting] = useState(false)
 
-  // Payment dialog state
-  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
-  const [paymentTeam, setPaymentTeam] = useState<Team | null>(null)
-  const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
-
   // Player HR map for view mode
   const [playerHrMap, setPlayerHrMap] = useState<Map<string, number>>(new Map())
 
@@ -78,6 +64,34 @@ export default function MyTeams() {
   useEffect(() => {
     fetchTeams()
   }, [])
+
+  // Handle navigation state (expand or edit a specific team)
+  useEffect(() => {
+    const state = location.state as { expandTeamId?: string; editTeamId?: string } | null
+    if (state?.expandTeamId) {
+      setPendingAction({ type: 'expand', teamId: state.expandTeamId })
+      // Clear state so it doesn't re-trigger on refresh
+      navigate(location.pathname, { replace: true })
+    } else if (state?.editTeamId) {
+      setPendingAction({ type: 'edit', teamId: state.editTeamId })
+      navigate(location.pathname, { replace: true })
+    }
+  }, [location.state, navigate, location.pathname])
+
+  // Execute pending action once teams are loaded
+  useEffect(() => {
+    if (!loading && teams.length > 0 && pendingAction) {
+      const team = teams.find(t => t.id === pendingAction.teamId)
+      if (team) {
+        if (pendingAction.type === 'edit' && team.paymentStatus === 'draft') {
+          startEditing(team)
+        } else {
+          setExpandedTeamId(pendingAction.teamId)
+        }
+      }
+      setPendingAction(null)
+    }
+  }, [loading, teams, pendingAction])
 
   const fetchTeams = async () => {
     try {
@@ -223,21 +237,6 @@ export default function MyTeams() {
     }
   }
 
-  const openPaymentDialog = (team: Team) => {
-    setPaymentTeam(team)
-    setPaymentDialogOpen(true)
-  }
-
-  const handleCopy = async (text: string, index: number) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopiedIndex(index)
-      setTimeout(() => setCopiedIndex(null), 2000)
-    } catch (err) {
-      console.error('Failed to copy:', err)
-    }
-  }
-
   const getStatusConfig = (status: string) => {
     switch (status) {
       case 'paid':
@@ -245,22 +244,12 @@ export default function MyTeams() {
           icon: <CheckCircle className="w-4 h-4" />,
           className: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
         }
-      case 'pending':
-        return {
-          icon: <Clock className="w-4 h-4" />,
-          className: 'bg-[#d97706]/20 text-[#d97706] border-[#d97706]/30',
-        }
-      case 'rejected':
-        return {
-          icon: <XCircle className="w-4 h-4" />,
-          className: 'bg-red-500/20 text-red-400 border-red-500/30',
-        }
       case 'refunded':
         return {
           icon: <AlertCircle className="w-4 h-4" />,
           className: 'bg-white/5 text-gray-500 border-white/10',
         }
-      default:
+      default: // draft
         return {
           icon: <Edit className="w-4 h-4" />,
           className: 'bg-white/5 text-gray-500 border-white/10',
@@ -296,9 +285,9 @@ export default function MyTeams() {
       isRegistrationOpen
   }
 
-  const canPayTeam = (team: Team) => {
+  const showPaymentLink = (team: Team) => {
     return team.userId === user?.id &&
-      (team.paymentStatus === 'draft' || team.paymentStatus === 'rejected') &&
+      team.paymentStatus === 'draft' &&
       team.entryStatus !== 'locked' &&
       isRegistrationOpen
   }
@@ -501,16 +490,16 @@ export default function MyTeams() {
                       {/* Action Buttons */}
                       {!isEditing && (
                         <div className="flex flex-wrap gap-2 mb-6">
-                          {canPayTeam(team) && (
+                          {showPaymentLink(team) && (
                             <Button
                               onClick={(e) => {
                                 e.stopPropagation()
-                                openPaymentDialog(team)
+                                navigate('/setup')
                               }}
                               className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-none"
                             >
-                              <DollarSign className="w-4 h-4 mr-2" />
-                              Payment Instructions
+                              <BookOpen className="w-4 h-4 mr-2" />
+                              How to Pay
                             </Button>
                           )}
                           {canEditTeam(team) && (
@@ -698,123 +687,6 @@ export default function MyTeams() {
         </DialogContent>
       </Dialog>
 
-      {/* Payment Instructions Dialog */}
-      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
-        <DialogContent className="bg-[#18181b] border-white/10 max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-white flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-emerald-400" />
-              Payment Instructions
-            </DialogTitle>
-            <DialogDescription className="text-gray-400">
-              {paymentTeam?.name} • {paymentTeam?.seasonYear} Season
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6 py-4">
-            {/* Pending Alert */}
-            {paymentTeam?.paymentStatus === 'pending' && (
-              <div className="p-4 bg-[#d97706]/10 border border-[#d97706]/30">
-                <div className="flex items-center gap-2 text-[#d97706] mb-2">
-                  <Clock className="w-4 h-4" />
-                  <span className="font-medium">Payment Pending Verification</span>
-                </div>
-                <p className="text-sm text-gray-400">
-                  Your payment is being verified by an admin. This typically takes up to 24 hours.
-                </p>
-              </div>
-            )}
-
-            {/* Entry Fee */}
-            <div className="p-4 bg-[#0c0c0c] border border-white/10">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400">Entry Fee</span>
-                <span className="font-broadcast text-3xl text-[#d97706]">${ENTRY_FEE}</span>
-              </div>
-            </div>
-
-            {/* Payment Options */}
-            <div>
-              <h4 className="text-sm text-gray-500 uppercase tracking-wider mb-3">Payment Options</h4>
-              <div className="space-y-2">
-                {PAYMENT_OPTIONS.map((option, index) => (
-                  <div
-                    key={option.name}
-                    className="flex items-center justify-between p-3 bg-[#0c0c0c] border border-white/5"
-                  >
-                    <div>
-                      <p className="font-medium text-white">{option.name}</p>
-                      <p className="text-sm text-gray-500 font-mono">{option.handle}</p>
-                    </div>
-                    {option.copyable && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleCopy(option.handle, index)}
-                        className="text-gray-400 hover:text-white hover:bg-white/5"
-                      >
-                        {copiedIndex === index ? (
-                          <Check className="h-4 w-4 text-emerald-400" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Instructions */}
-            <div>
-              <h4 className="text-sm text-gray-500 uppercase tracking-wider mb-3">Instructions</h4>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-[#b91c1c] flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-xs font-bold">1</span>
-                  </div>
-                  <p className="text-sm text-gray-400">
-                    Send <span className="text-white font-medium">${ENTRY_FEE}</span> using one of the payment methods above.
-                  </p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-[#b91c1c] flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-xs font-bold">2</span>
-                  </div>
-                  <p className="text-sm text-gray-400">
-                    Include your <span className="text-white font-medium">team name, email, and phone number</span> in the payment memo.
-                  </p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-[#b91c1c] flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-xs font-bold">3</span>
-                  </div>
-                  <p className="text-sm text-gray-400">
-                    An admin will verify your payment within <span className="text-white font-medium">24 hours</span>.
-                  </p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-[#b91c1c] flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-xs font-bold">4</span>
-                  </div>
-                  <p className="text-sm text-gray-400">
-                    You'll receive a confirmation email once your team is officially entered.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              onClick={() => setPaymentDialogOpen(false)}
-              className="bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-none w-full"
-            >
-              Got It
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
