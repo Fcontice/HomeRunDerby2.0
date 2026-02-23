@@ -9,11 +9,10 @@ interface LeaderboardRowProps {
   isExpanded: boolean
   onToggle: () => void
   isHighlighted?: boolean
-  isCurrentUser?: boolean
 }
 
 export const LeaderboardRow = memo(forwardRef<HTMLDivElement, LeaderboardRowProps>(
-  function LeaderboardRow({ entry, index, isExpanded, onToggle, isHighlighted, isCurrentUser }, ref) {
+  function LeaderboardRow({ entry, index, isExpanded, onToggle, isHighlighted }, ref) {
   // Memoize rank display to prevent recalculation on every render
   const rankDisplay = useMemo(() => {
     const rank = entry.rank
@@ -51,7 +50,7 @@ export const LeaderboardRow = memo(forwardRef<HTMLDivElement, LeaderboardRowProp
     <div
       ref={ref}
       className={`border-b border-white/5 ${isEven ? 'bg-[#0c0c0c]/50' : ''} ${
-        isHighlighted || isCurrentUser ? 'ring-2 ring-[#b91c1c] bg-[#b91c1c]/10' : ''
+        isHighlighted ? 'ring-2 ring-[#b91c1c] bg-[#b91c1c]/10' : ''
       }`}
     >
       <div

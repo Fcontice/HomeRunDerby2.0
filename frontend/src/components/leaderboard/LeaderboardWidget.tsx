@@ -1,45 +1,22 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { RefreshCw, ChevronRight, Trophy, Calendar } from 'lucide-react'
+import { RefreshCw, ChevronRight, Trophy } from 'lucide-react'
 import { leaderboardsApi, LeaderboardEntry } from '../../services/api'
-
-const MONTHS = [
-  { value: 3, label: 'March' },
-  { value: 4, label: 'April' },
-  { value: 5, label: 'May' },
-  { value: 6, label: 'June' },
-  { value: 7, label: 'July' },
-  { value: 8, label: 'August' },
-  { value: 9, label: 'September' },
-]
-
-type LeaderboardType = 'overall' | 'monthly'
 
 interface LeaderboardWidgetProps {
   userTeamIds?: string[]
-  type?: LeaderboardType
-  month?: number
 }
 
-export function LeaderboardWidget({ userTeamIds = [], type = 'overall', month }: LeaderboardWidgetProps) {
+export function LeaderboardWidget({ userTeamIds = [] }: LeaderboardWidgetProps) {
   const navigate = useNavigate()
   const [topEntries, setTopEntries] = useState<LeaderboardEntry[]>([])
   const [userEntries, setUserEntries] = useState<LeaderboardEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedMonth, setSelectedMonth] = useState<number>(() => {
-    if (month) return month
-    const currentMonth = new Date().getMonth() + 1
-    // Default to current month if in season (Mar-Sep), otherwise March
-    return currentMonth >= 3 && currentMonth <= 9 ? currentMonth : 3
-  })
 
   const fetchData = async () => {
     setIsLoading(true)
     try {
-      const response = type === 'overall'
-        ? await leaderboardsApi.getOverall()
-        : await leaderboardsApi.getMonthly(selectedMonth)
-
+      const response = await leaderboardsApi.getOverall()
       if (response.success && response.data) {
         setTopEntries(response.data.leaderboard.slice(0, 5))
 
@@ -60,11 +37,7 @@ export function LeaderboardWidget({ userTeamIds = [], type = 'overall', month }:
   }
 
   const handleTeamClick = (teamId: string) => {
-    if (type === 'monthly') {
-      navigate(`/leaderboard?tab=monthly&month=${selectedMonth}&teamId=${teamId}`)
-    } else {
-      navigate(`/leaderboard?teamId=${teamId}`)
-    }
+    navigate(`/leaderboard?teamId=${teamId}`)
   }
 
   // Memoize the team IDs key to prevent unnecessary re-fetches
@@ -72,7 +45,7 @@ export function LeaderboardWidget({ userTeamIds = [], type = 'overall', month }:
 
   useEffect(() => {
     fetchData()
-  }, [userTeamIdsKey, type, selectedMonth])
+  }, [userTeamIdsKey])
 
   const getRankDisplay = (rank: number) => {
     if (rank === 1) {
@@ -108,37 +81,16 @@ export function LeaderboardWidget({ userTeamIds = [], type = 'overall', month }:
       {/* Header */}
       <div className="p-4 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {type === 'overall' ? (
-            <Trophy className="h-5 w-5 text-[#d97706]" />
-          ) : (
-            <Calendar className="h-5 w-5 text-[#d97706]" />
-          )}
-          <h2 className="font-broadcast text-xl text-white">
-            {type === 'overall' ? 'OVERALL' : 'MONTHLY'}
-          </h2>
+          <Trophy className="h-5 w-5 text-[#d97706]" />
+          <h2 className="font-broadcast text-xl text-white">LEADERBOARD</h2>
         </div>
-        <div className="flex items-center gap-2">
-          {type === 'monthly' && (
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(Number(e.target.value))}
-              className="px-2 py-1 text-xs border border-white/10 bg-[#0c0c0c] text-white focus:outline-none focus:border-[#b91c1c]"
-            >
-              {MONTHS.map((m) => (
-                <option key={m.value} value={m.value}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
-          )}
-          <button
-            onClick={fetchData}
-            disabled={isLoading}
-            className="p-2 text-gray-500 hover:text-white hover:bg-white/5 transition-colors"
-          >
-            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-          </button>
-        </div>
+        <button
+          onClick={fetchData}
+          disabled={isLoading}
+          className="p-2 text-gray-500 hover:text-white hover:bg-white/5 transition-colors"
+        >
+          <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
+        </button>
       </div>
 
       {/* Content */}
@@ -218,10 +170,10 @@ export function LeaderboardWidget({ userTeamIds = [], type = 'overall', month }:
 
       {/* Footer Link */}
       <Link
-        to={type === 'overall' ? '/leaderboard' : `/leaderboard?tab=monthly&month=${selectedMonth}`}
+        to="/leaderboard"
         className="flex items-center justify-center gap-1 text-sm text-gray-400 hover:text-white font-medium py-4 border-t border-white/10 transition-colors"
       >
-        View Full {type === 'overall' ? 'Leaderboard' : 'Monthly Standings'}
+        View Full Leaderboard
         <ChevronRight size={16} />
       </Link>
     </div>

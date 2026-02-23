@@ -9,10 +9,9 @@ interface LeaderboardTableProps {
   isLoading: boolean
   onRefresh: () => void
   highlightTeamId?: string | null
-  currentUserId?: string
 }
 
-export function LeaderboardTable({ entries, type: _type, isLoading, onRefresh, highlightTeamId, currentUserId }: LeaderboardTableProps) {
+export function LeaderboardTable({ entries, type: _type, isLoading, onRefresh, highlightTeamId }: LeaderboardTableProps) {
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null)
   const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map())
 
@@ -95,7 +94,6 @@ export function LeaderboardTable({ entries, type: _type, isLoading, onRefresh, h
             isExpanded={expandedTeamId === entry.teamId}
             onToggle={() => handleToggle(entry.teamId)}
             isHighlighted={highlightTeamId === entry.teamId}
-            isCurrentUser={currentUserId === entry.userId}
           />
         ))}
       </div>
