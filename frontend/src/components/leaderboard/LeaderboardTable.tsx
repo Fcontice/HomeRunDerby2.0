@@ -9,9 +9,10 @@ interface LeaderboardTableProps {
   isLoading: boolean
   onRefresh: () => void
   highlightTeamId?: string | null
+  currentUserId?: string
 }
 
-export function LeaderboardTable({ entries, type: _type, isLoading, onRefresh, highlightTeamId }: LeaderboardTableProps) {
+export function LeaderboardTable({ entries, type: _type, isLoading, onRefresh, highlightTeamId, currentUserId }: LeaderboardTableProps) {
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null)
   const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map())
 
@@ -46,7 +47,7 @@ export function LeaderboardTable({ entries, type: _type, isLoading, onRefresh, h
     return (
       <div className="animate-pulse">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="flex items-center gap-4 p-4 border-b border-white/5">
+          <div key={i} className="flex items-center gap-4 p-4 border-b border-border">
             <div className="w-12 h-6 bg-white/5" />
             <div className="flex-1 h-6 bg-white/5" />
             <div className="w-20 h-6 bg-white/5" />
@@ -59,8 +60,8 @@ export function LeaderboardTable({ entries, type: _type, isLoading, onRefresh, h
   if (entries.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-lg text-gray-400">No teams have entered the contest yet.</p>
-        <p className="text-sm mt-2 text-gray-600">Be the first to create a team!</p>
+        <p className="text-lg text-muted-foreground">No teams have entered the contest yet.</p>
+        <p className="text-sm mt-2 text-muted-foreground">Be the first to create a team!</p>
       </div>
     )
   }
@@ -68,16 +69,16 @@ export function LeaderboardTable({ entries, type: _type, isLoading, onRefresh, h
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center px-4 py-3 bg-[#0c0c0c] border-b border-white/10">
+      <div className="flex items-center px-4 py-3 bg-surface-deep border-b border-border">
         <div className="w-5" /> {/* Spacer for chevron */}
-        <div className="w-12 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</div>
-        <div className="flex-1 text-xs font-medium text-gray-500 uppercase tracking-wider">Team</div>
-        <div className="w-32 text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:block">Owner</div>
-        <div className="w-20 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</div>
+        <div className="w-12 text-center text-sm font-medium text-muted-foreground uppercase tracking-wider">Rank</div>
+        <div className="flex-1 text-sm font-medium text-muted-foreground uppercase tracking-wider pl-4">Team</div>
+        <div className="w-32 text-sm font-medium text-muted-foreground uppercase tracking-wider hidden sm:block">Owner</div>
+        <div className="w-20 text-right text-sm font-medium text-muted-foreground uppercase tracking-wider">Total</div>
         <button
           onClick={onRefresh}
           disabled={isLoading}
-          className="ml-2 p-2 text-gray-500 hover:text-white hover:bg-white/5 transition-colors"
+          className="ml-2 p-2 text-muted-foreground hover:text-white hover:bg-white/5 transition-colors"
         >
           <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
         </button>
@@ -94,6 +95,7 @@ export function LeaderboardTable({ entries, type: _type, isLoading, onRefresh, h
             isExpanded={expandedTeamId === entry.teamId}
             onToggle={() => handleToggle(entry.teamId)}
             isHighlighted={highlightTeamId === entry.teamId}
+            isCurrentUser={currentUserId === entry.userId}
           />
         ))}
       </div>

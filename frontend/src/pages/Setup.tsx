@@ -48,24 +48,24 @@ export default function Setup() {
     : 'TBD'
 
   return (
-    <div className="min-h-screen bg-[#0c0c0c]">
+    <div className="min-h-screen bg-surface-base">
       <Navbar />
 
       {/* Compact Header */}
-      <header className="bg-gradient-to-r from-[#b91c1c] to-[#991b1b]">
+      <header className="bg-gradient-to-r from-brand-red to-brand-red-dark">
         <div className="container mx-auto px-4 py-8 text-center">
           <h1 className="font-broadcast text-2xl md:text-4xl text-white tracking-wider mb-1">
             HOMERUNDERBY {seasonYear}
           </h1>
-          <p className="text-white/80 text-sm">{ANNIVERSARY_YEAR}th Year Anniversary • Best 7 of 8 Pool</p>
+          <p className="text-white/80 text-sm">&#9918; {ANNIVERSARY_YEAR}th Year Anniversary • Best 7 of 8 Pool &#9918;</p>
         </div>
       </header>
 
       {/* Deadline Banner - Slim */}
-      <div className="bg-[#0c0c0c] border-b border-white/10">
+      <div className="bg-surface-base border-b border-border">
         <div className="container mx-auto px-4 py-3 flex items-center justify-center gap-2">
-          <Clock className="w-4 h-4 text-[#fbbf24]" />
-          <span className="text-gray-400 text-sm">Deadline:</span>
+          <Clock className="w-4 h-4 text-accent-blue" />
+          <span className="text-muted-foreground text-sm">Deadline:</span>
           <span className="text-white font-medium">{registrationDeadline}</span>
         </div>
       </div>
@@ -75,27 +75,27 @@ export default function Setup() {
         {/* How to Play - Clean Steps */}
         <section className="mb-12">
           <h2 className="font-broadcast text-lg text-white mb-6 flex items-center gap-2">
-            <span className="w-1 h-5 bg-[#b91c1c]"></span>
+            <span className="w-1 h-5 bg-brand-red"></span>
             HOW TO PLAY
           </h2>
 
           <div className="grid gap-6 md:grid-cols-2">
             <div className="flex gap-4">
-              <span className="text-[#b91c1c] font-broadcast text-lg">01</span>
+              <span className="text-brand-red font-bold text-lg tabular-nums">01</span>
               <div>
-                <p className="text-white font-medium">Pay ${ENTRY_FEE} per team</p>
-                <p className="text-gray-500 text-sm">Cash only, no checks</p>
+                <p className="text-white font-medium">&#128181; Pay ${ENTRY_FEE} per team</p>
+                <p className="text-muted-foreground text-sm">Cash only, no checks</p>
               </div>
             </div>
 
             <div className="flex gap-4">
-              <span className="text-[#b91c1c] font-broadcast text-lg">02</span>
+              <span className="text-brand-red font-bold text-lg tabular-nums">02</span>
               <div>
-                <p className="text-white font-medium">Pick 8 players</p>
-                <p className="text-gray-500 text-sm">Only your top 7 count toward score</p>
+                <p className="text-white font-medium">&#129351; Pick 8 players</p>
+                <p className="text-muted-foreground text-sm">Only your top 7 count toward score</p>
                 <Link
                   to="/players"
-                  className="text-[#d97706] hover:text-[#f59e0b] text-sm inline-flex items-center gap-1 mt-1"
+                  className="text-accent-amber hover:text-accent-amber/80 text-sm inline-flex items-center gap-1 mt-1"
                 >
                   Browse players <ChevronRight className="w-3 h-3" />
                 </Link>
@@ -103,20 +103,20 @@ export default function Setup() {
             </div>
 
             <div className="flex gap-4">
-              <span className="text-[#b91c1c] font-broadcast text-lg">03</span>
+              <span className="text-brand-red font-bold text-lg tabular-nums">03</span>
               <div>
-                <p className="text-white font-medium">Stay under 172 HR cap</p>
-                <p className="text-gray-500 text-sm">Combined previous season HRs</p>
+                <p className="text-white font-medium">&#9918; Stay under 172 HR cap</p>
+                <p className="text-muted-foreground text-sm">Combined previous season HRs</p>
               </div>
             </div>
 
             <div className="flex gap-4">
-              <span className="text-[#b91c1c] font-broadcast text-lg">04</span>
+              <span className="text-brand-red font-bold text-lg tabular-nums">04</span>
               <div>
-                <p className="text-white font-medium">Submit online & print</p>
+                <p className="text-white font-medium">&#128196; Submit online & print</p>
                 <Link
                   to="/create-team"
-                  className="text-[#d97706] hover:text-[#f59e0b] text-sm inline-flex items-center gap-1 mt-1"
+                  className="text-accent-amber hover:text-accent-amber/80 text-sm inline-flex items-center gap-1 mt-1"
                 >
                   Create your team <ChevronRight className="w-3 h-3" />
                 </Link>
@@ -124,25 +124,25 @@ export default function Setup() {
             </div>
 
             <div className="flex gap-4">
-              <span className="text-[#b91c1c] font-broadcast text-lg">05</span>
+              <span className="text-brand-red font-bold text-lg tabular-nums">05</span>
               <div>
-                <p className="text-white font-medium">Contact a regional agent</p>
-                <p className="text-gray-500 text-sm">For pickup & payment</p>
+                <p className="text-white font-medium">&#128222; Contact a regional agent</p>
+                <p className="text-muted-foreground text-sm">For pickup & payment</p>
               </div>
             </div>
 
             <div className="flex gap-4">
-              <span className="text-[#b91c1c] font-broadcast text-lg">06</span>
+              <span className="text-brand-red font-bold text-lg tabular-nums">06</span>
               <div>
-                <p className="text-white font-medium">No limit on entries</p>
-                <p className="text-gray-500 text-sm">Enter as many teams as you want</p>
+                <p className="text-white font-medium">&#127942; No limit on entries</p>
+                <p className="text-muted-foreground text-sm">Enter as many teams as you want</p>
               </div>
             </div>
           </div>
         </section>
 
         {/* Divider */}
-        <div className="border-t border-white/10 mb-12"></div>
+        <div className="baseball-divider mb-12"></div>
 
         {/* Rules & Payouts - Side by Side, Minimal */}
         <div className="grid gap-12 lg:grid-cols-2 mb-12">
@@ -150,32 +150,32 @@ export default function Setup() {
           {/* Rules */}
           <section>
             <h2 className="font-broadcast text-lg text-white mb-6 flex items-center gap-2">
-              <span className="w-1 h-5 bg-[#d97706]"></span>
+              <span className="w-1 h-5 bg-accent-amber"></span>
               RULES
             </h2>
-            <ul className="space-y-3 text-gray-400">
+            <ul className="space-y-3 text-muted-foreground">
               <li className="flex gap-2">
-                <span className="text-[#d97706]">•</span>
+                <span className="text-brand-red">•</span>
                 <span><strong className="text-white">No injury moves</strong> — stuck with your picks all season</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-[#d97706]">•</span>
+                <span className="text-brand-red">•</span>
                 <span>Rosters posted within 3 days of season start</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-[#d97706]">•</span>
+                <span className="text-brand-red">•</span>
                 <span>October HRs count toward September totals</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-[#d97706]">•</span>
+                <span className="text-brand-red">•</span>
                 <span>Player on IL? Still on your team</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-[#d97706]">•</span>
+                <span className="text-brand-red">•</span>
                 <span>All play-in games count</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-[#d97706]">•</span>
+                <span className="text-brand-red">•</span>
                 <span>Japan series HRs included</span>
               </li>
             </ul>
@@ -184,55 +184,55 @@ export default function Setup() {
           {/* Payouts */}
           <section>
             <h2 className="font-broadcast text-lg text-white mb-6 flex items-center gap-2">
-              <span className="w-1 h-5 bg-emerald-500"></span>
+              <span className="w-1 h-5 bg-accent-green"></span>
               PAYOUTS
             </h2>
             <div className="space-y-4">
               <div className="flex items-start gap-3">
-                <CalendarCheck className="w-5 h-5 text-emerald-400 mt-0.5" />
+                <CalendarCheck className="w-5 h-5 text-accent-green mt-0.5" />
                 <div>
                   <p className="text-white font-medium">Monthly</p>
-                  <p className="text-gray-500 text-sm">Top 4 teams each month</p>
+                  <p className="text-muted-foreground text-sm">Top 4 teams each month</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Users className="w-5 h-5 text-emerald-400 mt-0.5" />
+                <Users className="w-5 h-5 text-accent-green mt-0.5" />
                 <div>
                   <p className="text-white font-medium">All-Star Break</p>
-                  <p className="text-gray-500 text-sm">Top 3 teams at midseason</p>
+                  <p className="text-muted-foreground text-sm">Top 3 teams at midseason</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Trophy className="w-5 h-5 text-emerald-400 mt-0.5" />
+                <Trophy className="w-5 h-5 text-accent-green mt-0.5" />
                 <div>
                   <p className="text-white font-medium">End of Season</p>
-                  <p className="text-gray-500 text-sm">Top 15 teams overall</p>
+                  <p className="text-muted-foreground text-sm">Top 15 teams overall</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Banknote className="w-5 h-5 text-emerald-400 mt-0.5" />
+                <Banknote className="w-5 h-5 text-accent-green mt-0.5" />
                 <div>
                   <p className="text-white font-medium">Ties split evenly</p>
-                  <p className="text-gray-500 text-sm">No tiebreakers</p>
+                  <p className="text-muted-foreground text-sm">No tiebreakers</p>
                 </div>
               </div>
             </div>
-            <p className="text-gray-600 text-xs mt-4">
+            <p className="text-muted-foreground text-xs mt-4">
               * Prize amounts scale with total entries
             </p>
           </section>
         </div>
 
         {/* Divider */}
-        <div className="border-t border-white/10 mb-12"></div>
+        <div className="baseball-divider mb-12"></div>
 
         {/* Regional Contacts - Compact Grid */}
         <section>
           <h2 className="font-broadcast text-lg text-white mb-6 flex items-center gap-2">
-            <span className="w-1 h-5 bg-emerald-500"></span>
+            <span className="w-1 h-5 bg-accent-green"></span>
             REGIONAL CONTACTS
           </h2>
-          <p className="text-gray-500 text-sm mb-6">
+          <p className="text-muted-foreground text-sm mb-6">
             Find an agent near you to submit your team and payment.
           </p>
 
@@ -240,11 +240,11 @@ export default function Setup() {
             {REGIONAL_CONTACTS.map((contact) => (
               <div
                 key={contact.letter}
-                className="flex items-center gap-3 p-3 bg-white/[0.02] hover:bg-white/[0.04] border border-white/5 transition-colors"
+                className="flex items-center gap-3 p-3 bg-surface-deep hover:bg-surface-elevated border border-border transition-colors"
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-white font-medium">{contact.name}</p>
-                  <p className="text-gray-500 text-xs flex items-center gap-1">
+                  <p className="text-muted-foreground text-xs flex items-center gap-1">
                     <MapPin className="w-3 h-3" />
                     {contact.region}
                   </p>
@@ -252,7 +252,7 @@ export default function Setup() {
                 <a
                   href={`tel:${contact.phone.replace(/-/g, '')}`}
                   aria-label={`Call ${contact.name} at ${contact.phone}`}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-emerald-400 hover:text-emerald-300 text-sm font-mono"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-accent-green hover:text-accent-green/80 text-sm font-mono"
                 >
                   <Phone className="w-3 h-3" />
                   {contact.phone}
@@ -263,8 +263,8 @@ export default function Setup() {
         </section>
 
         {/* Important Note - Subtle */}
-        <div className="mt-12 pt-8 border-t border-white/10">
-          <p className="text-gray-600 text-sm text-center">
+        <div className="mt-12 pt-8 border-t border-border">
+          <p className="text-muted-foreground text-sm text-center">
             All teams must be picked up by a regional contact. Payment due before deadline.
           </p>
         </div>

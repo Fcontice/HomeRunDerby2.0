@@ -9,48 +9,50 @@ interface LeaderboardRowProps {
   isExpanded: boolean
   onToggle: () => void
   isHighlighted?: boolean
+  isCurrentUser?: boolean
 }
 
 export const LeaderboardRow = memo(forwardRef<HTMLDivElement, LeaderboardRowProps>(
-  function LeaderboardRow({ entry, index, isExpanded, onToggle, isHighlighted }, ref) {
+  function LeaderboardRow({ entry, index, isExpanded, onToggle, isHighlighted, isCurrentUser }, ref) {
   // Memoize rank display to prevent recalculation on every render
   const rankDisplay = useMemo(() => {
     const rank = entry.rank
     if (rank === 1) {
       return (
-        <div className="w-8 h-8 bg-[#d97706] flex items-center justify-center">
-          <span className="font-broadcast text-sm text-[#0c0c0c]">1</span>
+        <div className="w-8 h-8 bg-accent-amber flex items-center justify-center">
+          <span className="font-broadcast text-sm text-surface-base">1</span>
         </div>
       )
     }
     if (rank === 2) {
       return (
         <div className="w-8 h-8 bg-gray-400 flex items-center justify-center">
-          <span className="font-broadcast text-sm text-[#0c0c0c]">2</span>
+          <span className="font-broadcast text-sm text-surface-base">2</span>
         </div>
       )
     }
     if (rank === 3) {
       return (
         <div className="w-8 h-8 bg-amber-700 flex items-center justify-center">
-          <span className="font-broadcast text-sm text-[#0c0c0c]">3</span>
+          <span className="font-broadcast text-sm text-surface-base">3</span>
         </div>
       )
     }
     return (
       <div className="w-8 h-8 bg-white/5 flex items-center justify-center">
-        <span className="font-broadcast text-sm text-gray-400">{rank}</span>
+        <span className="font-broadcast text-sm text-muted-foreground">{rank}</span>
       </div>
     )
   }, [entry.rank])
 
   const isEven = index % 2 === 0
+  const highlighted = isHighlighted || isCurrentUser
 
   return (
     <div
       ref={ref}
-      className={`border-b border-white/5 ${isEven ? 'bg-[#0c0c0c]/50' : ''} ${
-        isHighlighted ? 'ring-2 ring-[#b91c1c] bg-[#b91c1c]/10' : ''
+      className={`border-b border-border ${isEven ? 'bg-surface-deep/50' : ''} ${
+        highlighted ? 'ring-2 ring-brand-red bg-brand-red/10' : ''
       }`}
     >
       <div
@@ -58,7 +60,7 @@ export const LeaderboardRow = memo(forwardRef<HTMLDivElement, LeaderboardRowProp
         className="flex items-center p-4 cursor-pointer hover:bg-white/5 transition-colors"
       >
         {/* Expand Icon */}
-        <div className="w-5 text-gray-600">
+        <div className="w-5 text-muted-foreground">
           {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
         </div>
 
@@ -81,15 +83,17 @@ export const LeaderboardRow = memo(forwardRef<HTMLDivElement, LeaderboardRowProp
           ) : (
             <div className="w-6 h-6 bg-white/10" />
           )}
-          <span className="text-sm text-gray-500 truncate">
+          <span className="text-sm text-muted-foreground truncate">
             @{entry.username}
           </span>
         </div>
 
         {/* Total HRs */}
         <div className="w-20 text-right">
-          <p className="font-broadcast text-2xl text-[#d97706]">{entry.totalHrs}</p>
-          <p className="text-xs text-gray-600 uppercase tracking-wider">HRs</p>
+          <p className="font-broadcast text-2xl text-accent-amber broadcast-stat">{entry.totalHrs}</p>
+          <p className="text-[10px] text-white/50 uppercase tracking-widest">
+            <span className="opacity-50 mr-0.5">&#9918;</span>HRs
+          </p>
         </div>
 
         {/* Spacer for refresh button alignment */}

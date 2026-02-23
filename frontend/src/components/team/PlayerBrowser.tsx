@@ -42,13 +42,13 @@ export default function PlayerBrowser({
   const isRosterFull = selectedPlayers.length >= 8
 
   return (
-    <div className="p-6 bg-[#18181b] border border-white/10">
+    <div className="p-6 bg-surface-card border border-border">
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-1">
-          <div className="w-1 h-5 bg-[#b91c1c]" />
+          <div className="w-1 h-5 bg-brand-red" />
           <h2 className="font-broadcast text-xl text-white">AVAILABLE PLAYERS</h2>
         </div>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-muted-foreground">
           2025 Season • {filteredPlayers.length} eligible players
         </p>
       </div>
@@ -56,13 +56,13 @@ export default function PlayerBrowser({
       {/* Search */}
       <div className="mb-4">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
             placeholder="Search by name or team..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-[#0c0c0c] border-white/10 text-white placeholder:text-gray-500 focus:border-[#b91c1c]"
+            className="pl-10 bg-surface-deep border-border text-white placeholder:text-muted-foreground focus:border-brand-red"
           />
         </div>
       </div>
@@ -81,7 +81,7 @@ export default function PlayerBrowser({
           ))}
         </div>
       ) : (
-        <div className="text-center py-12 text-gray-500">
+        <div className="text-center py-12 text-muted-foreground">
           <p>No players found</p>
           <p className="text-sm mt-2">Try adjusting your search</p>
         </div>
@@ -89,7 +89,7 @@ export default function PlayerBrowser({
 
       {/* Status Message */}
       {isRosterFull && (
-        <div className="mt-4 text-sm text-[#d97706] text-center">
+        <div className="mt-4 text-sm text-accent-blue text-center">
           Roster is full (8/8). Remove a player to add another.
         </div>
       )}

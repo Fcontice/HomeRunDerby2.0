@@ -72,7 +72,7 @@ export default function Register() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-[#0c0c0c] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-surface-base flex items-center justify-center p-4">
         {/* Background pattern */}
         <div className="absolute inset-0 opacity-5">
           <div className="absolute inset-0" style={{
@@ -88,10 +88,10 @@ export default function Register() {
 
         <div className="relative w-full max-w-md">
           {/* Top accent bar */}
-          <div className="h-1 bg-gradient-to-r from-[#b91c1c] via-[#d97706] to-[#b91c1c]" />
+          <div className="h-1 bg-gradient-to-r from-brand-red via-accent-amber to-brand-red" />
 
           {/* Card */}
-          <div className="bg-[#18181b] border border-white/10">
+          <div className="bg-surface-card border border-border">
             {/* Header */}
             <div className="p-8 text-center">
               <div className="w-16 h-16 bg-green-500/20 border border-green-500/30 mx-auto mb-6 flex items-center justify-center">
@@ -115,7 +115,7 @@ export default function Register() {
 
               <Link
                 to="/login"
-                className="block w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-broadcast text-lg tracking-wider py-3 rounded-none transition-colors text-center"
+                className="block w-full bg-white/5 hover:bg-white/10 border border-border text-white font-broadcast text-lg tracking-wider py-3 transition-colors text-center"
               >
                 GO TO LOGIN
               </Link>
@@ -123,14 +123,14 @@ export default function Register() {
           </div>
 
           {/* Bottom accent */}
-          <div className="h-1 bg-gradient-to-r from-[#b91c1c] via-[#d97706] to-[#b91c1c]" />
+          <div className="h-1 bg-gradient-to-r from-brand-red via-accent-amber to-brand-red" />
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#0c0c0c] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-surface-base flex items-center justify-center p-4">
       {/* Background pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0" style={{
@@ -146,24 +146,24 @@ export default function Register() {
 
       <div className="relative w-full max-w-3xl">
         {/* Top accent bar */}
-        <div className="h-1 bg-gradient-to-r from-[#b91c1c] via-[#d97706] to-[#b91c1c]" />
+        <div className="h-1 bg-gradient-to-r from-brand-red via-accent-amber to-brand-red" />
 
         {/* Card */}
-        <div className="bg-[#18181b] border border-white/10">
+        <div className="bg-surface-card border border-border">
           {/* Header */}
-          <div className="p-6 text-center border-b border-white/10">
+          <div className="p-6 text-center border-b border-border">
             <div className="inline-flex items-center gap-2 mb-3">
-              <div className="w-2 h-6 bg-[#b91c1c]" />
+              <div className="w-2 h-6 bg-brand-red" />
               <span className="font-broadcast text-sm tracking-wider text-white/60">
                 HOME RUN DERBY 2.0
               </span>
-              <div className="w-2 h-6 bg-[#b91c1c]" />
+              <div className="w-2 h-6 bg-brand-red" />
             </div>
             <h1 className="font-broadcast text-3xl text-white tracking-wide">
               CREATE ACCOUNT
             </h1>
             <p className="text-white/50 mt-1 text-sm">
-              Join the competition today
+              &#129351; Join the competition today
             </p>
           </div>
 
@@ -184,7 +184,7 @@ export default function Register() {
                     Email Address
                   </label>
                   <div className="relative">
-                    <div className="absolute left-0 top-0 bottom-0 w-10 bg-white/5 border-r border-white/10 flex items-center justify-center">
+                    <div className="absolute left-0 top-0 bottom-0 w-10 bg-white/5 border-r border-border flex items-center justify-center">
                       <Mail className="w-4 h-4 text-white/40" />
                     </div>
                     <input
@@ -192,7 +192,7 @@ export default function Register() {
                       placeholder="you@example.com"
                       {...register('email')}
                       disabled={loading}
-                      className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 pl-12 pr-4 py-2.5 rounded-none focus:outline-none focus:border-[#b91c1c] transition-colors disabled:opacity-50"
+                      className="w-full bg-white/5 border border-border text-white placeholder-white/30 pl-12 pr-4 py-2.5 focus:outline-none focus:border-brand-red transition-colors disabled:opacity-50"
                     />
                   </div>
                   {errors.email && (
@@ -206,7 +206,7 @@ export default function Register() {
                     Phone Number
                   </label>
                   <div className="relative">
-                    <div className="absolute left-0 top-0 bottom-0 w-10 bg-white/5 border-r border-white/10 flex items-center justify-center">
+                    <div className="absolute left-0 top-0 bottom-0 w-10 bg-white/5 border-r border-border flex items-center justify-center">
                       <Phone className="w-4 h-4 text-white/40" />
                     </div>
                     <input
@@ -214,7 +214,7 @@ export default function Register() {
                       placeholder="(555) 123-4567"
                       {...register('phoneNumber')}
                       disabled={loading}
-                      className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 pl-12 pr-4 py-2.5 rounded-none focus:outline-none focus:border-[#b91c1c] transition-colors disabled:opacity-50"
+                      className="w-full bg-white/5 border border-border text-white placeholder-white/30 pl-12 pr-4 py-2.5 focus:outline-none focus:border-brand-red transition-colors disabled:opacity-50"
                     />
                   </div>
                   {errors.phoneNumber && (
@@ -228,7 +228,7 @@ export default function Register() {
                     Username
                   </label>
                   <div className="relative">
-                    <div className="absolute left-0 top-0 bottom-0 w-10 bg-white/5 border-r border-white/10 flex items-center justify-center">
+                    <div className="absolute left-0 top-0 bottom-0 w-10 bg-white/5 border-r border-border flex items-center justify-center">
                       <User className="w-4 h-4 text-white/40" />
                     </div>
                     <input
@@ -236,7 +236,7 @@ export default function Register() {
                       placeholder="johndoe"
                       {...register('username')}
                       disabled={loading}
-                      className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 pl-12 pr-4 py-2.5 rounded-none focus:outline-none focus:border-[#b91c1c] transition-colors disabled:opacity-50"
+                      className="w-full bg-white/5 border border-border text-white placeholder-white/30 pl-12 pr-4 py-2.5 focus:outline-none focus:border-brand-red transition-colors disabled:opacity-50"
                     />
                   </div>
                   {errors.username && (
@@ -250,7 +250,7 @@ export default function Register() {
                     Password
                   </label>
                   <div className="relative">
-                    <div className="absolute left-0 top-0 bottom-0 w-10 bg-white/5 border-r border-white/10 flex items-center justify-center">
+                    <div className="absolute left-0 top-0 bottom-0 w-10 bg-white/5 border-r border-border flex items-center justify-center">
                       <Lock className="w-4 h-4 text-white/40" />
                     </div>
                     <input
@@ -258,7 +258,7 @@ export default function Register() {
                       placeholder="••••••••"
                       {...register('password')}
                       disabled={loading}
-                      className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 pl-12 pr-4 py-2.5 rounded-none focus:outline-none focus:border-[#b91c1c] transition-colors disabled:opacity-50"
+                      className="w-full bg-white/5 border border-border text-white placeholder-white/30 pl-12 pr-4 py-2.5 focus:outline-none focus:border-brand-red transition-colors disabled:opacity-50"
                     />
                   </div>
                   {errors.password && (
@@ -275,7 +275,7 @@ export default function Register() {
                     Confirm Password
                   </label>
                   <div className="relative md:max-w-[calc(50%-0.5rem)]">
-                    <div className="absolute left-0 top-0 bottom-0 w-10 bg-white/5 border-r border-white/10 flex items-center justify-center">
+                    <div className="absolute left-0 top-0 bottom-0 w-10 bg-white/5 border-r border-border flex items-center justify-center">
                       <Lock className="w-4 h-4 text-white/40" />
                     </div>
                     <input
@@ -283,7 +283,7 @@ export default function Register() {
                       placeholder="••••••••"
                       {...register('confirmPassword')}
                       disabled={loading}
-                      className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 pl-12 pr-4 py-2.5 rounded-none focus:outline-none focus:border-[#b91c1c] transition-colors disabled:opacity-50"
+                      className="w-full bg-white/5 border border-border text-white placeholder-white/30 pl-12 pr-4 py-2.5 focus:outline-none focus:border-brand-red transition-colors disabled:opacity-50"
                     />
                   </div>
                   {errors.confirmPassword && (
@@ -298,7 +298,7 @@ export default function Register() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-[#b91c1c] hover:bg-[#991b1b] text-white font-broadcast text-base tracking-wider py-2.5 rounded-none transition-colors disabled:opacity-50 flex items-center justify-center gap-2 group"
+                  className="w-full bg-brand-red hover:bg-brand-red-dark text-white font-broadcast text-base tracking-wider py-2.5 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 group"
                 >
                   {loading ? (
                     <span>CREATING ACCOUNT...</span>
@@ -315,7 +315,7 @@ export default function Register() {
                   type="button"
                   onClick={handleGoogleSignup}
                   disabled={loading}
-                  className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white py-2.5 rounded-none transition-colors disabled:opacity-50 flex items-center justify-center gap-3"
+                  className="w-full bg-white/5 hover:bg-white/10 border border-border text-white py-2.5 transition-colors disabled:opacity-50 flex items-center justify-center gap-3"
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path
@@ -342,10 +342,10 @@ export default function Register() {
           </div>
 
           {/* Footer */}
-          <div className="p-4 border-t border-white/10 text-center">
+          <div className="p-4 border-t border-border text-center">
             <p className="text-white/50 text-sm">
               Already have an account?{' '}
-              <Link to="/login" className="text-[#d97706] hover:text-[#f59e0b] font-medium transition-colors">
+              <Link to="/login" className="text-accent-amber hover:text-accent-amber/80 font-medium transition-colors">
                 Sign in
               </Link>
             </p>
@@ -353,7 +353,7 @@ export default function Register() {
         </div>
 
         {/* Bottom accent */}
-        <div className="h-1 bg-gradient-to-r from-[#b91c1c] via-[#d97706] to-[#b91c1c]" />
+        <div className="h-1 bg-gradient-to-r from-brand-red via-accent-amber to-brand-red" />
       </div>
     </div>
   )

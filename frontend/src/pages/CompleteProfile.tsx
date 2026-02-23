@@ -127,7 +127,7 @@ export default function CompleteProfile() {
   }, [user, navigate])
 
   return (
-    <div className="min-h-screen bg-[#0c0c0c] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-surface-base flex items-center justify-center p-4">
       {/* Background pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0" style={{
@@ -143,18 +143,18 @@ export default function CompleteProfile() {
 
       <div className="relative w-full max-w-md">
         {/* Top accent bar */}
-        <div className="h-1 bg-gradient-to-r from-[#b91c1c] via-[#d97706] to-[#b91c1c]" />
+        <div className="h-1 bg-gradient-to-r from-brand-red via-accent-amber to-brand-red" />
 
         {/* Card */}
-        <div className="bg-[#18181b] border border-white/10">
+        <div className="bg-surface-card border border-border">
           {/* Header */}
-          <div className="p-8 pb-6 text-center border-b border-white/10">
+          <div className="p-8 pb-6 text-center border-b border-border">
             <div className="inline-flex items-center gap-2 mb-4">
-              <div className="w-2 h-8 bg-[#b91c1c]" />
+              <div className="w-2 h-8 bg-brand-red" />
               <span className="font-broadcast text-sm tracking-wider text-white/60">
                 HOME RUN DERBY 2.0
               </span>
-              <div className="w-2 h-8 bg-[#b91c1c]" />
+              <div className="w-2 h-8 bg-brand-red" />
             </div>
             <h1 className="font-broadcast text-4xl text-white tracking-wide">
               COMPLETE PROFILE
@@ -188,7 +188,7 @@ export default function CompleteProfile() {
                     placeholder="Choose a username"
                     {...register('username')}
                     disabled={loading}
-                    className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 pl-14 pr-12 py-3 rounded-none focus:outline-none focus:border-[#b91c1c] transition-colors disabled:opacity-50"
+                    className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 pl-14 pr-12 py-3 rounded-none focus:outline-none focus:border-brand-red transition-colors disabled:opacity-50"
                   />
                   {/* Username availability indicator */}
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -217,7 +217,7 @@ export default function CompleteProfile() {
               {/* Phone number field */}
               <div>
                 <label htmlFor="phoneNumber" className="block text-xs font-medium text-white/60 uppercase tracking-wider mb-2">
-                  Phone Number <span className="text-[#d97706]">*</span>
+                  Phone Number <span className="text-accent-amber">*</span>
                 </label>
                 <div className="relative">
                   <div className="absolute left-0 top-0 bottom-0 w-12 bg-white/5 border-r border-white/10 flex items-center justify-center">
@@ -231,7 +231,7 @@ export default function CompleteProfile() {
                     onChange={handlePhoneChange}
                     disabled={loading}
                     maxLength={12}
-                    className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 pl-14 pr-4 py-3 rounded-none focus:outline-none focus:border-[#b91c1c] transition-colors disabled:opacity-50"
+                    className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 pl-14 pr-4 py-3 rounded-none focus:outline-none focus:border-brand-red transition-colors disabled:opacity-50"
                   />
                 </div>
                 {errors.phoneNumber && (
@@ -246,7 +246,7 @@ export default function CompleteProfile() {
               <button
                 type="submit"
                 disabled={loading || usernameStatus === 'taken' || usernameStatus === 'checking'}
-                className="w-full bg-[#b91c1c] hover:bg-[#991b1b] text-white font-broadcast text-lg tracking-wider py-3 rounded-none transition-colors disabled:opacity-50 flex items-center justify-center gap-2 group"
+                className="w-full bg-brand-red hover:bg-brand-red-dark text-white font-broadcast text-lg tracking-wider py-3 rounded-none transition-colors disabled:opacity-50 flex items-center justify-center gap-2 group"
               >
                 {loading ? (
                   <>
@@ -264,7 +264,7 @@ export default function CompleteProfile() {
           </div>
 
           {/* Footer info */}
-          <div className="p-6 border-t border-white/10 text-center">
+          <div className="p-6 border-t border-border text-center">
             <p className="text-white/40 text-sm">
               Your phone number is required for account recovery and important notifications.
             </p>
@@ -272,7 +272,7 @@ export default function CompleteProfile() {
         </div>
 
         {/* Bottom accent */}
-        <div className="h-1 bg-gradient-to-r from-[#b91c1c] via-[#d97706] to-[#b91c1c]" />
+        <div className="h-1 bg-gradient-to-r from-brand-red via-accent-amber to-brand-red" />
       </div>
     </div>
   )

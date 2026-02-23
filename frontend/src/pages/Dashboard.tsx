@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useSeason } from '../contexts/SeasonContext'
 import { useNavigate, Link } from 'react-router-dom'
 import { Button } from '../components/ui/button'
 import { LeaderboardWidget } from '../components/leaderboard'
+import { DingerJumbotron } from '../components/dashboard/DingerJumbotron'
 import { Navbar } from '../components/Navbar'
 import { teamsApi, Team } from '../services/api'
 import {
@@ -17,7 +18,34 @@ import {
   FileEdit,
   AlertCircle,
   Maximize2,
+  TrendingUp,
 } from 'lucide-react'
+
+function AnimatedNumber({ value, className }: { value: number; className?: string }) {
+  const [display, setDisplay] = useState(0)
+  const ref = useRef<number>(0)
+
+  useEffect(() => {
+    if (value === 0) { setDisplay(0); return }
+    const start = ref.current
+    const diff = value - start
+    const duration = 600
+    const startTime = performance.now()
+
+    function animate(now: number) {
+      const elapsed = now - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3) // ease-out cubic
+      const current = Math.round(start + diff * eased)
+      setDisplay(current)
+      if (progress < 1) requestAnimationFrame(animate)
+      else ref.current = value
+    }
+    requestAnimationFrame(animate)
+  }, [value])
+
+  return <span className={className}>{display}</span>
+}
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -59,111 +87,123 @@ export default function Dashboard() {
     : null
 
   return (
-    <div className="min-h-screen bg-[#0c0c0c]">
+    <div className="min-h-screen bg-surface-base">
       <Navbar />
 
       <main className="container mx-auto px-4 py-8">
         {/* Broadcast Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-1 h-8 bg-[#b91c1c]" />
-            <h1 className="font-broadcast text-4xl text-white tracking-wide">
+        <div className="mb-8 opacity-0 animate-slide-left">
+          <div className="inline-block broadcast-lower-third px-6 py-2 mb-3">
+            <h1 className="font-broadcast text-3xl md:text-4xl text-white tracking-wide">
               WELCOME BACK, {user?.username?.toUpperCase()}
             </h1>
           </div>
-          <p className="text-gray-500 ml-4">
+          <p className="text-muted-foreground ml-1">
             {isRegistrationOpen
               ? "Registration is open. Draft your team and compete!"
               : "Track your teams and watch the leaderboard."}
           </p>
         </div>
 
-        {/* Quick Stats Bar */}
-        <div className="mb-8 bg-[#18181b] border border-white/10">
-          <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-white/10">
-            {/* Teams Count - Always clickable */}
-            <button
-              onClick={() => {
-                if (hasDraftTeams) {
-                  setShowDraftModal(true)
-                } else if (teams.length === 0 && isRegistrationOpen) {
-                  navigate('/create-team')
-                } else {
-                  navigate('/my-teams')
+        {/* Scoreboard Stats Bar */}
+        <div className="mb-8 opacity-0 animate-fade-up stagger-2">
+          <div className="broadcast-score-box">
+            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-white/10">
+              {/* Teams Count */}
+              <button
+                onClick={() => {
+                  if (hasDraftTeams) {
+                    setShowDraftModal(true)
+                  } else if (teams.length === 0 && isRegistrationOpen) {
+                    navigate('/create-team')
+                  } else {
+                    navigate('/my-teams')
+                  }
+                }}
+                className="p-4 md:p-6 text-left hover:bg-white/5 transition-colors group relative"
+                aria-label={
+                  hasDraftTeams
+                    ? `You have ${draftTeams.length} draft team${draftTeams.length > 1 ? 's' : ''}. Click to view.`
+                    : teams.length === 0
+                    ? 'Create your first team'
+                    : 'View your teams'
                 }
-              }}
-              className="p-4 md:p-6 text-left hover:bg-white/5 transition-colors group"
-              aria-label={
-                hasDraftTeams
-                  ? `You have ${draftTeams.length} draft team${draftTeams.length > 1 ? 's' : ''}. Click to view.`
-                  : teams.length === 0
-                  ? 'Create your first team'
-                  : 'View your teams'
-              }
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#b91c1c] flex items-center justify-center relative">
-                  <Users className="h-5 w-5 text-white" />
-                  {/* Draft indicator dot */}
-                  {hasDraftTeams && (
-                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full border-2 border-[#18181b]" />
-                  )}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-brand-red flex items-center justify-center relative">
+                    <Users className="h-5 w-5 text-white" />
+                    {hasDraftTeams && (
+                      <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full border-2 border-[hsl(0_0%_4%)] animate-live-pulse" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-white/50 uppercase tracking-widest font-medium">My Teams</p>
+                    <div className="font-broadcast text-3xl text-white">
+                      <AnimatedNumber value={teams.length} />
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-white/30 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all ml-auto" />
                 </div>
-                <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wider group-hover:text-gray-400 transition-colors">My Teams</p>
-                  <p className="font-broadcast text-2xl text-white">{teams.length}</p>
-                </div>
-                <ChevronRight className="h-4 w-4 text-gray-600 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all ml-auto" />
-              </div>
-            </button>
+              </button>
 
-            {/* Total HRs */}
-            <div className="p-4 md:p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#d97706] flex items-center justify-center">
-                  <Trophy className="h-5 w-5 text-[#0c0c0c]" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Total HRs</p>
-                  <p className="font-broadcast text-2xl text-[#d97706]">{totalHRs}</p>
+              {/* Total HRs */}
+              <div className="p-4 md:p-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-accent-amber flex items-center justify-center">
+                    <Trophy className="h-5 w-5 text-surface-base" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-white/50 uppercase tracking-widest font-medium">
+                      <span className="opacity-60 mr-0.5">&#9918;</span> Total HRs
+                    </p>
+                    <div className="font-broadcast text-3xl text-accent-amber">
+                      <AnimatedNumber value={totalHRs} />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Season */}
-            <div className="p-4 md:p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/10 flex items-center justify-center">
-                  <Calendar className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Season</p>
-                  <p className="font-broadcast text-2xl text-white">{season?.seasonYear || new Date().getFullYear()}</p>
+              {/* Season */}
+              <div className="p-4 md:p-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/10 flex items-center justify-center">
+                    <Calendar className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-white/50 uppercase tracking-widest font-medium">Season</p>
+                    <p className="font-broadcast text-3xl text-white">{season?.seasonYear || new Date().getFullYear()}</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Best Team */}
-            <div className="p-4 md:p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-emerald-600 flex items-center justify-center">
-                  <span className="text-lg">⚾</span>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Best Team</p>
-                  {bestTeam ? (
-                    <p className="font-medium text-white truncate">{bestTeam.name}</p>
-                  ) : (
-                    <p className="text-gray-600">-</p>
-                  )}
+              {/* Best Team */}
+              <div className="p-4 md:p-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-accent-green flex items-center justify-center">
+                    <TrendingUp className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-white/50 uppercase tracking-widest font-medium">Best Team</p>
+                    {bestTeam ? (
+                      <p className="font-medium text-white truncate text-sm mt-0.5">{bestTeam.name}</p>
+                    ) : (
+                      <p className="text-white/30 font-broadcast text-xl">—</p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Dinger Alert Jumbotron */}
+        {season?.phase === 'active' && <DingerJumbotron seasonYear={season.seasonYear} />}
+
+        {/* Baseball stitch divider */}
+        <div className="baseball-divider my-4" />
+
         {/* Main Content Grid - Leaderboards */}
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-2 opacity-0 animate-fade-up stagger-4">
           {/* Overall Leaderboard Widget */}
           <LeaderboardWidget type="overall" userTeamIds={teams.map(t => t.id)} />
 
@@ -173,17 +213,24 @@ export default function Dashboard() {
 
         {/* No Teams CTA */}
         {!teamsLoading && teams.length === 0 && isRegistrationOpen && (
-          <div className="mt-6 bg-[#18181b] border border-white/10 p-8 text-center">
+          <div className="mt-6 bg-surface-card border border-border p-8 text-center opacity-0 animate-fade-up stagger-6">
             <div className="w-16 h-16 mx-auto mb-4 bg-white/5 flex items-center justify-center">
-              <span className="text-3xl">⚾</span>
+              <span className="text-3xl">&#9918;</span>
             </div>
-            <h3 className="font-broadcast text-xl text-white mb-2">STEP UP TO THE PLATE</h3>
-            <p className="text-gray-500 text-sm mb-6 max-w-xs mx-auto">
-              Draft your first lineup and join the competition. Pick 8 players and compete for the top spot.
+            <h3 className="font-broadcast text-xl text-white mb-2 flex items-center justify-center gap-2">
+              <span className="diamond-accent" />
+              STEP UP TO THE PLATE
+              <span className="diamond-accent" />
+            </h3>
+            <p className="text-muted-foreground text-sm mb-2 max-w-xs mx-auto">
+              Draft your first lineup and join the competition.
+            </p>
+            <p className="text-muted-foreground text-sm mb-6 max-w-xs mx-auto">
+              Pick 8 sluggers &#127935; and swing for the fences.
             </p>
             <Button
               onClick={() => navigate('/create-team')}
-              className="bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-none"
+              className="bg-brand-red hover:bg-brand-red-dark text-white"
             >
               Create Your Team
             </Button>
@@ -201,11 +248,11 @@ export default function Dashboard() {
           aria-labelledby="draft-modal-title"
         >
           <div
-            className="bg-[#18181b] border border-white/10 w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col"
+            className="bg-surface-card border border-border w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="p-5 border-b border-white/10 flex items-center justify-between flex-shrink-0">
+            <div className="p-5 border-b border-border flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-1 h-6 bg-amber-500" />
                 <h2 id="draft-modal-title" className="font-broadcast text-xl text-white">
@@ -216,7 +263,7 @@ export default function Dashboard() {
                 <Link
                   to="/my-teams"
                   onClick={() => setShowDraftModal(false)}
-                  className="p-2 text-gray-500 hover:text-white hover:bg-white/5 transition-colors"
+                  className="p-2 text-muted-foreground hover:text-white hover:bg-white/5 transition-colors"
                   aria-label="Open full page"
                   title="Open full page"
                 >
@@ -224,7 +271,7 @@ export default function Dashboard() {
                 </Link>
                 <button
                   onClick={() => setShowDraftModal(false)}
-                  className="p-2 text-gray-500 hover:text-white hover:bg-white/5 transition-colors"
+                  className="p-2 text-muted-foreground hover:text-white hover:bg-white/5 transition-colors"
                   aria-label="Close modal"
                 >
                   <X className="h-5 w-5" />
@@ -245,14 +292,14 @@ export default function Dashboard() {
                 {draftTeams.map((team) => (
                   <div
                     key={team.id}
-                    className="p-4 bg-[#0c0c0c] border border-white/5"
+                    className="p-4 bg-surface-base border border-white/5"
                   >
                     {/* Team Name & HRs */}
                     <div className="flex items-center justify-between mb-3">
                       <p className="font-medium text-white">{team.name}</p>
                       <div className="flex items-center gap-2">
-                        <span className="font-broadcast text-lg text-[#d97706]">{team.totalHrs2024 || 0}</span>
-                        <span className="text-xs text-gray-500">HRs</span>
+                        <span className="font-broadcast text-lg text-accent-amber">{team.totalHrs2024 || 0}</span>
+                        <span className="text-xs text-muted-foreground">HRs</span>
                       </div>
                     </div>
 
@@ -267,7 +314,7 @@ export default function Dashboard() {
                           setShowDraftModal(false)
                           navigate('/my-teams', { state: { editTeamId: team.id } })
                         }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 text-white text-sm hover:bg-white/10 transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-border text-white text-sm hover:bg-white/10 transition-colors"
                       >
                         <FileEdit className="h-3.5 w-3.5" />
                         Edit
@@ -277,7 +324,7 @@ export default function Dashboard() {
                           setShowDraftModal(false)
                           navigate('/my-teams', { state: { expandTeamId: team.id } })
                         }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#b91c1c] text-white text-sm hover:bg-[#991b1b] transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-red text-white text-sm hover:bg-brand-red-dark transition-colors"
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
                         View Details
@@ -290,13 +337,13 @@ export default function Dashboard() {
 
             {/* Modal Footer */}
             {isRegistrationOpen && (
-              <div className="p-5 border-t border-white/10 flex-shrink-0">
+              <div className="p-5 border-t border-border flex-shrink-0">
                 <Button
                   onClick={() => {
                     setShowDraftModal(false)
                     navigate('/create-team')
                   }}
-                  className="bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-none px-5"
+                  className="bg-brand-red hover:bg-brand-red-dark text-white px-5"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   New Team

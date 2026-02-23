@@ -19,8 +19,8 @@ export default function ProtectedRoute({
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+      <div className="min-h-screen flex items-center justify-center bg-surface-base stadium-bg">
+        <div className="w-10 h-10 border-2 border-brand-red border-t-transparent animate-spin"></div>
       </div>
     )
   }

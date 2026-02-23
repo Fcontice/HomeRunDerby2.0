@@ -9,6 +9,7 @@ import {
   getPlayerById,
   searchPlayers,
   getPlayerStats,
+  getRecentHRs,
 } from '../controllers/playerController.js';
 import { cache } from '../middleware/cache.js';
 
@@ -22,6 +23,9 @@ const router = express.Router();
 
 // GET /api/players - Get all eligible players (with filters)
 router.get('/', cache('medium'), getPlayers);
+
+// GET /api/players/recent-hrs - Get yesterday's home runs (Dinger Jumbotron)
+router.get('/recent-hrs', cache('medium'), getRecentHRs);
 
 // GET /api/players/search - Search players by name
 router.get('/search', cache('short'), searchPlayers);

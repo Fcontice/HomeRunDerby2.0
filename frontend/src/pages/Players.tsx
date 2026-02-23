@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from '../components/ui/dialog'
 import { Search, Users, ChevronRight, Filter, X, Trophy, Target, TrendingUp, Loader2, Download } from 'lucide-react'
+import { getPlayerTier, TIER_CONFIG } from '../lib/playerTiers'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -276,46 +277,49 @@ export default function Players() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0c0c0c]">
+    <div className="min-h-screen bg-surface-base">
       <Navbar />
 
       <main className="container mx-auto px-4 py-8">
         {/* Broadcast Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-1 h-8 bg-[#b91c1c]" />
-            <h1 className="font-broadcast text-4xl text-white tracking-wide">
+        <div className="mb-8 opacity-0 animate-slide-left">
+          <div className="inline-block px-6 py-2 mb-3" style={{
+            background: 'linear-gradient(90deg, hsl(var(--accent-amber)) 0%, hsl(var(--accent-amber)) 70%, transparent 100%)',
+            clipPath: 'polygon(0 0, 100% 0, 95% 100%, 0% 100%)',
+          }}>
+            <h1 className="font-broadcast text-3xl md:text-4xl text-surface-base tracking-wide flex items-center gap-3">
+              <Users className="h-6 w-6" />
               PLAYER POOL
             </h1>
           </div>
-          <p className="text-gray-500 ml-4">
+          <p className="text-muted-foreground ml-1">
             Browse eligible players and build your winning lineup.
           </p>
         </div>
 
         {/* Filters Section */}
-        <div className="bg-[#18181b] border border-white/10 mb-6">
-          <div className="p-4 border-b border-white/10 flex items-center gap-2">
-            <div className="w-1 h-5 bg-[#d97706]" />
+        <div className="bg-surface-card border border-border mb-6 opacity-0 animate-fade-up stagger-2">
+          <div className="p-4 border-b border-border flex items-center gap-2">
+            <div className="w-1 h-5 bg-accent-amber" />
             <h2 className="font-broadcast text-lg text-white">FILTERS</h2>
           </div>
           <div className="p-4">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search players..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 bg-[#0c0c0c] border-white/10 text-white placeholder:text-gray-600 rounded-none focus:border-[#b91c1c] focus:ring-[#b91c1c]"
+                  className="pl-10 bg-surface-base border-border text-white placeholder:text-muted-foreground focus:border-brand-red focus:ring-brand-red"
                 />
               </div>
               <Select value={teamFilter} onValueChange={setTeamFilter}>
-                <SelectTrigger className="w-full sm:w-[180px] bg-[#0c0c0c] border-white/10 text-white rounded-none focus:ring-[#b91c1c]">
-                  <Filter className="h-4 w-4 mr-2 text-gray-500" />
+                <SelectTrigger className="w-full sm:w-[180px] bg-surface-base border-border text-white focus:ring-brand-red">
+                  <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
                   <SelectValue placeholder="All Teams" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#18181b] border-white/10">
+                <SelectContent className="bg-surface-card border-border">
                   <SelectItem value="all" className="text-white focus:bg-white/10 focus:text-white">All Teams</SelectItem>
                   {MLB_TEAMS.map((team) => (
                     <SelectItem key={team} value={team} className="text-white focus:bg-white/10 focus:text-white">
@@ -328,17 +332,20 @@ export default function Players() {
           </div>
         </div>
 
+        {/* Baseball stitch divider */}
+        <div className="baseball-divider my-2" />
+
         {/* Error State */}
         {errorMessage && (
-          <div className="bg-[#18181b] border border-white/10 p-8 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 bg-[#b91c1c]/20 flex items-center justify-center">
+          <div className="bg-surface-card border border-border p-8 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-brand-red/20 flex items-center justify-center">
               <span className="text-3xl">⚠️</span>
             </div>
             <h3 className="font-broadcast text-xl text-white mb-2">SOMETHING WENT WRONG</h3>
-            <p className="text-gray-500 text-sm mb-6">{errorMessage}</p>
+            <p className="text-muted-foreground text-sm mb-6">{errorMessage}</p>
             <Button
               onClick={() => window.location.reload()}
-              className="bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-none"
+              className="bg-brand-red hover:bg-brand-red-dark text-white"
             >
               Try Again
             </Button>
@@ -349,7 +356,7 @@ export default function Players() {
         {isLoading && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {[...Array(12)].map((_, i) => (
-              <div key={i} className="bg-[#18181b] border border-white/10 p-4 animate-pulse">
+              <div key={i} className="bg-surface-card border border-border p-4 animate-pulse">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-white/5" />
                   <div className="flex-1">
@@ -370,12 +377,12 @@ export default function Players() {
         {!isLoading && !errorMessage && (
           <>
             {/* Results Count */}
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 opacity-0 animate-fade-up stagger-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-[#b91c1c] flex items-center justify-center">
+                <div className="w-8 h-8 bg-brand-red flex items-center justify-center">
                   <Users className="h-4 w-4 text-white" />
                 </div>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   <span className="font-broadcast text-lg text-white mr-1">{players.length}</span>
                   eligible players (10+ HRs in 2025)
                 </p>
@@ -383,7 +390,7 @@ export default function Players() {
               <Button
                 onClick={() => setIsPdfDialogOpen(true)}
                 variant="outline"
-                className="bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white rounded-none gap-2"
+                className="bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white gap-2"
                 disabled={players.length === 0}
               >
                 <Download className="h-4 w-4" />
@@ -393,62 +400,87 @@ export default function Players() {
 
             {/* Player Cards Grid - z-[45] sits above backdrop (z-40) but below panel (z-50) */}
             <div className="relative z-[45] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {players.map((player, index) => (
-                <button
-                  key={player.id}
-                  onClick={(e) => handlePlayerClick(e, player.id)}
-                  onMouseEnter={() => prefetchPlayer(player.id)}
-                  className="opacity-0 animate-fade-up text-left"
-                  style={{ animationDelay: `${Math.min(index * 30, 300)}ms`, animationFillMode: 'forwards' }}
-                >
-                  <div className="bg-[#18181b] border border-white/10 p-4 hover:border-white/20 hover:bg-white/5 transition-all group">
-                    <div className="flex items-center gap-3">
-                      {/* Player Photo */}
-                      {player.photoUrl ? (
-                        <img
-                          src={player.photoUrl}
-                          alt={player.name}
-                          className="w-12 h-12 object-cover bg-[#0c0c0c] border border-white/10"
+              {players.map((player, index) => {
+                const tier = getPlayerTier(player.hrsTotal)
+                const config = TIER_CONFIG[tier]
+                return (
+                  <button
+                    key={player.id}
+                    onClick={(e) => handlePlayerClick(e, player.id)}
+                    onMouseEnter={() => prefetchPlayer(player.id)}
+                    className="opacity-0 animate-fade-up text-left"
+                    style={{ animationDelay: `${Math.min(index * 30, 300)}ms`, animationFillMode: 'forwards' }}
+                  >
+                    <div className={`relative overflow-hidden bg-surface-card border p-4 ${config.cardBorder} ${config.cardHoverBorder} hover:bg-white/5 transition-all group ${config.cardBg}`}>
+                      {/* Tier stripe - left edge */}
+                      <div className={`absolute left-0 top-0 bottom-0 w-1 ${config.stripe}`} />
+
+                      {/* Holographic sheen for elite */}
+                      {tier === 'elite' && (
+                        <div
+                          className="absolute inset-0 pointer-events-none opacity-[0.06] animate-holographic-sheen"
+                          style={{
+                            backgroundImage: 'linear-gradient(105deg, transparent 40%, hsl(var(--accent-amber) / 0.4) 45%, hsl(var(--accent-amber) / 0.1) 50%, transparent 55%)',
+                            backgroundSize: '200% 100%',
+                          }}
                         />
-                      ) : (
-                        <div className="w-12 h-12 bg-[#b91c1c] flex items-center justify-center">
-                          <span className="font-broadcast text-sm text-white">
-                            {getInitials(player.name)}
-                          </span>
-                        </div>
                       )}
 
-                      {/* Player Info */}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-sm text-white truncate group-hover:text-[#d97706] transition-colors">
-                          {player.name}
-                        </h3>
-                        <p className="text-xs text-gray-500">{player.teamAbbr}</p>
-                      </div>
+                      <div className="flex items-center gap-3 relative">
+                        {/* Player Photo / Initials */}
+                        {player.photoUrl ? (
+                          <img
+                            src={player.photoUrl}
+                            alt={player.name}
+                            className="w-12 h-12 object-cover bg-surface-base border border-border"
+                          />
+                        ) : (
+                          <div className={`w-12 h-12 ${config.initialsBg} flex items-center justify-center`}>
+                            <span className={`font-broadcast text-sm ${config.initialsText}`}>
+                              {getInitials(player.name)}
+                            </span>
+                          </div>
+                        )}
 
-                      {/* HR Stats */}
-                      <div className="text-right flex items-center gap-2">
-                        <div>
-                          <div className="font-broadcast text-2xl text-[#d97706]">{player.hrsTotal}</div>
-                          <div className="text-xs text-gray-500 uppercase tracking-wider">HRs</div>
+                        {/* Player Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-medium text-sm text-white truncate group-hover:text-accent-amber transition-colors">
+                              {player.name}
+                            </h3>
+                            {config.label && (
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 border ${config.badgeBg} ${config.badgeText} ${config.badgeBorder}`}>
+                                {config.label}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">{player.teamAbbr}</p>
                         </div>
-                        <ChevronRight className="h-5 w-5 text-gray-600 group-hover:text-white transition-colors" />
+
+                        {/* HR Stats */}
+                        <div className="text-right flex items-center gap-2">
+                          <div>
+                            <div className={`font-broadcast text-2xl ${config.hrColor}`}>{player.hrsTotal}</div>
+                            <div className="text-xs text-muted-foreground uppercase tracking-wider">HRs</div>
+                          </div>
+                          <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-white transition-colors" />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                )
+              })}
             </div>
 
             {/* Empty State */}
             {players.length === 0 && (
-              <div className="bg-[#18181b] border border-white/10 p-12 text-center">
+              <div className="bg-surface-card border border-border p-12 text-center">
                 <div className="w-16 h-16 mx-auto mb-4 bg-white/5 flex items-center justify-center">
-                  <Search className="h-8 w-8 text-gray-600" />
+                  <span className="text-3xl">&#9918;</span>
                 </div>
-                <h3 className="font-broadcast text-xl text-white mb-2">NO PLAYERS FOUND</h3>
-                <p className="text-gray-500 text-sm max-w-md mx-auto">
-                  Try adjusting your search or filters to find players.
+                <h3 className="font-broadcast text-xl text-white mb-2">NO SLUGGERS FOUND</h3>
+                <p className="text-muted-foreground text-sm max-w-md mx-auto">
+                  No sluggers matching your search. Try adjusting your filters.
                 </p>
               </div>
             )}
@@ -467,42 +499,52 @@ export default function Players() {
 
       {/* Panel */}
       <div
-        className={`fixed top-0 right-0 h-full w-full max-w-md bg-[#0c0c0c]/60 backdrop-blur-md border-l border-white/10 z-50 transform transition-transform duration-300 ease-out ${
+        className={`fixed top-0 right-0 h-full w-full max-w-md z-50 transform transition-transform duration-300 ease-out ${
           isPanelOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
+        style={{
+          background: 'hsl(220 45% 7% / 0.85)',
+          backdropFilter: 'blur(16px)',
+          borderLeft: '1px solid hsl(0 0% 100% / 0.08)',
+        }}
       >
         {/* Panel Header */}
-        <div className="p-4 border-b border-white/10 flex items-center justify-between">
+        <div className="p-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-1 h-5 bg-[#b91c1c]" />
+            <div className="w-1 h-5 bg-brand-red" />
             <h2 className="font-broadcast text-lg text-white">PLAYER DETAILS</h2>
           </div>
           <button
             onClick={closePanel}
             className="w-8 h-8 bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
           >
-            <X className="h-4 w-4 text-gray-400" />
+            <X className="h-4 w-4 text-muted-foreground" />
           </button>
         </div>
 
         {/* Panel Content */}
         <div className="p-4 overflow-y-auto h-[calc(100%-60px)]">
           {/* Show player details if we have data that matches selected player */}
-          {selectedPlayer && selectedPlayer.id === selectedPlayerId ? (
+          {selectedPlayer && selectedPlayer.id === selectedPlayerId ? (() => {
+            const detailTier = getPlayerTier(selectedPlayer.latestSeasonStats?.hrsTotal || 0)
+            const detailConfig = TIER_CONFIG[detailTier]
+            return (
             <div className="space-y-4">
               {/* Player Header */}
-              <div className="bg-[#18181b] border border-white/10 p-4">
+              <div className={`relative overflow-hidden bg-surface-card border p-4 ${detailConfig.cardBorder}`}>
+                {/* Tier stripe */}
+                <div className={`absolute left-0 top-0 bottom-0 w-1 ${detailConfig.stripe}`} />
                 <div className="flex items-center gap-4">
                   {/* Player Photo */}
                   {selectedPlayer.photoUrl ? (
                     <img
                       src={selectedPlayer.photoUrl}
                       alt={selectedPlayer.name}
-                      className="w-20 h-20 object-cover bg-[#0c0c0c] border border-white/10"
+                      className="w-20 h-20 object-cover bg-surface-base border border-border"
                     />
                   ) : (
-                    <div className="w-20 h-20 bg-[#b91c1c] flex items-center justify-center">
-                      <span className="font-broadcast text-2xl text-white">
+                    <div className={`w-20 h-20 ${detailConfig.initialsBg} flex items-center justify-center`}>
+                      <span className={`font-broadcast text-2xl ${detailConfig.initialsText}`}>
                         {getInitials(selectedPlayer.name)}
                       </span>
                     </div>
@@ -513,17 +555,22 @@ export default function Players() {
                     <h3 className="font-broadcast text-xl text-white truncate">
                       {selectedPlayer.name.toUpperCase()}
                     </h3>
-                    <p className="text-gray-500">{selectedPlayer.teamAbbr}</p>
+                    <p className="text-muted-foreground">{selectedPlayer.teamAbbr}</p>
                   </div>
 
                   {/* HR Badge */}
                   <div className="text-center">
-                    <div className="font-broadcast text-4xl text-[#d97706]">
+                    <div className={`font-broadcast text-4xl ${detailConfig.hrColor}`}>
                       {selectedPlayer.latestSeasonStats?.hrsTotal || 0}
                     </div>
-                    <div className="text-xs text-gray-500 uppercase tracking-wider">
-                      {selectedPlayer.latestSeasonStats?.seasonYear || 'N/A'} HRs
+                    <div className="text-xs text-muted-foreground uppercase tracking-wider">
+                      <span className="opacity-50">&#9918;</span> {selectedPlayer.latestSeasonStats?.seasonYear || 'N/A'} HRs
                     </div>
+                    {detailConfig.label && (
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 border mt-1 inline-block ${detailConfig.badgeBg} ${detailConfig.badgeText} ${detailConfig.badgeBorder}`}>
+                        {detailConfig.label}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -531,43 +578,43 @@ export default function Players() {
               {/* Stats Grid */}
               <div className="grid grid-cols-2 gap-3">
                 {/* Eligibility Status */}
-                <div className="bg-[#18181b] border border-white/10 p-3">
+                <div className="bg-surface-card border border-border p-3">
                   <div className="flex items-center gap-2 mb-2">
                     <div className={`w-6 h-6 flex items-center justify-center ${
-                      selectedPlayer.latestSeasonStats?.isEligible ? 'bg-emerald-600' : 'bg-rose-600'
+                      selectedPlayer.latestSeasonStats?.isEligible ? 'bg-accent-green' : 'bg-rose-600'
                     }`}>
                       <Target className="h-3 w-3 text-white" />
                     </div>
-                    <span className="text-xs text-gray-500 uppercase tracking-wider">Status</span>
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">Status</span>
                   </div>
                   <div className={`font-broadcast text-lg ${
-                    selectedPlayer.latestSeasonStats?.isEligible ? 'text-emerald-400' : 'text-rose-400'
+                    selectedPlayer.latestSeasonStats?.isEligible ? 'text-accent-green' : 'text-rose-400'
                   }`}>
                     {selectedPlayer.latestSeasonStats?.isEligible ? 'ELIGIBLE' : 'INELIGIBLE'}
                   </div>
                 </div>
 
                 {/* Cap Cost */}
-                <div className="bg-[#18181b] border border-white/10 p-3">
+                <div className="bg-surface-card border border-border p-3">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 bg-[#d97706] flex items-center justify-center">
-                      <Trophy className="h-3 w-3 text-[#0c0c0c]" />
+                    <div className="w-6 h-6 bg-accent-amber flex items-center justify-center">
+                      <Trophy className="h-3 w-3 text-surface-base" />
                     </div>
-                    <span className="text-xs text-gray-500 uppercase tracking-wider">Cap Cost</span>
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">Cap Cost</span>
                   </div>
                   <div className="font-broadcast text-lg text-white">
                     {selectedPlayer.latestSeasonStats?.hrsTotal || 0}
-                    <span className="text-gray-500 text-xs">/172</span>
+                    <span className="text-muted-foreground text-xs">/172</span>
                   </div>
                 </div>
 
                 {/* Cap Percentage */}
-                <div className="bg-[#18181b] border border-white/10 p-3">
+                <div className="bg-surface-card border border-border p-3">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 bg-[#b91c1c] flex items-center justify-center">
+                    <div className="w-6 h-6 bg-brand-red flex items-center justify-center">
                       <TrendingUp className="h-3 w-3 text-white" />
                     </div>
-                    <span className="text-xs text-gray-500 uppercase tracking-wider">Cap %</span>
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">Cap %</span>
                   </div>
                   <div className="font-broadcast text-lg text-white">
                     {selectedPlayer.capPercentage}%
@@ -575,12 +622,12 @@ export default function Players() {
                 </div>
 
                 {/* Draft Count */}
-                <div className="bg-[#18181b] border border-white/10 p-3">
+                <div className="bg-surface-card border border-border p-3">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-6 h-6 bg-white/10 flex items-center justify-center">
                       <Users className="h-3 w-3 text-white" />
                     </div>
-                    <span className="text-xs text-gray-500 uppercase tracking-wider">Drafted</span>
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">Drafted</span>
                   </div>
                   <div className="font-broadcast text-lg text-white">
                     {selectedPlayer.draftCount === 0 ? '-' : selectedPlayer.draftCount}
@@ -589,15 +636,16 @@ export default function Players() {
               </div>
 
             </div>
-          ) : isPlayerError ? (
+            )
+          })() : isPlayerError ? (
             /* Show error if fetch failed */
             <div className="text-center py-12">
-              <p className="text-gray-500">Unable to load player details.</p>
+              <p className="text-muted-foreground">Unable to load player details.</p>
             </div>
           ) : (
             /* Default: show loading spinner */
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-[#b91c1c]" />
+              <Loader2 className="h-8 w-8 animate-spin text-brand-red" />
             </div>
           )}
         </div>
@@ -605,21 +653,21 @@ export default function Players() {
 
       {/* PDF Format Selection Dialog */}
       <Dialog open={isPdfDialogOpen} onOpenChange={setIsPdfDialogOpen}>
-        <DialogContent className="bg-[#18181b] border-white/10 text-white max-w-2xl">
+        <DialogContent className="bg-surface-card border-border text-white max-w-2xl">
           <DialogHeader>
             <DialogTitle className="font-broadcast text-xl flex items-center gap-2">
-              <Download className="h-5 w-5 text-[#b91c1c]" />
+              <Download className="h-5 w-5 text-brand-red" />
               DOWNLOAD PDF
             </DialogTitle>
           </DialogHeader>
-          <p className="text-gray-400 text-sm mb-4">
+          <p className="text-muted-foreground text-sm mb-4">
             Choose a format for your player list PDF:
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Compact Option */}
             <button
               onClick={downloadCompactPDF}
-              className="p-4 bg-[#0c0c0c] border border-white/10 hover:border-[#b91c1c] hover:bg-white/5 transition-all text-left group"
+              className="p-4 bg-surface-base border border-border hover:border-brand-red hover:bg-white/5 transition-all text-left group"
             >
               {/* Preview - Landscape two-column */}
               <div className="aspect-[11/8.5] bg-white rounded mb-3 p-2 overflow-hidden">
@@ -632,7 +680,7 @@ export default function Players() {
                   {/* Two columns */}
                   <div className="flex-1 flex gap-1">
                     <div className="flex-1 space-y-[2px]">
-                      <div className="h-2 bg-[#b91c1c] rounded-sm" />
+                      <div className="h-2 bg-brand-red rounded-sm" />
                       {[...Array(8)].map((_, i) => (
                         <div key={i} className={`h-1.5 ${i % 2 === 0 ? 'bg-gray-100' : 'bg-gray-200'} rounded-sm flex`}>
                           <div className="w-2 bg-gray-300 rounded-sm mr-0.5" />
@@ -642,7 +690,7 @@ export default function Players() {
                     </div>
                     <div className="w-[2px] bg-gray-300" />
                     <div className="flex-1 space-y-[2px]">
-                      <div className="h-2 bg-[#b91c1c] rounded-sm" />
+                      <div className="h-2 bg-brand-red rounded-sm" />
                       {[...Array(8)].map((_, i) => (
                         <div key={i} className={`h-1.5 ${i % 2 === 0 ? 'bg-gray-100' : 'bg-gray-200'} rounded-sm flex`}>
                           <div className="w-2 bg-gray-300 rounded-sm mr-0.5" />
@@ -653,13 +701,13 @@ export default function Players() {
                   </div>
                 </div>
               </div>
-              <h3 className="font-broadcast text-white group-hover:text-[#d97706] transition-colors">
+              <h3 className="font-broadcast text-white group-hover:text-accent-amber transition-colors">
                 COMPACT
               </h3>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 3 pages • Landscape • Two columns
               </p>
-              <p className="text-xs text-gray-600 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Best for quick reference
               </p>
             </button>
@@ -667,7 +715,7 @@ export default function Players() {
             {/* Detailed Option */}
             <button
               onClick={downloadDetailedPDF}
-              className="p-4 bg-[#0c0c0c] border border-white/10 hover:border-[#b91c1c] hover:bg-white/5 transition-all text-left group"
+              className="p-4 bg-surface-base border border-border hover:border-brand-red hover:bg-white/5 transition-all text-left group"
             >
               {/* Preview - Portrait single column */}
               <div className="aspect-[8.5/11] bg-white rounded mb-3 p-2 overflow-hidden mx-auto" style={{ maxHeight: '140px' }}>
@@ -679,7 +727,7 @@ export default function Players() {
                   </div>
                   {/* Single column */}
                   <div className="flex-1 space-y-[2px]">
-                    <div className="h-2.5 bg-[#b91c1c] rounded-sm flex items-center px-1">
+                    <div className="h-2.5 bg-brand-red rounded-sm flex items-center px-1">
                       <div className="text-[3px] text-white font-bold"># Player Team HR Cap%</div>
                     </div>
                     {[...Array(10)].map((_, i) => (
@@ -694,13 +742,13 @@ export default function Players() {
                   </div>
                 </div>
               </div>
-              <h3 className="font-broadcast text-white group-hover:text-[#d97706] transition-colors">
+              <h3 className="font-broadcast text-white group-hover:text-accent-amber transition-colors">
                 DETAILED
               </h3>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 9 pages • Portrait • With Cap %
               </p>
-              <p className="text-xs text-gray-600 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Best for in-depth research
               </p>
             </button>

@@ -57,6 +57,7 @@ export const TEST_USER = {
   authProvider: 'email' as const,
   avatarUrl: null,
   phoneNumber: null,
+  profileCompleted: true,
   createdAt: new Date().toISOString(),
 }
 
@@ -69,6 +70,7 @@ export const TEST_ADMIN = {
   authProvider: 'email' as const,
   avatarUrl: null,
   phoneNumber: null,
+  profileCompleted: true,
   createdAt: new Date().toISOString(),
 }
 

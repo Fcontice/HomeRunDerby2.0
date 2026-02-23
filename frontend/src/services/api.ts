@@ -475,6 +475,23 @@ export interface AuthResponse {
   csrfToken?: string
 }
 
+// ==================== DINGER ALERT TYPES ====================
+
+export interface DingerAlert {
+  playerId: string
+  playerName: string
+  teamAbbr: string
+  hrsOnDate: number
+  hrsTotal: number
+  date: string
+}
+
+export interface DingerAlertResponse {
+  dingers: DingerAlert[]
+  date: string
+  totalHRs: number
+}
+
 // ==================== LEADERBOARD TYPES ====================
 
 export interface PlayerScore {
@@ -918,6 +935,14 @@ export const playersApi = {
   getStats: async (seasonYear?: number): Promise<ApiResponse<PlayerStatsResponse>> => {
     const queryParams = seasonYear ? `?seasonYear=${seasonYear}` : ''
     const response = await api.get(`/api/players/stats/summary${queryParams}`)
+    return response.data
+  },
+
+  /**
+   * Get recent home runs (yesterday's dingers) for the Jumbotron
+   */
+  getRecentHRs: async (): Promise<ApiResponse<DingerAlertResponse>> => {
+    const response = await api.get('/api/players/recent-hrs')
     return response.data
   },
 }
