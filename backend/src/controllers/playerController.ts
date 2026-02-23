@@ -15,7 +15,7 @@ import { playerCache } from '../services/playerCache.js';
  * Get all eligible players with optional filters
  * Query params:
  *   - seasonYear: number (default: 2025)
- *   - minHrs: number (default: 10)
+ *   - minHrs: number (default: 9)
  *   - maxHrs: number (optional)
  *   - team: string (team abbreviation, optional)
  *   - search: string (search player name, optional)
@@ -28,7 +28,7 @@ export async function getPlayers(req: Request, res: Response, next: NextFunction
   try {
     const {
       seasonYear = '2025',
-      minHrs = '10',
+      minHrs = '9',
       maxHrs,
       team,
       search,
@@ -210,7 +210,7 @@ export async function getPlayerById(req: Request, res: Response, next: NextFunct
       latestSeasonStats: latestSeasonStats ? {
         seasonYear: latestSeasonStats.seasonYear,
         hrsTotal: latestSeasonStats.hrsTotal,
-        isEligible: latestSeasonStats.hrsTotal >= 10
+        isEligible: latestSeasonStats.hrsTotal >= 9
       } : null,
       capPercentage
     };
@@ -247,7 +247,7 @@ export async function searchPlayers(req: Request, res: Response, next: NextFunct
     let playerSeasonStats = await db.playerSeasonStats.findMany(
       {
         seasonYear: parseInt(seasonYear as string),
-        hrsTotal: { gte: 10 },
+        hrsTotal: { gte: 9 },
       },
       {
         orderBy: { hrsTotal: 'desc' },
@@ -286,7 +286,7 @@ export async function searchPlayers(req: Request, res: Response, next: NextFunct
  * Get players who hit home runs yesterday (or most recent game day)
  * Public endpoint for the Dinger Jumbotron
  */
-export async function getRecentHRs(req: Request, res: Response, next: NextFunction) {
+export async function getRecentHRs(_req: Request, res: Response, next: NextFunction) {
   try {
     // Get yesterday's date in UTC
     const yesterday = new Date();
@@ -339,7 +339,7 @@ export async function getPlayerStats(req: Request, res: Response, next: NextFunc
     const stats = await db.playerSeasonStats.aggregate({
       where: {
         seasonYear: parseInt(seasonYear as string),
-        hrsTotal: { gte: 10 },
+        hrsTotal: { gte: 9 },
       },
       _count: true,
       _avg: {
@@ -358,7 +358,7 @@ export async function getPlayerStats(req: Request, res: Response, next: NextFunc
       by: ['teamAbbr'],
       where: {
         seasonYear: parseInt(seasonYear as string),
-        hrsTotal: { gte: 10 },
+        hrsTotal: { gte: 9 },
       },
       _count: true,
       orderBy: {
