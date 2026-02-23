@@ -4,7 +4,7 @@ Fetches 2024 season statistics to determine 2025 contest eligibility
 Populates Player and PlayerSeasonStats tables
 
 Usage:
-    python import_2025_eligibility.py [--min-hrs 10] [--season-year 2025]
+    python import_2025_eligibility.py [--min-hrs 9] [--season-year 2025]
 """
 
 import os

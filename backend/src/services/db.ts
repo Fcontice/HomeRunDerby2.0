@@ -844,7 +844,7 @@ export const playerSeasonStatsDb = {
   },
 
   // Get eligible players for a specific contest year
-  // e.g., getEligibleForContest(2026) returns 2025 players with ≥10 HRs
+  // e.g., getEligibleForContest(2026) returns 2025 players with ≥9 HRs
   async getEligibleForContest(contestYear: number): Promise<PlayerSeasonStats[]> {
     const previousYear = contestYear - 1
 
@@ -855,7 +855,7 @@ export const playerSeasonStatsDb = {
         player:Player(*)
       `)
       .eq('seasonYear', previousYear)
-      .gte('hrsTotal', 10)
+      .gte('hrsTotal', 9)
       .order('hrsTotal', { ascending: false })
 
     if (error) throw error

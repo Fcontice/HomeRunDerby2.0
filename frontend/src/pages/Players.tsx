@@ -57,7 +57,7 @@ export default function Players() {
     queryKey: ['players', debouncedSearch, debouncedTeam],
     queryFn: async () => {
       const response = await playersApi.getPlayers({
-        minHrs: 10,
+        minHrs: 9,
         sortBy: 'hrs',
         sortOrder: 'desc',
         team: debouncedTeam === 'all' ? undefined : debouncedTeam,
@@ -143,7 +143,7 @@ export default function Players() {
     doc.setFontSize(7)
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(100)
-    doc.text('10+ HRs in 2025  |  Team Cap: 172 HRs  |  Best 7 of 8 score  |  hrderbyus.com', pageWidth / 2, 14, { align: 'center' })
+    doc.text('9+ HRs in 2025  |  Team Cap: 172 HRs  |  Best 7 of 8 score  |  hrderbyus.com', pageWidth / 2, 14, { align: 'center' })
     doc.setTextColor(0)
 
     // Two-column newspaper layout: read down col 1, then col 2, then next page
@@ -231,7 +231,7 @@ export default function Players() {
 
     doc.setFontSize(9)
     doc.setTextColor(100)
-    doc.text('Players with 10+ HRs in 2025  |  Team Cap: 172 HRs  |  Best 7 of 8 players score', pageWidth / 2, 35, { align: 'center' })
+    doc.text('Players with 9+ HRs in 2025  |  Team Cap: 172 HRs  |  Best 7 of 8 players score', pageWidth / 2, 35, { align: 'center' })
     doc.setTextColor(0)
 
     const tableData = players.map((player, index) => [
@@ -384,7 +384,7 @@ export default function Players() {
                 </div>
                 <p className="text-sm text-muted-foreground">
                   <span className="font-broadcast text-lg text-white mr-1">{players.length}</span>
-                  eligible players (10+ HRs in 2025)
+                  eligible players (9+ HRs in 2025)
                 </p>
               </div>
               <Button

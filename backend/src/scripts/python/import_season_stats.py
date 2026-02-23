@@ -6,7 +6,7 @@ Imports entire season's home run totals to populate PlayerSeasonStats table.
 This determines which players are eligible for the next contest.
 
 Usage:
-    python import_season_stats.py                    # Import 2025 season (default, >=10 HRs)
+    python import_season_stats.py                    # Import 2025 season (default, >=9 HRs)
     python import_season_stats.py --season 2024      # Import specific season
     python import_season_stats.py --min-hrs 20       # Custom HR threshold
 
@@ -32,7 +32,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from db_utils import SupabaseDB
 
 
-def fetch_season_leaders_paginated(season_year: int, min_home_runs: int = 10) -> list:
+def fetch_season_leaders_paginated(season_year: int, min_home_runs: int = 9) -> list:
     """
     Fetch all players with >= min_home_runs for the specified season using pagination.
 
@@ -42,7 +42,7 @@ def fetch_season_leaders_paginated(season_year: int, min_home_runs: int = 10) ->
 
     Args:
         season_year: MLB season year (e.g., 2025)
-        min_home_runs: Minimum HRs required for eligibility (default: 10)
+        min_home_runs: Minimum HRs required for eligibility (default: 9)
 
     Returns:
         List of player data dictionaries with HR totals (deduped, sorted by HRs desc)
@@ -242,8 +242,8 @@ def main():
     parser.add_argument(
         '--min-hrs',
         type=int,
-        default=10,
-        help='Minimum home runs for eligibility (default: 10)'
+        default=9,
+        help='Minimum home runs for eligibility (default: 9)'
     )
 
     args = parser.parse_args()

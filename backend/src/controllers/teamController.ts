@@ -51,7 +51,7 @@ export async function createTeam(req: Request, res: Response, next: NextFunction
 
     const playerSeasonStats = await db.playerSeasonStats.findMany({
       seasonYear: previousSeasonYear,
-      hrsTotal: { gte: 10 },
+      hrsTotal: { gte: 9 },
     });
 
     // Filter to only the selected players
@@ -223,7 +223,7 @@ export async function updateTeam(req: Request, res: Response, next: NextFunction
 
       const playerSeasonStats = await db.playerSeasonStats.findMany({
         seasonYear: previousSeasonYear,
-        hrsTotal: { gte: 10 },
+        hrsTotal: { gte: 9 },
       });
 
       // Filter to only the selected players

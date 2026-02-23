@@ -7,7 +7,7 @@
  * - mlbId format is correct (mlb-{playerId})
  * - No 'UNK' team abbreviations
  * - All players are eligible
- * - All players have >= 10 HRs
+ * - All players have >= 9 HRs
  * - HR distribution stats
  * - Team distribution
  * - No duplicate mlbIds
