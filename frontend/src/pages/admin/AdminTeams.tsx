@@ -16,9 +16,7 @@ import {
 
 const paymentStatusColors: Record<string, { bg: string; text: string; border: string }> = {
   draft: { bg: 'bg-slate-500/10', text: 'text-slate-400', border: 'border-slate-500/30' },
-  pending: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30' },
   paid: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30' },
-  rejected: { bg: 'bg-red-500/10', text: 'text-red-400', border: 'border-red-500/30' },
   refunded: { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/30' },
 }
 
@@ -85,7 +83,7 @@ export default function AdminTeams() {
 
   const handleStatusChange = (teamId: string, newStatus: string, team?: AdminTeam) => {
     setActiveDropdown(null)
-    if (newStatus === 'rejected' || newStatus === 'refunded') {
+    if (newStatus === 'refunded') {
       setPendingAction({ teamId, status: newStatus })
       setShowReAuth(true)
     } else if (newStatus === 'paid' && team) {
@@ -153,9 +151,7 @@ export default function AdminTeams() {
           >
             <option value="all">All Payments</option>
             <option value="draft">Draft</option>
-            <option value="pending">Pending</option>
             <option value="paid">Paid</option>
-            <option value="rejected">Rejected</option>
             <option value="refunded">Refunded</option>
           </select>
           <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
@@ -287,23 +283,14 @@ export default function AdminTeams() {
                                   <Eye className="w-4 h-4" />
                                   View Details
                                 </button>
-                                {(team.paymentStatus === 'pending' || team.paymentStatus === 'draft') && (
-                                  <>
-                                    <button
-                                      onClick={() => handleStatusChange(team.id, 'paid', team)}
-                                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-emerald-400 hover:bg-emerald-500/10 transition-colors"
-                                    >
-                                      <Check className="w-4 h-4" />
-                                      Approve Payment
-                                    </button>
-                                    <button
-                                      onClick={() => handleStatusChange(team.id, 'rejected')}
-                                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
-                                    >
-                                      <X className="w-4 h-4" />
-                                      Reject
-                                    </button>
-                                  </>
+                                {team.paymentStatus === 'draft' && (
+                                  <button
+                                    onClick={() => handleStatusChange(team.id, 'paid', team)}
+                                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+                                  >
+                                    <Check className="w-4 h-4" />
+                                    Approve Payment
+                                  </button>
                                 )}
                                 {team.paymentStatus === 'paid' && (
                                   <button

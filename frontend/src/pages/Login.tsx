@@ -46,7 +46,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0c0c0c] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-surface-base flex items-center justify-center p-4">
       {/* Background pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0" style={{
@@ -62,24 +62,24 @@ export default function Login() {
 
       <div className="relative w-full max-w-md">
         {/* Top accent bar */}
-        <div className="h-1 bg-gradient-to-r from-[#b91c1c] via-[#d97706] to-[#b91c1c]" />
+        <div className="h-1 bg-gradient-to-r from-brand-red via-accent-amber to-brand-red" />
 
         {/* Card */}
-        <div className="bg-[#18181b] border border-white/10">
+        <div className="bg-surface-card border border-border">
           {/* Header */}
-          <div className="p-8 pb-6 text-center border-b border-white/10">
+          <div className="p-8 pb-6 text-center border-b border-border">
             <div className="inline-flex items-center gap-2 mb-4">
-              <div className="w-2 h-8 bg-[#b91c1c]" />
+              <div className="w-2 h-8 bg-brand-red" />
               <span className="font-broadcast text-sm tracking-wider text-white/60">
                 HOME RUN DERBY 2.0
               </span>
-              <div className="w-2 h-8 bg-[#b91c1c]" />
+              <div className="w-2 h-8 bg-brand-red" />
             </div>
             <h1 className="font-broadcast text-4xl text-white tracking-wide">
               SIGN IN
             </h1>
             <p className="text-white/50 mt-2">
-              Access your teams and compete
+              &#129506; Access your teams and compete
             </p>
           </div>
 
@@ -98,7 +98,7 @@ export default function Login() {
                   Email Address
                 </label>
                 <div className="relative">
-                  <div className="absolute left-0 top-0 bottom-0 w-12 bg-white/5 border-r border-white/10 flex items-center justify-center">
+                  <div className="absolute left-0 top-0 bottom-0 w-12 bg-white/5 border-r border-border flex items-center justify-center">
                     <Mail className="w-4 h-4 text-white/40" />
                   </div>
                   <input
@@ -107,7 +107,7 @@ export default function Login() {
                     placeholder="you@example.com"
                     {...register('email')}
                     disabled={loading}
-                    className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 pl-14 pr-4 py-3 rounded-none focus:outline-none focus:border-[#b91c1c] transition-colors disabled:opacity-50"
+                    className="w-full bg-white/5 border border-border text-white placeholder-white/30 pl-14 pr-4 py-3 focus:outline-none focus:border-brand-red transition-colors disabled:opacity-50"
                   />
                 </div>
                 {errors.email && (
@@ -123,13 +123,13 @@ export default function Login() {
                   </label>
                   <Link
                     to="/forgot-password"
-                    className="text-xs text-[#d97706] hover:text-[#f59e0b] transition-colors"
+                    className="text-xs text-accent-amber hover:text-accent-amber/80 transition-colors"
                   >
                     Forgot password?
                   </Link>
                 </div>
                 <div className="relative">
-                  <div className="absolute left-0 top-0 bottom-0 w-12 bg-white/5 border-r border-white/10 flex items-center justify-center">
+                  <div className="absolute left-0 top-0 bottom-0 w-12 bg-white/5 border-r border-border flex items-center justify-center">
                     <Lock className="w-4 h-4 text-white/40" />
                   </div>
                   <input
@@ -138,7 +138,7 @@ export default function Login() {
                     placeholder="••••••••"
                     {...register('password')}
                     disabled={loading}
-                    className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 pl-14 pr-4 py-3 rounded-none focus:outline-none focus:border-[#b91c1c] transition-colors disabled:opacity-50"
+                    className="w-full bg-white/5 border border-border text-white placeholder-white/30 pl-14 pr-4 py-3 focus:outline-none focus:border-brand-red transition-colors disabled:opacity-50"
                   />
                 </div>
                 {errors.password && (
@@ -150,7 +150,7 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[#b91c1c] hover:bg-[#991b1b] text-white font-broadcast text-lg tracking-wider py-3 rounded-none transition-colors disabled:opacity-50 flex items-center justify-center gap-2 group"
+                className="w-full bg-brand-red hover:bg-brand-red-dark text-white font-broadcast text-lg tracking-wider py-3 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 group"
               >
                 {loading ? (
                   <span>SIGNING IN...</span>
@@ -166,10 +166,10 @@ export default function Login() {
             {/* Divider */}
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/10" />
+                <div className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center">
-                <span className="px-4 bg-[#18181b] text-white/40 text-xs uppercase tracking-wider">
+                <span className="px-4 bg-surface-card text-white/40 text-xs uppercase tracking-wider">
                   Or continue with
                 </span>
               </div>
@@ -180,7 +180,7 @@ export default function Login() {
               type="button"
               onClick={handleGoogleLogin}
               disabled={loading}
-              className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-none transition-colors disabled:opacity-50 flex items-center justify-center gap-3"
+              className="w-full bg-white/5 hover:bg-white/10 border border-border text-white py-3 transition-colors disabled:opacity-50 flex items-center justify-center gap-3"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -205,10 +205,10 @@ export default function Login() {
           </div>
 
           {/* Footer */}
-          <div className="p-6 border-t border-white/10 text-center">
+          <div className="p-6 border-t border-border text-center">
             <p className="text-white/50 text-sm">
               Don't have an account?{' '}
-              <Link to="/register" className="text-[#d97706] hover:text-[#f59e0b] font-medium transition-colors">
+              <Link to="/register" className="text-accent-amber hover:text-accent-amber/80 font-medium transition-colors">
                 Create one
               </Link>
             </p>
@@ -216,7 +216,7 @@ export default function Login() {
         </div>
 
         {/* Bottom accent */}
-        <div className="h-1 bg-gradient-to-r from-[#b91c1c] via-[#d97706] to-[#b91c1c]" />
+        <div className="h-1 bg-gradient-to-r from-brand-red via-accent-amber to-brand-red" />
       </div>
     </div>
   )

@@ -24,6 +24,7 @@ export default defineConfig({
             '@radix-ui/react-tabs',
             '@radix-ui/react-toast',
           ],
+          'animation-vendor': ['framer-motion'],
         },
       },
     },

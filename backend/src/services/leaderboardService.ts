@@ -440,7 +440,7 @@ export async function getOverallLeaderboard(seasonYear: number = 2025): Promise<
 
 /**
  * Get monthly leaderboard from database (cached)
- * Optimized to use a single JOIN query
+ * Includes player breakdown with monthly HRs (best 7 of 8)
  */
 export async function getMonthlyLeaderboard(
   seasonYear: number,
@@ -457,7 +457,7 @@ export async function getMonthlyLeaderboard(
   console.log(`📋 Fetching monthly leaderboard from database for ${seasonYear}-${month}...`)
   const startTime = Date.now()
 
-  // Single query with JOINs
+  // Single query with JOINs - include teamPlayers for player breakdown
   const { data, error } = await supabaseAdmin
     .from('Leaderboard')
     .select(`
@@ -474,6 +474,13 @@ export async function getMonthlyLeaderboard(
           id,
           username,
           avatarUrl
+        ),
+        teamPlayers:TeamPlayer(
+          id,
+          player:Player(
+            id,
+            name
+          )
         )
       )
     `)
@@ -488,7 +495,55 @@ export async function getMonthlyLeaderboard(
     throw error
   }
 
-  // Transform data to LeaderboardEntry format
+  // Get all player IDs from all teams
+  const allPlayerIds = new Set<string>()
+  for (const record of data || []) {
+    const team = record.team as unknown as {
+      teamPlayers: Array<{ player: { id: string } }>
+    }
+    if (team?.teamPlayers) {
+      for (const tp of team.teamPlayers) {
+        if (tp.player?.id) {
+          allPlayerIds.add(tp.player.id)
+        }
+      }
+    }
+  }
+
+  // Calculate date range for this month
+  const startDate = new Date(seasonYear, month - 1, 1).toISOString().split('T')[0]
+  const endDate = new Date(seasonYear, month, 0).toISOString().split('T')[0]
+
+  // Fetch all daily stats within the month range and aggregate per player
+  const playerMonthlyHrs = new Map<string, number>()
+
+  if (allPlayerIds.size > 0) {
+    const playerIdArray = Array.from(allPlayerIds)
+
+    // Get all daily stats within the month and sum hrsDaily per player
+    const { data: dailyStats, error: statsError } = await supabaseAdmin
+      .from('PlayerStats')
+      .select('playerId, hrsDaily')
+      .eq('seasonYear', seasonYear)
+      .in('playerId', playerIdArray)
+      .gte('date', startDate)
+      .lte('date', endDate)
+
+    if (statsError) {
+      console.error('Error fetching monthly stats:', statsError)
+      throw statsError
+    }
+
+    // Aggregate hrsDaily per player
+    if (dailyStats) {
+      for (const stat of dailyStats) {
+        const current = playerMonthlyHrs.get(stat.playerId) || 0
+        playerMonthlyHrs.set(stat.playerId, current + (stat.hrsDaily || 0))
+      }
+    }
+  }
+
+  // Transform data to LeaderboardEntry format with player scores
   const entries: LeaderboardEntry[] = []
 
   for (const record of data || []) {
@@ -496,9 +551,34 @@ export async function getMonthlyLeaderboard(
       id: string
       name: string
       user: { id: string; username: string; avatarUrl: string | null }
+      teamPlayers: Array<{ id: string; player: { id: string; name: string } }>
     }
 
     if (!team || !team.user) continue
+
+    // Build player scores with monthly HRs
+    const playerScores: PlayerScore[] = []
+    if (team.teamPlayers) {
+      for (const tp of team.teamPlayers) {
+        const player = tp.player
+        const monthlyHrs = playerMonthlyHrs.get(player.id) || 0
+
+        playerScores.push({
+          playerId: player.id,
+          playerName: player.name,
+          hrsTotal: monthlyHrs,
+          hrsRegularSeason: monthlyHrs,
+          hrsPostseason: 0,
+          included: false, // Will be set below
+        })
+      }
+
+      // Sort by HRs and mark top 7 as included (best 7 of 8)
+      playerScores.sort((a, b) => b.hrsTotal - a.hrsTotal)
+      for (let i = 0; i < Math.min(7, playerScores.length); i++) {
+        playerScores[i].included = true
+      }
+    }
 
     entries.push({
       rank: record.rank,
@@ -508,6 +588,7 @@ export async function getMonthlyLeaderboard(
       userId: team.user.id,
       username: team.user.username,
       avatarUrl: team.user.avatarUrl,
+      playerScores,
     })
   }
 

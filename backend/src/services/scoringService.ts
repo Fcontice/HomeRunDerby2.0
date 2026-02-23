@@ -93,7 +93,10 @@ async function batchFetchLatestStats(
 
 /**
  * Batch fetch monthly stats for multiple players
- * Returns a Map of playerId -> stats for the month
+ * Returns a Map of playerId -> HRs hit during that specific month
+ *
+ * Uses hrsDaily field to sum daily HR counts within the date range.
+ * This is simpler and more efficient than the old 2-query cumulative approach.
  */
 async function batchFetchMonthlyStats(
   playerIds: string[],
@@ -105,30 +108,35 @@ async function batchFetchMonthlyStats(
     return new Map()
   }
 
-  const { data: allStats, error } = await supabaseAdmin
+  // Fetch all daily stats within the date range
+  const { data: dailyStats, error } = await supabaseAdmin
     .from('PlayerStats')
-    .select('playerId, hrsRegularSeason, date')
+    .select('playerId, hrsDaily')
     .eq('seasonYear', seasonYear)
     .in('playerId', playerIds)
     .gte('date', startDate)
     .lte('date', endDate)
-    .order('date', { ascending: false })
 
   if (error) {
     console.error('Error batch fetching monthly stats:', error)
     throw error
   }
 
-  // Keep only the latest stat for each player within the month
-  const statsMap = new Map<string, { hrsRegularSeason: number }>()
-  if (allStats) {
-    for (const stat of allStats) {
-      if (!statsMap.has(stat.playerId)) {
-        statsMap.set(stat.playerId, {
-          hrsRegularSeason: stat.hrsRegularSeason || 0,
-        })
-      }
+  // Aggregate hrsDaily per player
+  const totals = new Map<string, number>()
+  if (dailyStats) {
+    for (const stat of dailyStats) {
+      const current = totals.get(stat.playerId) || 0
+      totals.set(stat.playerId, current + (stat.hrsDaily || 0))
     }
+  }
+
+  // Build result map (ensure all requested players have an entry)
+  const statsMap = new Map<string, { hrsRegularSeason: number }>()
+  for (const playerId of playerIds) {
+    statsMap.set(playerId, {
+      hrsRegularSeason: totals.get(playerId) || 0,
+    })
   }
 
   return statsMap

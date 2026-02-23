@@ -4,25 +4,25 @@
 
 @layer base {
   :root {
-    --background: 222 47% 6%;
+    --background: 220 45% 7%;
     --foreground: 210 40% 98%;
-    --card: 222 47% 11%;
+    --card: 222 40% 13%;
     --card-foreground: 210 40% 98%;
-    --popover: 222 47% 11%;
+    --popover: 222 40% 13%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 222 47% 11%;
-    --secondary: 217 33% 17%;
+    --primary: 348 90% 50%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 217 33% 18%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 17%;
+    --muted: 217 33% 18%;
+    --muted-foreground: 215 20% 70%;
+    --accent: 217 33% 18%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 217 91% 60%;
+    --border: 217 33% 22%;
+    --input: 217 33% 22%;
+    --ring: 348 90% 50%;
     --radius: 0.5rem;
 
     /* Multi-accent colors */
@@ -30,6 +30,17 @@
     --gold-foreground: 222 47% 11%;
     --success: 160 84% 39%;
     --success-foreground: 210 40% 98%;
+
+    /* HRD design tokens */
+    --surface-base: 220 45% 7%;
+    --surface-card: 222 40% 13%;
+    --surface-deep: 220 45% 5%;
+    --surface-elevated: 222 40% 16%;
+    --brand-red: 348 100% 42%;
+    --brand-red-dark: 348 100% 35%;
+    --accent-green: 145 65% 42%;
+    --accent-blue: 210 80% 55%;
+    --accent-amber: 43 96% 52%;
   }
 }
 
@@ -39,6 +50,15 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background-image:
+      radial-gradient(ellipse 80% 40% at 20% 0%, hsl(348 100% 42% / 0.04) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 0%, hsl(220 60% 50% / 0.03) 0%, transparent 60%);
+  }
+
+  h1, h2, h3, h4, .font-broadcast {
+    font-family: 'Bebas Neue', Impact, sans-serif;
+    letter-spacing: 0.02em;
   }
 
   /* Override browser autofill styles */
@@ -46,7 +66,7 @@
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus,
   input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 30px #18181b inset !important;
+    -webkit-box-shadow: 0 0 0 30px hsl(var(--surface-card)) inset !important;
     -webkit-text-fill-color: white !important;
     caret-color: white !important;
     transition: background-color 5000s ease-in-out 0s;
@@ -146,8 +166,8 @@
   }
 
   .card-glow:hover {
-    @apply border-slate-700;
-    box-shadow: 0 4px 20px -2px hsl(var(--primary) / 0.1);
+    border-color: hsl(var(--border) / 1.5);
+    box-shadow: 0 4px 24px -2px hsl(var(--primary) / 0.12), inset 0 1px 0 hsl(0 0% 100% / 0.06);
   }
 
   /* Gold stats styling */
@@ -158,7 +178,7 @@
 
   /* Rank badge styling */
   .rank-badge {
-    @apply inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full text-sm font-bold;
+    @apply inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 text-sm font-bold;
     background: linear-gradient(135deg, hsl(var(--gold)) 0%, hsl(var(--gold) / 0.8) 100%);
     color: hsl(var(--gold-foreground));
   }
@@ -365,6 +385,95 @@
   .delay-800 { animation-delay: 800ms; }
 }
 
+/* HRD utility classes */
+@layer components {
+  .hrd-card {
+    @apply bg-surface-card border border-border transition-all duration-200;
+    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.04);
+  }
+
+  /* Card variant: stat panel — gradient bg + accent border for scoreboard-style data */
+  .card-stat-panel {
+    background: linear-gradient(
+      180deg,
+      hsl(0 0% 4%) 0%,
+      hsl(0 0% 8%) 100%
+    );
+    border: 1px solid hsl(var(--broadcast-gray) / 0.3);
+    box-shadow:
+      0 4px 30px hsl(0 0% 0% / 0.5),
+      inset 0 1px 0 hsl(0 0% 100% / 0.05);
+  }
+
+  /* Card variant: interactive card — hover glow for clickable items */
+  .card-interactive {
+    @apply bg-surface-card border border-border transition-all duration-200;
+    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.04);
+  }
+
+  .card-interactive:hover {
+    border-color: hsl(var(--border) / 1.5);
+    box-shadow: 0 4px 24px -2px hsl(var(--primary) / 0.12), inset 0 1px 0 hsl(0 0% 100% / 0.06);
+  }
+
+  /* Card variant: data table — denser, with header bar accent */
+  .card-data-table {
+    @apply bg-surface-card border border-border;
+    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.03);
+  }
+
+  /* Card variant: hero card — prominent with shadows and gradient */
+  .card-hero {
+    background: linear-gradient(
+      180deg,
+      hsl(var(--surface-elevated)) 0%,
+      hsl(var(--surface-card)) 100%
+    );
+    border: 1px solid hsl(var(--border));
+    box-shadow:
+      0 8px 40px hsl(0 0% 0% / 0.4),
+      inset 0 1px 0 hsl(0 0% 100% / 0.06);
+  }
+
+  .stadium-bg {
+    background-image:
+      radial-gradient(ellipse 80% 40% at 20% 0%, hsl(348 100% 42% / 0.04) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 0%, hsl(220 60% 50% / 0.03) 0%, transparent 60%);
+  }
+
+  .glow-red {
+    box-shadow: 0 0 20px -4px hsl(var(--brand-red) / 0.3);
+  }
+
+  .glow-green {
+    box-shadow: 0 0 20px -4px hsl(var(--accent-green) / 0.3);
+  }
+
+  .glow-blue {
+    box-shadow: 0 0 20px -4px hsl(var(--accent-blue) / 0.3);
+  }
+
+  .glow-amber {
+    box-shadow: 0 0 20px -4px hsl(var(--accent-amber) / 0.3);
+  }
+
+  .jumbotron-frame {
+    background: linear-gradient(180deg, hsl(var(--surface-deep)) 0%, hsl(var(--surface-card)) 100%);
+    border: 1px solid hsl(var(--accent-amber) / 0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .jumbotron-frame::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, hsl(var(--accent-amber) / 0.06) 1px, transparent 1px);
+    background-size: 8px 8px;
+    pointer-events: none;
+  }
+}
+
 /* Broadcast component styles */
 @layer components {
   /* Diagonal stripe accent */
@@ -486,5 +595,90 @@
     background: hsl(var(--broadcast-white) / 0.03);
     backdrop-filter: blur(10px);
     border: 1px solid hsl(var(--broadcast-white) / 0.08);
+  }
+}
+
+/* ================================================
+   BASEBALL THEMING — Subtle decorative elements
+   ================================================ */
+
+/* Baseball stitching divider — replaces plain hr/border-t */
+.baseball-stitch {
+  position: relative;
+  height: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.baseball-stitch::before {
+  content: '';
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    hsl(348 100% 50% / 0.10) 0px,
+    hsl(348 100% 50% / 0.10) 8px,
+    transparent 8px,
+    transparent 16px
+  );
+}
+
+/* Full-width stitch divider variant */
+.baseball-divider {
+  position: relative;
+  height: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.baseball-divider::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    hsl(348 100% 50% / 0.10) 0px,
+    hsl(348 100% 50% / 0.10) 8px,
+    transparent 8px,
+    transparent 16px
+  );
+}
+
+/* Small inline diamond accent — rotated square */
+.diamond-accent {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  background: hsl(348 100% 50% / 0.25);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+/* Subtle baseball-leather texture for hero sections */
+.bg-baseball-texture {
+  position: relative;
+}
+
+.bg-baseball-texture::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 0c2 8-6 12-6 20s8 12 6 20' fill='none' stroke='%23dc2626' stroke-width='1'/%3E%3Cpath d='M20 0c-2 8 6 12 6 20s-8 12-6 20' fill='none' stroke='%23dc2626' stroke-width='1'/%3E%3C/svg%3E");
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .baseball-stitch::before,
+  .baseball-divider::before {
+    animation: none;
   }
 }

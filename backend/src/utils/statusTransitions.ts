@@ -12,10 +12,8 @@ import { ValidationError } from './errors.js'
  * Each key represents the current status, and the array contains valid target statuses
  */
 const VALID_PAYMENT_TRANSITIONS: Record<PaymentStatus, PaymentStatus[]> = {
-  draft: ['pending'],                    // User submits payment
-  pending: ['paid', 'rejected'],         // Admin approves or rejects
-  paid: ['refunded'],                    // Admin refunds
-  rejected: ['pending'],                 // User resubmits payment
+  draft: ['paid'],                       // Admin approves payment directly
+  paid: ['refunded'],                    // Admin can refund
   refunded: [],                          // Terminal state
 }
 

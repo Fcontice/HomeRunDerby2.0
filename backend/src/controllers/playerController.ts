@@ -282,6 +282,51 @@ export async function searchPlayers(req: Request, res: Response, next: NextFunct
 }
 
 /**
+ * GET /api/players/recent-hrs
+ * Get players who hit home runs yesterday (or most recent game day)
+ * Public endpoint for the Dinger Jumbotron
+ */
+export async function getRecentHRs(req: Request, res: Response, next: NextFunction) {
+  try {
+    // Get yesterday's date in UTC
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const dateStr = yesterday.toISOString().split('T')[0];
+
+    const { data: stats, error } = await supabaseAdmin
+      .from('PlayerStats')
+      .select('playerId, hrsDaily, hrsTotal, date, player:Player!inner(name, teamAbbr)')
+      .eq('date', dateStr)
+      .gt('hrsDaily', 0)
+      .order('hrsDaily', { ascending: false });
+
+    if (error) throw error;
+
+    const dingers = (stats || []).map((stat: any) => ({
+      playerId: stat.playerId,
+      playerName: stat.player?.name || 'Unknown',
+      teamAbbr: stat.player?.teamAbbr || '',
+      hrsOnDate: stat.hrsDaily,
+      hrsTotal: stat.hrsTotal,
+      date: stat.date,
+    }));
+
+    const totalHRs = dingers.reduce((sum: number, d: any) => sum + d.hrsOnDate, 0);
+
+    res.json({
+      success: true,
+      data: {
+        dingers,
+        date: dateStr,
+        totalHRs,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
  * GET /api/players/stats/summary
  * Get player pool summary statistics
  * Query params:

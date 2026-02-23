@@ -9,7 +9,7 @@ import { supabaseAdmin } from '../config/supabase.js'
 const ADMIN_ALERT_EMAIL = process.env.ADMIN_ALERT_EMAIL || process.env.FROM_EMAIL || 'admin@hrderbyus.com'
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173'
 
-export type JobName = 'update_stats' | 'import_season' | 'calculate_leaderboard' | 'recalculate_all'
+export type JobName = 'update_stats' | 'import_season' | 'calculate_leaderboard' | 'recalculate_all' | 'news_digest'
 export type JobStatus = 'success' | 'failed' | 'running' | 'partial'
 
 export interface JobExecutionLog {
@@ -136,6 +136,7 @@ export async function alertAdminJobFailure(
     import_season: 'Season Import',
     calculate_leaderboard: 'Leaderboard Calculation',
     recalculate_all: 'Full Recalculation',
+    news_digest: 'Daily News Digest',
   }[alert.jobName] || alert.jobName
 
   const attemptInfo = alert.attempt && alert.maxRetries
@@ -292,12 +293,13 @@ export async function getRecentJobExecutions(
  * Get latest execution for each job type
  */
 export async function getLatestJobExecutions(): Promise<Record<JobName, JobExecutionLog | null>> {
-  const jobNames: JobName[] = ['update_stats', 'import_season', 'calculate_leaderboard', 'recalculate_all']
+  const jobNames: JobName[] = ['update_stats', 'import_season', 'calculate_leaderboard', 'recalculate_all', 'news_digest']
   const result: Record<JobName, JobExecutionLog | null> = {
     update_stats: null,
     import_season: null,
     calculate_leaderboard: null,
     recalculate_all: null,
+    news_digest: null,
   }
 
   for (const jobName of jobNames) {

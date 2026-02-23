@@ -93,6 +93,8 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
             email: email.toLowerCase(),
           })
 
+          let isNewUser = false
+
           if (user) {
             // User exists - check if deleted
             if (user.deletedAt) {
@@ -124,13 +126,17 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
               authProvider: 'google',
               emailVerified: true, // Google emails are pre-verified
               avatarUrl: profile.photos?.[0]?.value,
+              profileCompleted: false, // New Google users need to complete profile
             })
+            isNewUser = true
           }
 
           return done(null, {
             userId: user.id,
             email: user.email,
             role: user.role,
+            isNewUser,
+            profileCompleted: user.profileCompleted,
           })
         } catch (error) {
           return done(error as Error)

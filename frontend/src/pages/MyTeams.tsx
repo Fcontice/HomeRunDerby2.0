@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useSeason } from '../contexts/SeasonContext'
 import { Navbar } from '../components/Navbar'
@@ -19,39 +19,30 @@ import {
   Users,
   Plus,
   Trophy,
-  Clock,
   CheckCircle,
-  XCircle,
   AlertCircle,
   Edit,
   Lock,
   ChevronDown,
   ChevronUp,
   Trash2,
-  DollarSign,
   X,
   Calendar,
-  Copy,
-  Check,
+  BookOpen,
 } from 'lucide-react'
 
 const MAX_HRS = 172
-const ENTRY_FEE = 100
-
-const PAYMENT_OPTIONS = [
-  { name: 'Venmo', handle: '@YourVenmoHandle', copyable: true },
-  { name: 'Zelle', handle: 'your-email@example.com', copyable: true },
-  { name: 'In-Person', handle: 'Contact admin to arrange cash pickup', copyable: false },
-]
 
 export default function MyTeams() {
   const { user } = useAuth()
   const { season } = useSeason()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const [teams, setTeams] = useState<Team[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null)
+  const [pendingAction, setPendingAction] = useState<{ type: 'expand' | 'edit'; teamId: string } | null>(null)
 
   // Edit mode state
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null)
@@ -65,11 +56,6 @@ export default function MyTeams() {
   const [teamToDelete, setTeamToDelete] = useState<Team | null>(null)
   const [deleting, setDeleting] = useState(false)
 
-  // Payment dialog state
-  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
-  const [paymentTeam, setPaymentTeam] = useState<Team | null>(null)
-  const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
-
   // Player HR map for view mode
   const [playerHrMap, setPlayerHrMap] = useState<Map<string, number>>(new Map())
 
@@ -78,6 +64,34 @@ export default function MyTeams() {
   useEffect(() => {
     fetchTeams()
   }, [])
+
+  // Handle navigation state (expand or edit a specific team)
+  useEffect(() => {
+    const state = location.state as { expandTeamId?: string; editTeamId?: string } | null
+    if (state?.expandTeamId) {
+      setPendingAction({ type: 'expand', teamId: state.expandTeamId })
+      // Clear state so it doesn't re-trigger on refresh
+      navigate(location.pathname, { replace: true })
+    } else if (state?.editTeamId) {
+      setPendingAction({ type: 'edit', teamId: state.editTeamId })
+      navigate(location.pathname, { replace: true })
+    }
+  }, [location.state, navigate, location.pathname])
+
+  // Execute pending action once teams are loaded
+  useEffect(() => {
+    if (!loading && teams.length > 0 && pendingAction) {
+      const team = teams.find(t => t.id === pendingAction.teamId)
+      if (team) {
+        if (pendingAction.type === 'edit' && team.paymentStatus === 'draft') {
+          startEditing(team)
+        } else {
+          setExpandedTeamId(pendingAction.teamId)
+        }
+      }
+      setPendingAction(null)
+    }
+  }, [loading, teams, pendingAction])
 
   const fetchTeams = async () => {
     try {
@@ -223,47 +237,22 @@ export default function MyTeams() {
     }
   }
 
-  const openPaymentDialog = (team: Team) => {
-    setPaymentTeam(team)
-    setPaymentDialogOpen(true)
-  }
-
-  const handleCopy = async (text: string, index: number) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopiedIndex(index)
-      setTimeout(() => setCopiedIndex(null), 2000)
-    } catch (err) {
-      console.error('Failed to copy:', err)
-    }
-  }
-
   const getStatusConfig = (status: string) => {
     switch (status) {
       case 'paid':
         return {
           icon: <CheckCircle className="w-4 h-4" />,
-          className: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-        }
-      case 'pending':
-        return {
-          icon: <Clock className="w-4 h-4" />,
-          className: 'bg-[#d97706]/20 text-[#d97706] border-[#d97706]/30',
-        }
-      case 'rejected':
-        return {
-          icon: <XCircle className="w-4 h-4" />,
-          className: 'bg-red-500/20 text-red-400 border-red-500/30',
+          className: 'bg-accent-green/20 text-accent-green border-accent-green/30',
         }
       case 'refunded':
         return {
           icon: <AlertCircle className="w-4 h-4" />,
-          className: 'bg-white/5 text-gray-500 border-white/10',
+          className: 'bg-white/5 text-muted-foreground border-border',
         }
-      default:
+      default: // draft
         return {
           icon: <Edit className="w-4 h-4" />,
-          className: 'bg-white/5 text-gray-500 border-white/10',
+          className: 'bg-white/5 text-muted-foreground border-border',
         }
     }
   }
@@ -272,14 +261,14 @@ export default function MyTeams() {
     switch (entryStatus) {
       case 'locked':
         return (
-          <div className="flex items-center gap-1 px-2 py-1 bg-white/5 border border-white/10 text-gray-400 text-xs uppercase tracking-wider">
+          <div className="flex items-center gap-1 px-2 py-1 bg-white/5 border border-border text-muted-foreground text-xs uppercase tracking-wider">
             <Lock className="w-3 h-3" />
             Locked
           </div>
         )
       case 'entered':
         return (
-          <div className="flex items-center gap-1 px-2 py-1 bg-[#b91c1c]/20 border border-[#b91c1c]/30 text-[#b91c1c] text-xs uppercase tracking-wider">
+          <div className="flex items-center gap-1 px-2 py-1 bg-brand-red/20 border border-brand-red/30 text-brand-red text-xs uppercase tracking-wider">
             <Trophy className="w-3 h-3" />
             Live
           </div>
@@ -296,9 +285,9 @@ export default function MyTeams() {
       isRegistrationOpen
   }
 
-  const canPayTeam = (team: Team) => {
+  const showPaymentLink = (team: Team) => {
     return team.userId === user?.id &&
-      (team.paymentStatus === 'draft' || team.paymentStatus === 'rejected') &&
+      team.paymentStatus === 'draft' &&
       team.entryStatus !== 'locked' &&
       isRegistrationOpen
   }
@@ -310,7 +299,7 @@ export default function MyTeams() {
   const totalHRsAll = teams.reduce((sum, team) => sum + (team.totalHrs2024 || 0), 0)
 
   return (
-    <div className="min-h-screen bg-[#0c0c0c]">
+    <div className="min-h-screen bg-surface-base">
       <Navbar />
 
       <main className="container mx-auto px-4 py-8">
@@ -318,10 +307,10 @@ export default function MyTeams() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-1 h-8 bg-[#b91c1c]" />
+              <div className="w-1 h-8 bg-brand-red" />
               <h1 className="font-broadcast text-4xl text-white tracking-wide">MY TEAMS</h1>
             </div>
-            <p className="text-gray-500 ml-4">
+            <p className="text-muted-foreground ml-4">
               Manage your fantasy baseball teams
             </p>
           </div>
@@ -329,7 +318,7 @@ export default function MyTeams() {
           {isRegistrationOpen && (
             <Button
               onClick={() => navigate('/create-team')}
-              className="bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-none"
+              className="bg-brand-red hover:bg-brand-red-dark text-white"
             >
               <Plus className="w-4 h-4 mr-2" />
               Create New Team
@@ -339,38 +328,38 @@ export default function MyTeams() {
 
         {/* Stats Bar */}
         {teams.length > 0 && (
-          <div className="mb-8 bg-[#18181b] border border-white/10">
-            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-white/10">
+          <div className="mb-8 bg-surface-card border border-border">
+            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-border">
               <div className="p-4 md:p-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#b91c1c] flex items-center justify-center">
+                  <div className="w-10 h-10 bg-brand-red flex items-center justify-center">
                     <Users className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider">Total</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Total</p>
                     <p className="font-broadcast text-2xl text-white">{totalTeams}</p>
                   </div>
                 </div>
               </div>
               <div className="p-4 md:p-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-emerald-600 flex items-center justify-center">
+                  <div className="w-10 h-10 bg-accent-green flex items-center justify-center">
                     <CheckCircle className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider">Paid</p>
-                    <p className="font-broadcast text-2xl text-emerald-400">{paidTeams}</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Paid</p>
+                    <p className="font-broadcast text-2xl text-accent-green">{paidTeams}</p>
                   </div>
                 </div>
               </div>
               <div className="p-4 md:p-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#d97706] flex items-center justify-center">
-                    <Edit className="h-5 w-5 text-[#0c0c0c]" />
+                  <div className="w-10 h-10 bg-accent-amber flex items-center justify-center">
+                    <Edit className="h-5 w-5 text-surface-base" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider">Draft</p>
-                    <p className="font-broadcast text-2xl text-[#d97706]">{draftTeams}</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Draft</p>
+                    <p className="font-broadcast text-2xl text-accent-amber">{draftTeams}</p>
                   </div>
                 </div>
               </div>
@@ -380,7 +369,9 @@ export default function MyTeams() {
                     <Trophy className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider">Total HRs</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                      <span className="opacity-60 mr-0.5">&#9918;</span> Total HRs
+                    </p>
                     <p className="font-broadcast text-2xl text-white">{totalHRsAll}</p>
                   </div>
                 </div>
@@ -393,28 +384,28 @@ export default function MyTeams() {
         {loading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-[#18181b] border border-white/10 p-6 animate-pulse">
+              <div key={i} className="bg-surface-card border border-border p-6 animate-pulse">
                 <div className="h-6 w-32 bg-white/5 mb-2" />
                 <div className="h-4 w-24 bg-white/5" />
               </div>
             ))}
           </div>
         ) : teams.length === 0 ? (
-          <div className="bg-[#18181b] border border-white/10">
+          <div className="bg-surface-card border border-border">
             <div className="py-16 text-center">
               <div className="w-16 h-16 mx-auto mb-4 bg-white/5 flex items-center justify-center">
-                <Users className="w-8 h-8 text-gray-600" />
+                <span className="text-3xl">&#9918;</span>
               </div>
               <h3 className="font-broadcast text-2xl text-white mb-2">NO TEAMS YET</h3>
-              <p className="text-gray-500 mb-6 max-w-sm mx-auto">
+              <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
                 {isRegistrationOpen
-                  ? "Create your first team and join the competition!"
+                  ? "&#129351; Grab your glove and draft your first squad!"
                   : "Registration is currently closed."}
               </p>
               {isRegistrationOpen && (
                 <Button
                   onClick={() => navigate('/create-team')}
-                  className="bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-none"
+                  className="bg-brand-red hover:bg-brand-red-dark text-white"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Create Your First Team
@@ -432,16 +423,16 @@ export default function MyTeams() {
               return (
                 <div
                   key={team.id}
-                  className="bg-[#18181b] border border-white/10"
+                  className="bg-surface-card border border-border"
                 >
                   {/* Team Header - Always visible */}
                   <div
-                    className={`p-4 cursor-pointer hover:bg-white/5 transition-all ${isExpanded ? 'border-b border-white/10' : ''}`}
+                    className={`p-4 cursor-pointer hover:bg-white/5 transition-all ${isExpanded ? 'border-b border-border' : ''}`}
                     onClick={() => handleToggleExpand(team.id)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4 min-w-0">
-                        <div className="w-12 h-12 bg-[#b91c1c] flex items-center justify-center flex-shrink-0">
+                        <div className="w-12 h-12 bg-brand-red flex items-center justify-center flex-shrink-0">
                           <span className="font-broadcast text-xl text-white">
                             {team.name.charAt(0).toUpperCase()}
                           </span>
@@ -449,7 +440,7 @@ export default function MyTeams() {
                         <div className="min-w-0">
                           <h3 className="font-medium text-white text-lg truncate">{team.name}</h3>
                           <div className="flex items-center gap-2 flex-wrap mt-1">
-                            <span className="text-xs text-gray-500">{team.seasonYear} Season</span>
+                            <span className="text-xs text-muted-foreground">{team.seasonYear} Season</span>
                             <div className={`flex items-center gap-1 px-2 py-0.5 border text-xs uppercase tracking-wider ${statusConfig.className}`}>
                               {statusConfig.icon}
                               {team.paymentStatus}
@@ -460,13 +451,13 @@ export default function MyTeams() {
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="text-right">
-                          <p className="font-broadcast text-2xl text-[#d97706]">{team.totalHrs2024 || 0}</p>
-                          <p className="text-xs text-gray-500">HRs</p>
+                          <p className="font-broadcast text-2xl text-accent-amber">{team.totalHrs2024 || 0}</p>
+                          <p className="text-xs text-muted-foreground">HRs</p>
                         </div>
                         {isExpanded ? (
-                          <ChevronUp className="h-5 w-5 text-gray-500" />
+                          <ChevronUp className="h-5 w-5 text-muted-foreground" />
                         ) : (
-                          <ChevronDown className="h-5 w-5 text-gray-500" />
+                          <ChevronDown className="h-5 w-5 text-muted-foreground" />
                         )}
                       </div>
                     </div>
@@ -476,24 +467,24 @@ export default function MyTeams() {
                   {isExpanded && (
                     <div className="p-4">
                       {/* Stats Row */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 p-4 bg-[#0c0c0c] border border-white/5">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 p-4 bg-surface-base border border-border">
                         <div>
-                          <p className="text-xs text-gray-600 uppercase tracking-wider">HR Cap Used</p>
-                          <p className="font-broadcast text-xl text-[#d97706]">{team.totalHrs2024} / {MAX_HRS}</p>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">HR Cap Used</p>
+                          <p className="font-broadcast text-xl text-accent-amber">{team.totalHrs2024} / {MAX_HRS}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-600 uppercase tracking-wider">Players</p>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Players</p>
                           <p className="font-broadcast text-xl text-white">{team.teamPlayers?.length || 0} / 8</p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-600 uppercase tracking-wider">Created</p>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Created</p>
                           <p className="text-sm text-white flex items-center gap-1">
-                            <Calendar className="w-3 h-3 text-gray-500" />
+                            <Calendar className="w-3 h-3 text-muted-foreground" />
                             {new Date(team.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-600 uppercase tracking-wider">Scoring</p>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Scoring</p>
                           <p className="text-sm text-white">Best 7 of 8</p>
                         </div>
                       </div>
@@ -501,16 +492,16 @@ export default function MyTeams() {
                       {/* Action Buttons */}
                       {!isEditing && (
                         <div className="flex flex-wrap gap-2 mb-6">
-                          {canPayTeam(team) && (
+                          {showPaymentLink(team) && (
                             <Button
                               onClick={(e) => {
                                 e.stopPropagation()
-                                openPaymentDialog(team)
+                                navigate('/setup')
                               }}
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-none"
+                              className="bg-accent-green hover:bg-accent-green/90 text-white"
                             >
-                              <DollarSign className="w-4 h-4 mr-2" />
-                              Payment Instructions
+                              <BookOpen className="w-4 h-4 mr-2" />
+                              How to Pay
                             </Button>
                           )}
                           {canEditTeam(team) && (
@@ -520,7 +511,7 @@ export default function MyTeams() {
                                 startEditing(team)
                               }}
                               variant="outline"
-                              className="border-white/10 text-white hover:bg-white/5 rounded-none"
+                              className="border-border text-white hover:bg-white/5"
                             >
                               <Edit className="w-4 h-4 mr-2" />
                               Edit Team
@@ -534,7 +525,7 @@ export default function MyTeams() {
                                 setDeleteDialogOpen(true)
                               }}
                               variant="outline"
-                              className="border-red-500/30 text-red-400 hover:bg-red-500/10 rounded-none"
+                              className="border-red-500/30 text-red-400 hover:bg-red-500/10"
                             >
                               <Trash2 className="w-4 h-4 mr-2" />
                               Delete
@@ -545,12 +536,12 @@ export default function MyTeams() {
 
                       {/* Warning Messages */}
                       {!isRegistrationOpen && team.paymentStatus !== 'paid' && (
-                        <p className="text-sm text-[#d97706] mb-4">
+                        <p className="text-sm text-accent-amber mb-4">
                           Registration is closed. Team cannot be modified.
                         </p>
                       )}
                       {team.entryStatus === 'locked' && (
-                        <p className="text-sm text-gray-500 mb-4">
+                        <p className="text-sm text-muted-foreground mb-4">
                           This team is locked and cannot be modified.
                         </p>
                       )}
@@ -559,23 +550,23 @@ export default function MyTeams() {
                       {isEditing ? (
                         <div>
                           {/* Edit Header */}
-                          <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/10">
+                          <div className="flex items-center justify-between mb-4 pb-4 border-b border-border">
                             <div className="flex items-center gap-3">
-                              <div className="w-1 h-6 bg-[#d97706]" />
+                              <div className="w-1 h-6 bg-accent-amber" />
                               <h3 className="font-broadcast text-lg text-white">EDITING TEAM</h3>
                             </div>
                             <div className="flex items-center gap-2">
                               <Button
                                 onClick={handleSave}
                                 disabled={saving || selectedPlayers.length !== 8 || totalHRs > MAX_HRS}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-none"
+                                className="bg-accent-green hover:bg-accent-green/90 text-white"
                               >
                                 {saving ? 'Saving...' : 'Save Changes'}
                               </Button>
                               <Button
                                 onClick={cancelEditing}
                                 variant="outline"
-                                className="border-white/10 text-white hover:bg-white/5 rounded-none"
+                                className="border-border text-white hover:bg-white/5"
                               >
                                 <X className="w-4 h-4 mr-2" />
                                 Cancel
@@ -585,12 +576,12 @@ export default function MyTeams() {
 
                           {/* Team Name Input */}
                           <div className="mb-6">
-                            <label className="text-xs text-gray-500 uppercase tracking-wider block mb-2">Team Name</label>
+                            <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">Team Name</label>
                             <input
                               type="text"
                               value={editedName}
                               onChange={(e) => setEditedName(e.target.value)}
-                              className="w-full max-w-md px-4 py-2 bg-[#0c0c0c] border border-white/10 text-white focus:outline-none focus:border-[#b91c1c]"
+                              className="w-full max-w-md px-4 py-2 bg-surface-base border border-border text-white focus:outline-none focus:border-brand-red"
                               maxLength={50}
                             />
                           </div>
@@ -614,9 +605,9 @@ export default function MyTeams() {
                         /* View Mode - Roster */
                         <div>
                           <div className="flex items-center gap-2 mb-4">
-                            <Trophy className="w-5 h-5 text-[#d97706]" />
+                            <Trophy className="w-5 h-5 text-accent-amber" />
                             <h3 className="font-broadcast text-lg text-white">ROSTER</h3>
-                            <span className="text-xs text-gray-500 ml-2">(Best 7 of 8 count toward score)</span>
+                            <span className="text-xs text-muted-foreground ml-2">(Best 7 of 8 count toward score)</span>
                           </div>
 
                           {team.teamPlayers && team.teamPlayers.length > 0 ? (
@@ -628,34 +619,34 @@ export default function MyTeams() {
                                     key={tp.id}
                                     to={`/players/${tp.player.id}`}
                                     onClick={(e) => e.stopPropagation()}
-                                    className="flex items-center gap-3 p-3 bg-[#0c0c0c] border border-white/5 hover:border-white/20 hover:bg-white/5 transition-all"
+                                    className="flex items-center gap-3 p-3 bg-surface-base border border-border hover:border-white/20 hover:bg-white/5 transition-all"
                                   >
-                                    <div className="w-8 h-8 bg-[#b91c1c] flex items-center justify-center flex-shrink-0">
+                                    <div className="w-8 h-8 bg-brand-red flex items-center justify-center flex-shrink-0">
                                       <span className="font-broadcast text-sm text-white">{tp.position}</span>
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <p className="font-medium text-white truncate">{tp.player.name}</p>
-                                      <p className="text-xs text-gray-500">{tp.player.teamAbbr}</p>
+                                      <p className="text-xs text-muted-foreground">{tp.player.teamAbbr}</p>
                                     </div>
                                     <div className="text-right">
-                                      <p className="font-broadcast text-lg text-[#d97706]">
+                                      <p className="font-broadcast text-lg text-accent-amber">
                                         {playerHrMap.get(tp.player.id) ?? tp.player.hrsTotal ?? '—'}
                                       </p>
-                                      <p className="text-xs text-gray-600">HRs</p>
+                                      <p className="text-xs text-muted-foreground">HRs</p>
                                     </div>
                                   </Link>
                                 ))}
                             </div>
                           ) : (
-                            <p className="text-gray-500 text-center py-8">
+                            <p className="text-muted-foreground text-center py-8">
                               No players on this team
                             </p>
                           )}
 
                           {/* Total HR Cap */}
-                          <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center">
-                            <span className="text-gray-400">Total HR Cap</span>
-                            <span className="font-broadcast text-2xl text-[#d97706]">
+                          <div className="mt-4 pt-4 border-t border-border flex justify-between items-center">
+                            <span className="text-muted-foreground">Total HR Cap</span>
+                            <span className="font-broadcast text-2xl text-accent-amber">
                               {team.totalHrs2024} / {MAX_HRS}
                             </span>
                           </div>
@@ -672,10 +663,10 @@ export default function MyTeams() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="bg-[#18181b] border-white/10">
+        <DialogContent className="bg-surface-card border-border">
           <DialogHeader>
             <DialogTitle className="text-white">Delete Team?</DialogTitle>
-            <DialogDescription className="text-gray-400">
+            <DialogDescription className="text-muted-foreground">
               This action cannot be undone. Your team "{teamToDelete?.name}" will be permanently deleted.
             </DialogDescription>
           </DialogHeader>
@@ -683,14 +674,14 @@ export default function MyTeams() {
             <Button
               variant="outline"
               onClick={() => setDeleteDialogOpen(false)}
-              className="border-white/10 text-white hover:bg-white/5 rounded-none"
+              className="border-border text-white hover:bg-white/5"
             >
               Cancel
             </Button>
             <Button
               onClick={handleDelete}
               disabled={deleting}
-              className="bg-red-600 hover:bg-red-700 text-white rounded-none"
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
               {deleting ? 'Deleting...' : 'Delete Team'}
             </Button>
@@ -698,123 +689,6 @@ export default function MyTeams() {
         </DialogContent>
       </Dialog>
 
-      {/* Payment Instructions Dialog */}
-      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
-        <DialogContent className="bg-[#18181b] border-white/10 max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-white flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-emerald-400" />
-              Payment Instructions
-            </DialogTitle>
-            <DialogDescription className="text-gray-400">
-              {paymentTeam?.name} • {paymentTeam?.seasonYear} Season
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6 py-4">
-            {/* Pending Alert */}
-            {paymentTeam?.paymentStatus === 'pending' && (
-              <div className="p-4 bg-[#d97706]/10 border border-[#d97706]/30">
-                <div className="flex items-center gap-2 text-[#d97706] mb-2">
-                  <Clock className="w-4 h-4" />
-                  <span className="font-medium">Payment Pending Verification</span>
-                </div>
-                <p className="text-sm text-gray-400">
-                  Your payment is being verified by an admin. This typically takes up to 24 hours.
-                </p>
-              </div>
-            )}
-
-            {/* Entry Fee */}
-            <div className="p-4 bg-[#0c0c0c] border border-white/10">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400">Entry Fee</span>
-                <span className="font-broadcast text-3xl text-[#d97706]">${ENTRY_FEE}</span>
-              </div>
-            </div>
-
-            {/* Payment Options */}
-            <div>
-              <h4 className="text-sm text-gray-500 uppercase tracking-wider mb-3">Payment Options</h4>
-              <div className="space-y-2">
-                {PAYMENT_OPTIONS.map((option, index) => (
-                  <div
-                    key={option.name}
-                    className="flex items-center justify-between p-3 bg-[#0c0c0c] border border-white/5"
-                  >
-                    <div>
-                      <p className="font-medium text-white">{option.name}</p>
-                      <p className="text-sm text-gray-500 font-mono">{option.handle}</p>
-                    </div>
-                    {option.copyable && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleCopy(option.handle, index)}
-                        className="text-gray-400 hover:text-white hover:bg-white/5"
-                      >
-                        {copiedIndex === index ? (
-                          <Check className="h-4 w-4 text-emerald-400" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Instructions */}
-            <div>
-              <h4 className="text-sm text-gray-500 uppercase tracking-wider mb-3">Instructions</h4>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-[#b91c1c] flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-xs font-bold">1</span>
-                  </div>
-                  <p className="text-sm text-gray-400">
-                    Send <span className="text-white font-medium">${ENTRY_FEE}</span> using one of the payment methods above.
-                  </p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-[#b91c1c] flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-xs font-bold">2</span>
-                  </div>
-                  <p className="text-sm text-gray-400">
-                    Include your <span className="text-white font-medium">team name, email, and phone number</span> in the payment memo.
-                  </p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-[#b91c1c] flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-xs font-bold">3</span>
-                  </div>
-                  <p className="text-sm text-gray-400">
-                    An admin will verify your payment within <span className="text-white font-medium">24 hours</span>.
-                  </p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-[#b91c1c] flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-xs font-bold">4</span>
-                  </div>
-                  <p className="text-sm text-gray-400">
-                    You'll receive a confirmation email once your team is officially entered.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              onClick={() => setPaymentDialogOpen(false)}
-              className="bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-none w-full"
-            >
-              Got It
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

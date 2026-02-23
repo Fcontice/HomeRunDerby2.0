@@ -19,7 +19,7 @@ export default function Landing() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#0c0c0c] text-white font-broadcast-body overflow-x-hidden">
+    <div className="min-h-screen bg-surface-base text-white font-broadcast-body overflow-x-hidden">
       {/* ================================================================
           HERO SECTION
           Full viewport, bold typography, diagonal accents
@@ -31,11 +31,11 @@ export default function Landing() {
         {/* Background layers */}
         <div className="absolute inset-0">
           {/* Dark gradient base */}
-          <div className="absolute inset-0 bg-gradient-to-br from-[#0c0c0c] via-[#111111] to-[#0c0c0c]" />
+          <div className="absolute inset-0 bg-gradient-to-br from-surface-base via-surface-card to-surface-base" />
 
           {/* Subtle ambient glow */}
-          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[#991b1b]/8 rounded-full blur-[180px]" />
-          <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-[#92400e]/6 rounded-full blur-[150px]" />
+          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-brand-red-dark/10 rounded-full blur-[180px]" />
+          <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-accent-amber/5 rounded-full blur-[150px]" />
 
           {/* Grid pattern overlay */}
           <div
@@ -51,7 +51,7 @@ export default function Landing() {
 
           {/* Diagonal accent stripe - more subtle */}
           <div
-            className="absolute top-0 right-0 w-[40%] h-full bg-[#991b1b]/5"
+            className="absolute top-0 right-0 w-[40%] h-full bg-brand-red-dark/5"
             style={{
               clipPath: 'polygon(30% 0, 100% 0, 100% 100%, 0% 100%)'
             }}
@@ -66,10 +66,10 @@ export default function Landing() {
               className={`inline-flex items-center gap-2 mb-8 opacity-0 ${isVisible ? 'animate-slide-left' : ''}`}
             >
               <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#b91c1c] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-[#b91c1c]"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-red opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-brand-red"></span>
               </span>
-              <span className="text-[#b91c1c] font-broadcast text-lg tracking-wider">
+              <span className="text-brand-red font-broadcast text-lg tracking-wider">
                 2025 SEASON NOW OPEN
               </span>
             </div>
@@ -80,26 +80,26 @@ export default function Landing() {
             >
               <span className="block text-white">DRAFT.</span>
               <span className="block text-white">COMPETE.</span>
-              <span className="block bg-gradient-to-r from-[#b91c1c] to-[#c2410c] bg-clip-text text-transparent">WIN.</span>
+              <span className="block bg-gradient-to-r from-brand-red to-brand-red-dark bg-clip-text text-transparent">WIN.</span>
             </h1>
 
             {/* Subheadline */}
             <p
-              className={`text-xl md:text-2xl text-gray-400 max-w-2xl mb-10 leading-relaxed opacity-0 ${isVisible ? 'animate-slide-up delay-200' : ''}`}
+              className={`text-xl md:text-2xl text-muted-foreground max-w-2xl mb-10 leading-relaxed opacity-0 ${isVisible ? 'animate-slide-up delay-200' : ''}`}
             >
               Build your 8-player roster. Track every home run.
-              Dominate the leaderboard all season long.
+              Dominate the leaderboard all season long. &#9918;
             </p>
 
             {/* CTA Buttons */}
             <div
-              className={`flex flex-col sm:flex-row gap-4 opacity-0 ${isVisible ? 'animate-slide-up delay-300' : ''}`}
+              className={`flex flex-col sm:flex-row gap-4 mb-24 opacity-0 ${isVisible ? 'animate-slide-up delay-300' : ''}`}
             >
               {isAuthenticated ? (
                 <Link to="/dashboard">
                   <Button
                     size="lg"
-                    className="bg-[#b91c1c] hover:bg-[#ff4066] text-white font-broadcast text-xl px-10 py-7 rounded-none relative overflow-hidden group"
+                    className="bg-brand-red hover:bg-brand-red/80 text-white font-broadcast text-2xl px-14 py-9 rounded-none relative overflow-hidden group"
                   >
                     <span className="relative z-10">GO TO DASHBOARD</span>
                     <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 skew-x-12" />
@@ -110,7 +110,7 @@ export default function Landing() {
                   <Link to="/register">
                     <Button
                       size="lg"
-                      className="bg-[#b91c1c] hover:bg-[#ff4066] text-white font-broadcast text-xl px-10 py-7 rounded-none relative overflow-hidden group"
+                      className="bg-brand-red hover:bg-brand-red/80 text-white font-broadcast text-2xl px-14 py-9 rounded-none relative overflow-hidden group"
                     >
                       <span className="relative z-10">JOIN NOW</span>
                       <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 skew-x-12" />
@@ -120,7 +120,7 @@ export default function Landing() {
                     <Button
                       size="lg"
                       variant="outline"
-                      className="border-2 border-white/30 hover:border-white/60 text-white font-broadcast text-xl px-10 py-7 rounded-none bg-transparent hover:bg-white/5"
+                      className="border-2 border-white/30 hover:border-white/60 text-white font-broadcast text-2xl px-14 py-9 rounded-none bg-transparent hover:bg-white/5"
                     >
                       VIEW LEADERBOARD
                     </Button>
@@ -157,15 +157,15 @@ export default function Landing() {
           LIVE TICKER
           Scrolling stats banner - subtle treatment
           ================================================================ */}
-      <section className="relative bg-[#18181b] border-y border-white/10 py-3 overflow-hidden">
+      <section className="relative bg-surface-card border-y border-border py-3 overflow-hidden">
         <div className="flex animate-ticker whitespace-nowrap">
           {[...Array(2)].map((_, i) => (
             <div key={i} className="flex items-center gap-12 px-6">
-              <TickerItem text="2025 Season Now Open" />
-              <TickerItem text="Track Every Home Run All Season" />
-              <TickerItem text="Draft 8 Players • Best 7 Count" />
-              <TickerItem text="172 HR Salary Cap Challenge" />
-              <TickerItem text="Compete for Monthly & Season Titles" />
+              <TickerItem emoji="&#9918;" text="2025 Season Now Open" />
+              <TickerItem emoji="&#127935;" text="Track Every Home Run All Season" />
+              <TickerItem emoji="&#9918;" text="Draft 8 Players • Best 7 Count" />
+              <TickerItem emoji="&#127935;" text="172 HR Salary Cap Challenge" />
+              <TickerItem emoji="&#9918;" text="Compete for Monthly & Season Titles" />
             </div>
           ))}
         </div>
@@ -177,14 +177,14 @@ export default function Landing() {
           ================================================================ */}
       <section className="relative py-32 overflow-hidden">
         {/* Background accent */}
-        <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-[#b91c1c]/5 to-transparent" />
+        <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-brand-red/5 to-transparent" />
 
         <div className="container mx-auto px-6">
           {/* Section header */}
           <div className="mb-20">
             <div className="flex items-center gap-4 mb-4">
-              <div className="w-16 h-1 bg-[#b91c1c]" />
-              <span className="text-[#b91c1c] font-broadcast text-lg tracking-wider">THE GAME PLAN</span>
+              <div className="w-16 h-1 bg-brand-red" />
+              <span className="text-brand-red font-broadcast text-lg tracking-wider">THE GAME PLAN</span>
             </div>
             <h2 className="font-broadcast text-5xl md:text-7xl text-white">
               HOW IT WORKS
@@ -197,23 +197,29 @@ export default function Landing() {
               number="01"
               title="DRAFT YOUR SQUAD"
               description="Select 8 MLB players within the 172 HR salary cap. Study the stats, trust your instincts, and build a championship roster."
-              accent="from-[#b91c1c] to-[#c2410c]"
+              accent="from-brand-red to-brand-red-dark"
+              emoji="&#9918;"
             />
             <StepCard
               number="02"
               title="TRACK EVERY BOMB"
               description="Watch your team climb the leaderboard as your players crush home runs throughout the season. Best 7 of 8 players count."
-              accent="from-[#c2410c] to-[#d97706]"
+              accent="from-brand-red-dark to-accent-amber"
+              emoji="&#127935;"
             />
             <StepCard
               number="03"
               title="CLAIM YOUR GLORY"
               description="Top the leaderboard and prove you've got the best eye for talent. Monthly and season-long competitions keep things exciting."
-              accent="from-[#d97706] to-[#b91c1c]"
+              accent="from-accent-amber to-brand-red"
+              emoji="&#127942;"
             />
           </div>
         </div>
       </section>
+
+      {/* Baseball stitch divider */}
+      <div className="baseball-stitch my-0" />
 
       {/* ================================================================
           SALARY CAP EXPLAINER
@@ -235,13 +241,13 @@ export default function Landing() {
             {/* Left: Content */}
             <div>
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-16 h-1 bg-[#b91c1c]" />
-                <span className="text-[#b91c1c] font-broadcast text-lg tracking-wider">DRAFT STRATEGY</span>
+                <div className="w-16 h-1 bg-brand-red" />
+                <span className="text-brand-red font-broadcast text-lg tracking-wider">DRAFT STRATEGY</span>
               </div>
               <h2 className="font-broadcast text-5xl md:text-6xl text-white mb-6">
                 THE 172 HR<br />SALARY CAP
               </h2>
-              <p className="text-gray-400 text-xl leading-relaxed mb-8">
+              <p className="text-muted-foreground text-xl leading-relaxed mb-8">
                 Every player costs their previous season's home run total.
                 Draft 8 players whose combined HRs don't exceed 172.
                 Balance proven sluggers with breakout candidates.
@@ -256,7 +262,7 @@ export default function Landing() {
 
             {/* Right: Visual example */}
             <div className="relative">
-              <div className="bg-gradient-to-br from-white/5 to-white/0 border border-white/10 p-8">
+              <div className="bg-gradient-to-br from-white/5 to-white/0 border border-border p-8">
                 <div className="flex items-center justify-between mb-6">
                   <span className="font-broadcast text-2xl text-white">SAMPLE ROSTER</span>
                   <span className="px-3 py-1 bg-green-500/20 text-green-400 font-broadcast text-sm">
@@ -275,41 +281,44 @@ export default function Landing() {
                   <RosterRow player="Christian Walker" hrs="14" />
                 </div>
 
-                <div className="mt-6 pt-6 border-t border-white/10 flex items-center justify-between">
-                  <span className="text-gray-400 font-broadcast">TOTAL CAP USED</span>
-                  <span className="font-broadcast text-4xl text-[#d97706]">172</span>
+                <div className="mt-6 pt-6 border-t border-border flex items-center justify-between">
+                  <span className="text-muted-foreground font-broadcast">TOTAL CAP USED</span>
+                  <span className="font-broadcast text-4xl text-accent-amber">172</span>
                 </div>
               </div>
 
               {/* Decorative elements */}
-              <div className="absolute -top-4 -right-4 w-24 h-24 border-2 border-[#b91c1c]/30 -z-10" />
-              <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-[#b91c1c]/10 -z-10" />
+              <div className="absolute -top-4 -right-4 w-24 h-24 border-2 border-brand-red/30 -z-10" />
+              <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-brand-red/10 -z-10" />
             </div>
           </div>
         </div>
       </section>
 
+      {/* Baseball stitch divider */}
+      <div className="baseball-stitch my-0" />
+
       {/* ================================================================
           FINAL CTA
           Clean, focused ending
           ================================================================ */}
-      <section className="relative py-32 overflow-hidden bg-[#18181b]">
+      <section className="relative py-32 overflow-hidden bg-surface-card">
         {/* Subtle gradient accent */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#b91c1c]/10 via-transparent to-[#d97706]/10" />
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-red/10 via-transparent to-accent-amber/10" />
 
         <div className="container mx-auto px-6 relative z-10 text-center">
           <h2 className="font-broadcast text-4xl md:text-6xl text-white mb-6">
             READY TO COMPETE?
           </h2>
-          <p className="text-gray-400 text-lg md:text-xl max-w-xl mx-auto mb-10">
-            Build your roster. Track your players. Climb the leaderboard.
+          <p className="text-muted-foreground text-lg md:text-xl max-w-xl mx-auto mb-10">
+            &#129351; Build your roster. Track your players. Climb the leaderboard. &#127942;
           </p>
 
           {isAuthenticated ? (
             <Link to="/create-team">
               <Button
                 size="lg"
-                className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-broadcast text-xl px-10 py-6 rounded-none"
+                className="bg-brand-red hover:bg-brand-red-dark text-white font-broadcast text-xl px-10 py-6 rounded-none"
               >
                 CREATE YOUR TEAM
               </Button>
@@ -318,7 +327,7 @@ export default function Landing() {
             <Link to="/register">
               <Button
                 size="lg"
-                className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-broadcast text-xl px-10 py-6 rounded-none"
+                className="bg-brand-red hover:bg-brand-red-dark text-white font-broadcast text-xl px-10 py-6 rounded-none"
               >
                 REGISTER NOW
               </Button>
@@ -331,18 +340,18 @@ export default function Landing() {
           FOOTER
           Simple, broadcast-style footer
           ================================================================ */}
-      <footer className="bg-black py-12 border-t border-white/10">
+      <footer className="bg-black py-12 border-t border-border">
         <div className="container mx-auto px-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="font-broadcast text-2xl text-white">
-              HR DERBY <span className="text-[#b91c1c]">2.0</span>
+              HR DERBY <span className="text-brand-red">2.0</span> <span className="text-base opacity-40">&#129351;</span>
             </div>
-            <div className="flex items-center gap-8 text-gray-500 text-sm">
+            <div className="flex items-center gap-8 text-muted-foreground text-sm">
               <Link to="/leaderboard" className="hover:text-white transition-colors">Leaderboard</Link>
               <Link to="/players" className="hover:text-white transition-colors">Players</Link>
               <Link to="/login" className="hover:text-white transition-colors">Login</Link>
             </div>
-            <div className="text-gray-600 text-sm">
+            <div className="text-muted-foreground text-sm">
               © 2025 Home Run Derby 2.0
             </div>
           </div>
@@ -360,14 +369,15 @@ function StatBox({ label, value }: { label: string; value: string }) {
   return (
     <div className="text-center">
       <div className="font-broadcast text-4xl md:text-5xl text-white mb-1">{value}</div>
-      <div className="text-gray-500 text-sm tracking-wider">{label}</div>
+      <div className="text-muted-foreground text-sm tracking-wider">{label}</div>
     </div>
   )
 }
 
-function TickerItem({ text }: { text: string }) {
+function TickerItem({ text, emoji }: { text: string; emoji?: string }) {
   return (
-    <div className="flex items-center gap-3 text-gray-400 font-medium text-sm">
+    <div className="flex items-center gap-3 text-muted-foreground font-medium text-sm">
+      {emoji && <span className="text-xs opacity-60" dangerouslySetInnerHTML={{ __html: emoji }} />}
       <span>{text}</span>
       <span className="text-white/20">•</span>
     </div>
@@ -378,27 +388,37 @@ function StepCard({
   number,
   title,
   description,
-  accent
+  accent,
+  emoji,
 }: {
   number: string
   title: string
   description: string
   accent: string
+  emoji?: string
 }) {
   return (
     <div className="group relative">
       {/* Background card */}
-      <div className="bg-gradient-to-br from-white/5 to-white/0 border border-white/10 p-8 h-full transition-all duration-300 group-hover:border-white/20 group-hover:bg-white/5">
-        {/* Number */}
-        <div className={`inline-block font-broadcast text-7xl bg-gradient-to-r ${accent} bg-clip-text text-transparent mb-6`}>
-          {number}
+      <div className="bg-gradient-to-br from-white/5 to-white/0 border border-border p-8 h-full transition-all duration-300 group-hover:border-white/20 group-hover:bg-white/5">
+        {/* Number + diamond accent */}
+        <div className="flex items-start gap-3 mb-6">
+          <div className={`inline-block font-broadcast text-7xl bg-gradient-to-r ${accent} bg-clip-text text-transparent`}>
+            {number}
+          </div>
+          {emoji && (
+            <span className="text-lg mt-2 opacity-50" dangerouslySetInnerHTML={{ __html: emoji }} />
+          )}
         </div>
 
         {/* Title */}
-        <h3 className="font-broadcast text-2xl text-white mb-4">{title}</h3>
+        <h3 className="font-broadcast text-2xl text-white mb-4 flex items-center gap-2">
+          <span className="diamond-accent" />
+          {title}
+        </h3>
 
         {/* Description */}
-        <p className="text-gray-400 leading-relaxed">{description}</p>
+        <p className="text-muted-foreground leading-relaxed">{description}</p>
       </div>
 
       {/* Hover accent */}
@@ -410,8 +430,8 @@ function StepCard({
 function CapRule({ icon, text }: { icon: string; text: string }) {
   return (
     <div className="flex items-center gap-4">
-      <div className="w-16 h-16 bg-[#b91c1c]/10 border border-[#b91c1c]/30 flex items-center justify-center">
-        <span className="font-broadcast text-2xl text-[#b91c1c]">{icon}</span>
+      <div className="w-16 h-16 bg-brand-red/10 border border-brand-red/30 flex items-center justify-center">
+        <span className="font-broadcast text-2xl text-brand-red">{icon}</span>
       </div>
       <span className="text-white text-lg">{text}</span>
     </div>
@@ -422,7 +442,7 @@ function RosterRow({ player, hrs }: { player: string; hrs: string }) {
   return (
     <div className="flex items-center justify-between py-3 border-b border-white/5">
       <span className="text-white">{player}</span>
-      <span className="font-broadcast text-xl text-[#b91c1c]">{hrs} HR</span>
+      <span className="font-broadcast text-xl text-brand-red">{hrs} HR</span>
     </div>
   )
 }

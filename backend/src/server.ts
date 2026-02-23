@@ -7,6 +7,7 @@ import helmet from 'helmet'
 import cookieParser from 'cookie-parser'
 import passport from './config/passport.js'
 import authRoutes from './routes/authRoutes.js'
+import userRoutes from './routes/userRoutes.js'
 import playerRoutes from './routes/playerRoutes.js'
 import teamRoutes from './routes/teamRoutes.js'
 import leaderboardRoutes from './routes/leaderboardRoutes.js'
@@ -14,6 +15,7 @@ import healthRoutes from './routes/healthRoutes.js'
 import adminRoutes from './routes/adminRoutes.js'
 import seasonRoutes from './routes/seasonRoutes.js'
 import jobRoutes from './routes/jobRoutes.js'
+import newsRoutes from './routes/newsRoutes.js'
 import { initializeScheduledJobs, stopScheduledJobs } from './services/scheduledJobs.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
 import { csrfProtection, csrfTokenEndpoint } from './middleware/csrf.js'
@@ -128,6 +130,9 @@ app.get('/api', (_req, res) => {
 // Authentication routes
 app.use('/api/auth', authRoutes)
 
+// User routes
+app.use('/api/users', userRoutes)
+
 // Player routes
 app.use('/api/players', playerRoutes)
 
@@ -145,6 +150,9 @@ app.use('/api/admin', adminRoutes)
 // Admin: GET/POST/PATCH /api/admin/seasons/*
 app.use('/api/season', seasonRoutes)
 app.use('/api/admin/seasons', seasonRoutes)
+
+// News routes (daily digest)
+app.use('/api/news', newsRoutes)
 
 // Job management routes (admin only)
 app.use('/api/admin/jobs', jobRoutes)

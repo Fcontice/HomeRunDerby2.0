@@ -9,7 +9,8 @@
 
 import cron from 'node-cron'
 import { updatePlayerStats } from './statsService.js'
-import { calculateOverallLeaderboard } from './leaderboardService.js'
+import { generateDailyNewsDigest } from './newsService.js'
+import { calculateOverallLeaderboard, calculateMonthlyLeaderboard } from './leaderboardService.js'
 import {
   logJobStart,
   logJobComplete,
@@ -87,12 +88,25 @@ export async function runStatsUpdateJob(
 
     console.log(`   ✅ Stats updated: ${statsResult.updated} updated, ${statsResult.created} created`)
 
-    // Step 2: Recalculate leaderboard if stats changed
+    // Step 2: Recalculate leaderboards if stats changed
     if (statsResult.updated > 0 || statsResult.created > 0) {
-      console.log('\n📈 Step 2: Recalculating leaderboard...')
+      console.log('\n📈 Step 2a: Recalculating overall leaderboard...')
       await calculateOverallLeaderboard(seasonYear)
+      console.log('   ✅ Overall leaderboard recalculated')
+
+      // Step 2b: Recalculate the current month's leaderboard
+      // Determine which month to update (from dateStr or current date)
+      const statsDate = dateStr ? new Date(dateStr) : new Date()
+      const currentMonth = statsDate.getMonth() + 1 // 1-12
+
+      // Only calculate monthly leaderboard for MLB season months (March-September = 3-9)
+      if (currentMonth >= 3 && currentMonth <= 9) {
+        console.log(`\n📈 Step 2b: Recalculating monthly leaderboard for month ${currentMonth}...`)
+        await calculateMonthlyLeaderboard(seasonYear, currentMonth)
+        console.log(`   ✅ Monthly leaderboard (month ${currentMonth}) recalculated`)
+      }
+
       leaderboardUpdated = true
-      console.log('   ✅ Leaderboard recalculated')
 
       // Step 3: Invalidate HTTP cache so users see fresh data immediately
       console.log('\n🔄 Step 3: Invalidating HTTP cache...')
@@ -237,6 +251,76 @@ export async function runLeaderboardJob(
 }
 
 /**
+ * Run the daily news digest job
+ * Fetches HR logs, transactions, and RSS feeds for yesterday's date
+ */
+export async function runNewsDigestJob(
+  dateStr?: string
+): Promise<{
+  success: boolean
+  error?: string
+}> {
+  const lockName = 'news_digest'
+
+  if (!acquireJobLock(lockName)) {
+    console.log('⚠️ News digest job already running, skipping')
+    return { success: false, error: 'Job already running' }
+  }
+
+  const jobId = await logJobStart('news_digest', { date: dateStr || 'yesterday' })
+
+  console.log(`\n${'='.repeat(60)}`)
+  console.log(`📰 SCHEDULED JOB: Daily News Digest`)
+  console.log(`   Date: ${dateStr || 'yesterday (default)'}`)
+  console.log(`   Time: ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })} ET`)
+  console.log(`${'='.repeat(60)}\n`)
+
+  try {
+    const result = await generateDailyNewsDigest(dateStr)
+
+    await logJobComplete(jobId, 'success', {
+      context: {
+        hrCount: result.hrCount,
+        injuryCount: result.injuryCount,
+        tradeCount: result.tradeCount,
+        totalItems: result.totalItems,
+      },
+    })
+
+    console.log(`\n${'='.repeat(60)}`)
+    console.log(`✅ NEWS DIGEST COMPLETED: ${result.totalItems} items`)
+    console.log(`${'='.repeat(60)}\n`)
+
+    return { success: true }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const errorStack = error instanceof Error ? error.stack : undefined
+
+    console.error(`\n❌ NEWS DIGEST FAILED: ${errorMessage}`)
+
+    await logJobComplete(jobId, 'failed', {
+      errorMessage,
+      errorStack,
+    })
+
+    await alertAdminJobFailure(
+      {
+        jobName: 'news_digest',
+        error: errorMessage,
+        errorStack,
+        timestamp: new Date().toISOString(),
+        context: { date: dateStr },
+      },
+      jobId
+    )
+
+    return { success: false, error: errorMessage }
+  } finally {
+    releaseJobLock(lockName)
+  }
+}
+
+/**
  * Initialize all scheduled jobs
  * Called once at server startup
  */
@@ -264,6 +348,22 @@ export function initializeScheduledJobs(): void {
 
   scheduledTasks.push(statsJob)
   console.log('   ✅ Daily stats update: 3:00 AM ET')
+
+  // Daily news digest at 7:00 AM ET (after stats update at 3 AM)
+  const newsDigestJob = cron.schedule(
+    '0 7 * * *', // 7:00 AM every day
+    async () => {
+      console.log('\n🔔 Triggered: Daily news digest job')
+      await runNewsDigestJob()
+    },
+    {
+      timezone: 'America/New_York',
+      scheduled: true,
+    }
+  )
+
+  scheduledTasks.push(newsDigestJob)
+  console.log('   ✅ Daily news digest: 7:00 AM ET')
 
   // Optional: Add a health check job that runs every hour
   const healthCheckJob = cron.schedule(
@@ -320,6 +420,11 @@ export function getSchedulerStatus(): {
         timezone: 'America/New_York',
       },
       {
+        name: 'Daily News Digest',
+        schedule: '0 7 * * * (7:00 AM)',
+        timezone: 'America/New_York',
+      },
+      {
         name: 'Heartbeat',
         schedule: '0 * * * * (every hour)',
         timezone: 'America/New_York',
@@ -347,6 +452,10 @@ export async function triggerJob(
     case 'calculate_leaderboard':
       const leaderboardResult = await runLeaderboardJob(seasonYear)
       return { success: leaderboardResult.success, error: leaderboardResult.error }
+
+    case 'news_digest':
+      const newsResult = await runNewsDigestJob(options.date)
+      return { success: newsResult.success, error: newsResult.error }
 
     default:
       return { success: false, error: `Unknown job: ${jobName}` }

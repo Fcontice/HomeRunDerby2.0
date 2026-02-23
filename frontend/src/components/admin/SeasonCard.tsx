@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
-import { Badge } from '../ui/badge'
 import {
   Select,
   SelectContent,
@@ -30,11 +28,11 @@ const phaseLabels: Record<SeasonPhase, string> = {
   completed: 'Completed',
 }
 
-const phaseBadgeVariants: Record<SeasonPhase, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  off_season: 'secondary',
-  registration: 'default',
-  active: 'destructive',
-  completed: 'outline',
+const phaseColors: Record<SeasonPhase, string> = {
+  off_season: 'bg-slate-600 text-white border-slate-500',
+  registration: 'bg-emerald-600 text-white border-emerald-500',
+  active: 'bg-red-600 text-white border-red-500',
+  completed: 'bg-slate-700 text-slate-300 border-slate-600',
 }
 
 export default function SeasonCard() {
@@ -136,32 +134,30 @@ export default function SeasonCard() {
 
   return (
     <>
-      <Card className="bg-slate-800 border-slate-700">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-white flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
+      <div className="bg-[#1e293b] border border-white/5">
+        <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-slate-400" />
             Season Management
-          </CardTitle>
+          </h2>
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
+            <button
               onClick={fetchSeasons}
               disabled={loading}
+              className="p-2 bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
             >
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            </Button>
-            <Button
-              variant="default"
-              size="sm"
+            </button>
+            <button
               onClick={() => setNewSeasonDialog(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-cyan-600 text-white text-sm hover:bg-cyan-700 transition-colors"
             >
-              <Plus className="h-4 w-4 mr-1" />
+              <Plus className="h-4 w-4" />
               New Season
-            </Button>
+            </button>
           </div>
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div className="p-5">
           {loading ? (
             <div className="text-slate-400 text-center py-4">Loading seasons...</div>
           ) : seasons.length === 0 ? (
@@ -173,47 +169,46 @@ export default function SeasonCard() {
               {seasons.map((season) => (
                 <div
                   key={season.id}
-                  className={`p-4 rounded-lg border ${
+                  className={`p-4 border ${
                     season.isCurrentSeason
-                      ? 'bg-purple-900/20 border-purple-500'
-                      : 'bg-slate-700/50 border-slate-600'
+                      ? 'bg-[#0f172a] border-l-4 border-l-cyan-500 border-t-white/10 border-r-white/10 border-b-white/10'
+                      : 'bg-[#0f172a] border-white/5'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl font-bold text-white">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl font-bold text-white font-mono">
                         {season.seasonYear}
                       </span>
                       {season.isCurrentSeason && (
-                        <Badge variant="default" className="bg-purple-600">
-                          <Star className="h-3 w-3 mr-1" />
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-cyan-600 text-white text-xs">
+                          <Star className="h-3 w-3" />
                           Current
-                        </Badge>
+                        </span>
                       )}
-                      <Badge variant={phaseBadgeVariants[season.phase]}>
+                      <span className={`inline-flex px-2 py-0.5 border text-xs ${phaseColors[season.phase]}`}>
                         {phaseLabels[season.phase]}
-                      </Badge>
+                      </span>
                     </div>
                     {!season.isCurrentSeason && (
-                      <Button
-                        variant="outline"
-                        size="sm"
+                      <button
                         onClick={() => handleSetCurrent(season.seasonYear)}
+                        className="px-3 py-1.5 text-xs bg-white/5 border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
                       >
                         Set Current
-                      </Button>
+                      </button>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 mb-3 text-sm">
+                  <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
                     <div>
-                      <span className="text-slate-400">Registration:</span>
+                      <span className="text-slate-500">Registration:</span>
                       <span className="text-white ml-2">
                         {formatDate(season.registrationOpenDate)} - {formatDate(season.registrationCloseDate)}
                       </span>
                     </div>
                     <div>
-                      <span className="text-slate-400">Season:</span>
+                      <span className="text-slate-500">Season:</span>
                       <span className="text-white ml-2">
                         {formatDate(season.seasonStartDate)} - {formatDate(season.seasonEndDate)}
                       </span>
@@ -221,17 +216,17 @@ export default function SeasonCard() {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <Label className="text-slate-400">Phase:</Label>
+                    <span className="text-sm text-slate-500">Phase:</span>
                     <Select
                       value={season.phase}
                       onValueChange={(value) =>
                         handlePhaseChange(season.seasonYear, value as SeasonPhase)
                       }
                     >
-                      <SelectTrigger className="w-40 bg-slate-700 border-slate-600">
+                      <SelectTrigger className="w-40 bg-[#1e293b] border-white/10 text-white">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-[#1e293b] border-white/10">
                         <SelectItem value="off_season">Off Season</SelectItem>
                         <SelectItem value="registration">Registration</SelectItem>
                         <SelectItem value="active">Active</SelectItem>
@@ -248,12 +243,12 @@ export default function SeasonCard() {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Phase Change Confirmation Dialog */}
       <Dialog open={confirmDialog.open} onOpenChange={(open) => !open && setConfirmDialog({ open: false, type: 'phase' })}>
-        <DialogContent className="bg-slate-800 border-slate-700">
+        <DialogContent className="bg-[#1e293b] border-white/10">
           <DialogHeader>
             <DialogTitle className="text-white">
               {confirmDialog.type === 'phase' ? 'Change Season Phase' : 'Set Current Season'}
@@ -262,14 +257,14 @@ export default function SeasonCard() {
               {confirmDialog.type === 'phase' ? (
                 <>
                   Are you sure you want to change season {confirmDialog.seasonYear} to{' '}
-                  <strong>{confirmDialog.newPhase && phaseLabels[confirmDialog.newPhase]}</strong>?
+                  <strong className="text-white">{confirmDialog.newPhase && phaseLabels[confirmDialog.newPhase]}</strong>?
                   {confirmDialog.newPhase === 'active' && (
-                    <span className="block mt-2 text-yellow-400">
+                    <span className="block mt-2 text-amber-400">
                       This will lock all teams and prevent further modifications.
                     </span>
                   )}
                   {confirmDialog.newPhase === 'off_season' && (
-                    <span className="block mt-2 text-yellow-400">
+                    <span className="block mt-2 text-amber-400">
                       This will prevent team creation and payments.
                     </span>
                   )}
@@ -287,10 +282,15 @@ export default function SeasonCard() {
               variant="outline"
               onClick={() => setConfirmDialog({ open: false, type: 'phase' })}
               disabled={updating}
+              className="border-white/10 text-slate-300 hover:text-white hover:bg-white/5"
             >
               Cancel
             </Button>
-            <Button onClick={handleConfirm} disabled={updating}>
+            <Button
+              onClick={handleConfirm}
+              disabled={updating}
+              className="bg-white text-[#0f172a] hover:bg-white/90"
+            >
               {updating ? 'Updating...' : 'Confirm'}
             </Button>
           </DialogFooter>
@@ -299,7 +299,7 @@ export default function SeasonCard() {
 
       {/* New Season Dialog */}
       <Dialog open={newSeasonDialog} onOpenChange={setNewSeasonDialog}>
-        <DialogContent className="bg-slate-800 border-slate-700">
+        <DialogContent className="bg-[#1e293b] border-white/10">
           <DialogHeader>
             <DialogTitle className="text-white">Create New Season</DialogTitle>
             <DialogDescription className="text-slate-400">
@@ -317,7 +317,7 @@ export default function SeasonCard() {
               onChange={(e) => setNewSeasonYear(parseInt(e.target.value))}
               min={2020}
               max={2100}
-              className="mt-2 bg-slate-700 border-slate-600"
+              className="mt-2 bg-[#0f172a] border-white/10 text-white"
             />
           </div>
           <DialogFooter>
@@ -325,10 +325,15 @@ export default function SeasonCard() {
               variant="outline"
               onClick={() => setNewSeasonDialog(false)}
               disabled={updating}
+              className="border-white/10 text-slate-300 hover:text-white hover:bg-white/5"
             >
               Cancel
             </Button>
-            <Button onClick={handleCreateSeason} disabled={updating}>
+            <Button
+              onClick={handleCreateSeason}
+              disabled={updating}
+              className="bg-white text-[#0f172a] hover:bg-white/90"
+            >
               {updating ? 'Creating...' : 'Create Season'}
             </Button>
           </DialogFooter>

@@ -40,7 +40,7 @@ export default function VerifyEmail() {
   }, [searchParams])
 
   return (
-    <div className="min-h-screen bg-[#0c0c0c] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-surface-base flex items-center justify-center p-4">
       {/* Background pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0" style={{
@@ -56,18 +56,18 @@ export default function VerifyEmail() {
 
       <div className="relative w-full max-w-md">
         {/* Top accent bar */}
-        <div className="h-1 bg-gradient-to-r from-[#b91c1c] via-[#d97706] to-[#b91c1c]" />
+        <div className="h-1 bg-gradient-to-r from-brand-red via-accent-amber to-brand-red" />
 
         {/* Card */}
-        <div className="bg-[#18181b] border border-white/10">
+        <div className="bg-surface-card border border-border">
           {/* Header */}
-          <div className="p-8 text-center border-b border-white/10">
+          <div className="p-8 text-center border-b border-border">
             <div className="inline-flex items-center gap-2 mb-4">
-              <div className="w-2 h-8 bg-[#b91c1c]" />
+              <div className="w-2 h-8 bg-brand-red" />
               <span className="font-broadcast text-sm tracking-wider text-white/60">
                 HOME RUN DERBY 2.0
               </span>
-              <div className="w-2 h-8 bg-[#b91c1c]" />
+              <div className="w-2 h-8 bg-brand-red" />
             </div>
             <h1 className="font-broadcast text-3xl text-white tracking-wide">
               {status === 'loading' && 'VERIFYING EMAIL'}
@@ -100,7 +100,7 @@ export default function VerifyEmail() {
                 </div>
                 <Link
                   to="/login"
-                  className="block w-full bg-[#b91c1c] hover:bg-[#991b1b] text-white font-broadcast text-lg tracking-wider py-3 rounded-none transition-colors text-center"
+                  className="block w-full bg-brand-red hover:bg-brand-red-dark text-white font-broadcast text-lg tracking-wider py-3 rounded-none transition-colors text-center"
                 >
                   GO TO LOGIN
                 </Link>
@@ -117,7 +117,7 @@ export default function VerifyEmail() {
                 </div>
                 <Link
                   to="/login"
-                  className="block w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-broadcast text-lg tracking-wider py-3 rounded-none transition-colors text-center"
+                  className="block w-full bg-white/5 hover:bg-white/10 border border-border text-white font-broadcast text-lg tracking-wider py-3 rounded-none transition-colors text-center"
                 >
                   BACK TO LOGIN
                 </Link>
@@ -127,7 +127,7 @@ export default function VerifyEmail() {
         </div>
 
         {/* Bottom accent */}
-        <div className="h-1 bg-gradient-to-r from-[#b91c1c] via-[#d97706] to-[#b91c1c]" />
+        <div className="h-1 bg-gradient-to-r from-brand-red via-accent-amber to-brand-red" />
       </div>
     </div>
   )

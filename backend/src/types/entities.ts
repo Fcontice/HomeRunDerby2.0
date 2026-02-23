@@ -7,7 +7,7 @@
 
 export type AuthProvider = 'email' | 'google'
 export type UserRole = 'user' | 'admin'
-export type PaymentStatus = 'draft' | 'pending' | 'paid' | 'rejected' | 'refunded'
+export type PaymentStatus = 'draft' | 'paid' | 'refunded'
 export type EntryStatus = 'draft' | 'entered' | 'locked'
 export type LeaderboardType = 'overall' | 'monthly' | 'allstar'
 export type NotificationType = 'email' | 'in_app'
@@ -28,6 +28,7 @@ export interface User {
   role: UserRole
   avatarUrl: string | null
   phoneNumber: string | null
+  profileCompleted: boolean
   verificationToken: string | null
   verificationTokenExpiry: string | null
   resetToken: string | null
@@ -186,6 +187,29 @@ export interface SeasonConfig {
   updatedAt: string
   // Relations (optional, populated when included)
   changedByUser?: User
+}
+
+// ==================== NEWS ITEM ====================
+
+export type NewsCategory = 'hr' | 'injury' | 'trade'
+
+export interface NewsItem {
+  id: string
+  dateKey: string
+  category: NewsCategory
+  headline: string
+  summary: string | null
+  playerId: string | null
+  playerName: string | null
+  teamAbbr: string | null
+  sourceUrl: string | null
+  sourceName: string | null
+  externalId: string
+  metadata: Record<string, unknown> | null
+  createdAt: string | null
+  updatedAt: string | null
+  // Relations (optional, populated when included)
+  player?: Player
 }
 
 // ==================== AGGREGATE RESULT TYPES ====================

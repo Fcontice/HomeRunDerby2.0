@@ -381,6 +381,7 @@ export interface User {
   phoneNumber: string | null
   authProvider: 'email' | 'google'
   emailVerified: boolean
+  profileCompleted: boolean
   createdAt: string
 }
 
@@ -460,6 +461,42 @@ export interface Team {
   }
 }
 
+// ==================== NEWS TYPES ====================
+
+export type NewsCategory = 'hr' | 'injury' | 'trade'
+
+export interface NewsItem {
+  id: string
+  dateKey: string
+  category: NewsCategory
+  headline: string
+  summary: string | null
+  playerId: string | null
+  playerName: string | null
+  teamAbbr: string | null
+  sourceUrl: string | null
+  sourceName: string | null
+  metadata: Record<string, unknown> | null
+  createdAt: string | null
+  player?: {
+    id: string
+    name: string
+    mlbId: string
+    teamAbbr: string
+    photoUrl: string | null
+  }
+}
+
+export interface DailyNewsResponse {
+  items: NewsItem[]
+  date: string
+  counts: {
+    hr: number
+    injury: number
+    trade: number
+  }
+}
+
 /**
  * Response returned after successful login.
  *
@@ -472,6 +509,23 @@ export interface AuthResponse {
   user: User
   /** CSRF token for double-submit pattern. Safe to expose - it's also in a readable cookie. */
   csrfToken?: string
+}
+
+// ==================== DINGER ALERT TYPES ====================
+
+export interface DingerAlert {
+  playerId: string
+  playerName: string
+  teamAbbr: string
+  hrsOnDate: number
+  hrsTotal: number
+  date: string
+}
+
+export interface DingerAlertResponse {
+  dingers: DingerAlert[]
+  date: string
+  totalHRs: number
 }
 
 // ==================== LEADERBOARD TYPES ====================
@@ -524,9 +578,7 @@ export interface AdminStats {
   totalUsers: number
   teamsByPaymentStatus: {
     draft: number
-    pending: number
     paid: number
-    rejected: number
     refunded: number
   }
   teamsByEntryStatus: {
@@ -755,6 +807,26 @@ export const authApi = {
 // ==================== USERS API ====================
 
 export const usersApi = {
+  /**
+   * Check if a username is available
+   */
+  checkUsernameAvailability: async (username: string): Promise<ApiResponse<{ available: boolean; message: string | null }>> => {
+    const response = await api.get(`/api/users/check-username/${encodeURIComponent(username)}`)
+    return response.data
+  },
+
+  /**
+   * Complete profile for new Google OAuth users
+   * Sets username and phone number
+   */
+  completeProfile: async (data: {
+    username: string
+    phoneNumber: string
+  }): Promise<ApiResponse<{ user: User }>> => {
+    const response = await api.post('/api/users/complete-profile', data)
+    return response.data
+  },
+
   updateProfile: async (data: {
     username?: string
     avatarUrl?: string
@@ -899,6 +971,14 @@ export const playersApi = {
   getStats: async (seasonYear?: number): Promise<ApiResponse<PlayerStatsResponse>> => {
     const queryParams = seasonYear ? `?seasonYear=${seasonYear}` : ''
     const response = await api.get(`/api/players/stats/summary${queryParams}`)
+    return response.data
+  },
+
+  /**
+   * Get recent home runs (yesterday's dingers) for the Jumbotron
+   */
+  getRecentHRs: async (): Promise<ApiResponse<DingerAlertResponse>> => {
+    const response = await api.get('/api/players/recent-hrs')
     return response.data
   },
 }
@@ -1184,6 +1264,27 @@ export const seasonApi = {
    */
   getCurrent: async (): Promise<ApiResponse<SeasonConfig | null>> => {
     const response = await api.get('/api/season/current')
+    return response.data
+  },
+}
+
+// ==================== NEWS API ====================
+
+export const newsApi = {
+  /**
+   * Get daily news digest
+   */
+  getDailyNews: async (params?: {
+    date?: string
+    category?: NewsCategory
+    limit?: number
+  }): Promise<ApiResponse<DailyNewsResponse>> => {
+    const queryParams = new URLSearchParams()
+    if (params?.date) queryParams.append('date', params.date)
+    if (params?.category) queryParams.append('category', params.category)
+    if (params?.limit) queryParams.append('limit', String(params.limit))
+    const qs = queryParams.toString()
+    const response = await api.get(`/api/news/daily${qs ? `?${qs}` : ''}`)
     return response.data
   },
 }

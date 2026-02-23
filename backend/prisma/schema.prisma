@@ -24,6 +24,7 @@ model User {
   updatedAt               DateTime       @updatedAt
   deletedAt               DateTime?
   phoneNumber             String?        @db.VarChar(20)
+  profileCompleted        Boolean        @default(true)
   notifications           Notification[]
   reminderLogs            ReminderLog[]
   seasonConfigChanges     SeasonConfig[] @relation("SeasonConfigChangedBy")
@@ -65,8 +66,32 @@ model Player {
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   PlayerSeasonStats PlayerSeasonStats[]
+  newsItems         NewsItem[]
   playerStats       PlayerStats[]
   teamPlayers       TeamPlayer[]
+}
+
+model NewsItem {
+  id         String    @id @default(dbgenerated("gen_random_uuid()"))
+  dateKey    DateTime  @db.Date
+  category   String
+  headline   String
+  summary    String?
+  playerId   String?
+  playerName String?
+  teamAbbr   String?
+  sourceUrl  String?
+  sourceName String?
+  externalId String
+  metadata   Json?
+  createdAt  DateTime? @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime? @default(now()) @db.Timestamptz(6)
+  player     Player?   @relation(fields: [playerId], references: [id], onDelete: SetNull)
+
+  @@unique([dateKey, category, externalId])
+  @@index([dateKey(sort: Desc)], map: "idx_news_item_date_key")
+  @@index([playerId], map: "idx_news_item_player_id")
+  @@index([dateKey, category], map: "idx_news_item_date_category")
 }
 
 model TeamPlayer {
@@ -93,6 +118,7 @@ model PlayerStats {
   hrsRegularSeason Int      @default(0)
   hrsPostseason    Int      @default(0)
   lastUpdated      DateTime @updatedAt
+  hrsDaily         Int      @default(0)
   player           Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@unique([playerId, seasonYear, date])
@@ -100,6 +126,7 @@ model PlayerStats {
   @@index([seasonYear])
   @@index([date])
   @@index([playerId, seasonYear, date(sort: Desc)], map: "idx_player_stats_player_season_date")
+  @@index([seasonYear, date, hrsDaily, playerId], map: "idx_player_stats_monthly_sum")
 }
 
 model Leaderboard {
@@ -215,9 +242,7 @@ enum UserRole {
 
 enum PaymentStatus {
   draft
-  pending
   paid
-  rejected
   refunded
 }
 
