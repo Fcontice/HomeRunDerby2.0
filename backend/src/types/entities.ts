@@ -189,6 +189,29 @@ export interface SeasonConfig {
   changedByUser?: User
 }
 
+// ==================== NEWS ITEM ====================
+
+export type NewsCategory = 'hr' | 'injury' | 'trade'
+
+export interface NewsItem {
+  id: string
+  dateKey: string
+  category: NewsCategory
+  headline: string
+  summary: string | null
+  playerId: string | null
+  playerName: string | null
+  teamAbbr: string | null
+  sourceUrl: string | null
+  sourceName: string | null
+  externalId: string
+  metadata: Record<string, unknown> | null
+  createdAt: string | null
+  updatedAt: string | null
+  // Relations (optional, populated when included)
+  player?: Player
+}
+
 // ==================== AGGREGATE RESULT TYPES ====================
 
 // For aggregate method results from db.ts

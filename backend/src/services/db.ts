@@ -14,6 +14,7 @@ import type {
   Leaderboard,
   ReminderLog,
   SeasonConfig,
+  NewsItem,
   AggregateResult,
   GroupByResult,
 } from '../types/entities.js'
@@ -1608,6 +1609,81 @@ export const seasonConfigDb = {
   },
 }
 
+// ==================== NEWS ITEM OPERATIONS ====================
+
+export const newsItemDb = {
+  async findMany(where: Record<string, unknown> = {}, options: Record<string, unknown> = {}): Promise<NewsItem[]> {
+    let query = supabaseAdmin.from('NewsItem').select(`
+      *,
+      player:Player(id, name, mlbId, teamAbbr, photoUrl)
+    `)
+
+    // Apply filters
+    if (where.dateKey) {
+      if (typeof where.dateKey === 'object' && where.dateKey !== null) {
+        const dateFilter = where.dateKey as { gte?: string; lte?: string }
+        if (dateFilter.gte) query = query.gte('dateKey', dateFilter.gte)
+        if (dateFilter.lte) query = query.lte('dateKey', dateFilter.lte)
+      } else {
+        query = query.eq('dateKey', where.dateKey as string)
+      }
+    }
+    if (where.category) query = query.eq('category', where.category as string)
+    if (where.playerId) query = query.eq('playerId', where.playerId as string)
+
+    // Apply ordering
+    if (options.orderBy) {
+      const orderBy = options.orderBy as Record<string, string>
+      const field = Object.keys(orderBy)[0]
+      const direction = orderBy[field]
+      query = query.order(field, { ascending: direction === 'asc' })
+    } else {
+      query = query.order('createdAt', { ascending: false })
+    }
+
+    if (options.take) query = query.limit(options.take as number)
+
+    const { data, error } = await query
+    if (error) throw error
+    return (data || []) as NewsItem[]
+  },
+
+  async bulkCreate(items: Partial<NewsItem>[]): Promise<number> {
+    if (items.length === 0) return 0
+
+    const now = new Date().toISOString()
+    const rows = items.map(item => ({
+      ...item,
+      createdAt: now,
+      updatedAt: now,
+    }))
+
+    const { data, error } = await supabaseAdmin
+      .from('NewsItem')
+      .upsert(rows, {
+        onConflict: 'dateKey,category,externalId',
+        ignoreDuplicates: true,
+      })
+      .select('id')
+
+    if (error) throw error
+    return data?.length || 0
+  },
+
+  async count(where: Record<string, unknown> = {}): Promise<number> {
+    let query = supabaseAdmin
+      .from('NewsItem')
+      .select('*', { count: 'exact', head: true })
+
+    if (where.dateKey) query = query.eq('dateKey', where.dateKey as string)
+    if (where.category) query = query.eq('category', where.category as string)
+
+    const { count, error } = await query
+    if (error) throw error
+    return count || 0
+  },
+}
+
 // Export a db object that mimics Prisma's structure
 export const db = {
   user: userDb,
@@ -1619,6 +1695,7 @@ export const db = {
   leaderboard: leaderboardDb,
   reminderLog: reminderLogDb,
   seasonConfig: seasonConfigDb,
+  newsItem: newsItemDb,
 
   // Raw query support
   async $queryRaw(query: string, ..._params: unknown[]) {

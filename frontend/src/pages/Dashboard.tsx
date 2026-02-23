@@ -5,6 +5,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { Button } from '../components/ui/button'
 import { LeaderboardWidget } from '../components/leaderboard'
 import { DingerJumbotron } from '../components/dashboard/DingerJumbotron'
+import { NewsBoard } from '../components/dashboard/NewsBoard'
 import { Navbar } from '../components/Navbar'
 import { teamsApi, Team } from '../services/api'
 import {
@@ -85,6 +86,11 @@ export default function Dashboard() {
   const bestTeam = teams.length > 0
     ? teams.reduce((best, team) => (team.totalHrs2024 || 0) > (best.totalHrs2024 || 0) ? team : best)
     : null
+
+  // Extract all player IDs across user's teams (for news board highlighting)
+  const userPlayerIds = teams.flatMap(
+    t => t.teamPlayers?.map(tp => tp.player.id) || []
+  )
 
   return (
     <div className="min-h-screen bg-surface-base">
@@ -198,6 +204,13 @@ export default function Dashboard() {
 
         {/* Dinger Alert Jumbotron */}
         {season?.phase === 'active' && <DingerJumbotron seasonYear={season.seasonYear} />}
+
+        {/* Daily News Board */}
+        {season?.phase === 'active' && (
+          <div className="mb-6 opacity-0 animate-fade-up stagger-3">
+            <NewsBoard userPlayerIds={userPlayerIds} />
+          </div>
+        )}
 
         {/* Baseball stitch divider */}
         <div className="baseball-divider my-4" />

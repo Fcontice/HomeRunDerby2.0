@@ -461,6 +461,42 @@ export interface Team {
   }
 }
 
+// ==================== NEWS TYPES ====================
+
+export type NewsCategory = 'hr' | 'injury' | 'trade'
+
+export interface NewsItem {
+  id: string
+  dateKey: string
+  category: NewsCategory
+  headline: string
+  summary: string | null
+  playerId: string | null
+  playerName: string | null
+  teamAbbr: string | null
+  sourceUrl: string | null
+  sourceName: string | null
+  metadata: Record<string, unknown> | null
+  createdAt: string | null
+  player?: {
+    id: string
+    name: string
+    mlbId: string
+    teamAbbr: string
+    photoUrl: string | null
+  }
+}
+
+export interface DailyNewsResponse {
+  items: NewsItem[]
+  date: string
+  counts: {
+    hr: number
+    injury: number
+    trade: number
+  }
+}
+
 /**
  * Response returned after successful login.
  *
@@ -1228,6 +1264,27 @@ export const seasonApi = {
    */
   getCurrent: async (): Promise<ApiResponse<SeasonConfig | null>> => {
     const response = await api.get('/api/season/current')
+    return response.data
+  },
+}
+
+// ==================== NEWS API ====================
+
+export const newsApi = {
+  /**
+   * Get daily news digest
+   */
+  getDailyNews: async (params?: {
+    date?: string
+    category?: NewsCategory
+    limit?: number
+  }): Promise<ApiResponse<DailyNewsResponse>> => {
+    const queryParams = new URLSearchParams()
+    if (params?.date) queryParams.append('date', params.date)
+    if (params?.category) queryParams.append('category', params.category)
+    if (params?.limit) queryParams.append('limit', String(params.limit))
+    const qs = queryParams.toString()
+    const response = await api.get(`/api/news/daily${qs ? `?${qs}` : ''}`)
     return response.data
   },
 }

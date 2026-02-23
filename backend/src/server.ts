@@ -15,6 +15,7 @@ import healthRoutes from './routes/healthRoutes.js'
 import adminRoutes from './routes/adminRoutes.js'
 import seasonRoutes from './routes/seasonRoutes.js'
 import jobRoutes from './routes/jobRoutes.js'
+import newsRoutes from './routes/newsRoutes.js'
 import { initializeScheduledJobs, stopScheduledJobs } from './services/scheduledJobs.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
 import { csrfProtection, csrfTokenEndpoint } from './middleware/csrf.js'
@@ -149,6 +150,9 @@ app.use('/api/admin', adminRoutes)
 // Admin: GET/POST/PATCH /api/admin/seasons/*
 app.use('/api/season', seasonRoutes)
 app.use('/api/admin/seasons', seasonRoutes)
+
+// News routes (daily digest)
+app.use('/api/news', newsRoutes)
 
 // Job management routes (admin only)
 app.use('/api/admin/jobs', jobRoutes)
