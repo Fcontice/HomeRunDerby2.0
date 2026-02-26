@@ -4,6 +4,103 @@ All notable changes to Home Run Derby 2.0 project.
 
 ## [Unreleased]
 
+### Pre-Launch Updates - February 2026
+
+#### Added
+
+- **First & Last Name Fields**
+  - Added `firstName` and `lastName` columns to User table (`backend/migrations/add_first_last_name.sql`)
+  - Updated Prisma schema, entity types, and validation schemas
+  - Registration form now collects first/last name
+  - CompleteProfile (Google OAuth) form collects first/last name
+  - Profile update supports first/last name changes
+  - All auth responses (login, register, getProfile, refresh) include name fields
+
+- **Regional Agent System**
+  - 9 regional agents (A-I) defined in `backend/src/constants/regionalAgents.ts`
+  - Agent API route: `GET /api/agents` returns agent list (public)
+  - Agent assignment: `POST /api/teams/:id/assign-agent` assigns agent to team
+  - `assignedAgent` column added to Team table (`backend/migrations/add_assigned_agent.sql`)
+  - Agent controller (`backend/src/controllers/agentController.ts`) with SMS + email notifications
+  - SelectAgent page (`frontend/src/pages/SelectAgent.tsx`) for post-team-creation agent selection
+  - MyTeams page shows assigned agent badge and "Select Agent" button
+
+- **SMS Service** (`backend/src/services/smsService.ts`)
+  - Twilio integration for sending SMS notifications
+  - E.164 phone number formatting
+  - Graceful fallback when Twilio not configured
+  - Environment validation for `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`
+
+- **Daily HR Tracking for Dinger Jumbotron**
+  - Added `hrsDaily` field to PlayerStats entity type
+  - New `playerStatsDb.findDailyWithPlayer()` query for fetching yesterday's home runs
+  - Powers the DingerJumbotron dashboard component
+
+- **Frontend Lazy Loading**
+  - All non-critical pages lazy-loaded with `React.lazy()` and `Suspense`
+  - Dev-only test routes conditionally loaded (`import.meta.env.DEV`)
+  - Reduces initial bundle size
+
+- **ProtectedRoute Admin Guard**
+  - Added `requireAdmin` prop to ProtectedRoute component
+  - Admin routes now properly redirect non-admin users to `/dashboard`
+
+#### Changed
+
+- **Simplified Payment Status** - Removed `pending` and `rejected` from PaymentStatus type
+  - Now only three states: `draft` → `paid` → `refunded`
+  - Updated status transitions, admin controller, notification targeting, and frontend types
+  - Simplifies payment flow (admin approves directly from draft to paid)
+
+- **Security Improvements**
+  - HTML escaping (`escapeHtml()`) in admin email notification templates to prevent XSS
+  - Team detail endpoint strips sensitive user fields for non-owners/non-admins
+  - JWT_SECRET validation fails fast in production with `process.exit(1)`
+
+- **UI Updates**
+  - Updated dashboard layout and leaderboard widget styling
+  - Improved leaderboard table and player card rendering speed
+  - Leaderboard widget shows top 10 teams
+
+#### Database Migrations
+| Migration | Description |
+|-----------|-------------|
+| `add_first_last_name.sql` | Adds `firstName` and `lastName` to User table |
+| `add_assigned_agent.sql` | Adds `assignedAgent` to Team table |
+
+#### Files Changed
+| File | Change Type |
+|------|-------------|
+| `backend/src/constants/regionalAgents.ts` | NEW |
+| `backend/src/controllers/agentController.ts` | NEW |
+| `backend/src/routes/agentRoutes.ts` | NEW |
+| `backend/src/services/smsService.ts` | NEW |
+| `backend/migrations/add_first_last_name.sql` | NEW |
+| `backend/migrations/add_assigned_agent.sql` | NEW |
+| `frontend/src/pages/SelectAgent.tsx` | NEW |
+| `frontend/src/pages/CompleteProfile.tsx` | MODIFIED |
+| `frontend/src/pages/Register.tsx` | MODIFIED |
+| `frontend/src/pages/MyTeams.tsx` | MODIFIED |
+| `frontend/src/App.tsx` | MODIFIED |
+| `frontend/src/components/ProtectedRoute.tsx` | MODIFIED |
+| `frontend/src/services/api.ts` | MODIFIED |
+| `frontend/src/contexts/AuthContext.tsx` | MODIFIED |
+| `backend/prisma/schema.prisma` | MODIFIED |
+| `backend/src/types/entities.ts` | MODIFIED |
+| `backend/src/types/validation.ts` | MODIFIED |
+| `backend/src/env.ts` | MODIFIED |
+| `backend/src/server.ts` | MODIFIED |
+| `backend/src/services/db.ts` | MODIFIED |
+| `backend/src/controllers/authController.ts` | MODIFIED |
+| `backend/src/controllers/userController.ts` | MODIFIED |
+| `backend/src/controllers/teamController.ts` | MODIFIED |
+| `backend/src/controllers/adminController.ts` | MODIFIED |
+| `backend/src/controllers/playerController.ts` | MODIFIED |
+| `backend/src/utils/statusTransitions.ts` | MODIFIED |
+| `backend/src/routes/teamRoutes.ts` | MODIFIED |
+
+---
+
 ### Performance Optimizations - January 16, 2026
 
 #### Added

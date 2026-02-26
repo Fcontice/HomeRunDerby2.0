@@ -1,6 +1,8 @@
 # Home Run Derby 2.0
 
-A web-based MLB fantasy sports pooling application where users create teams of 8 MLB players and compete based on real-world home run performance throughout the MLB season.
+A web-based MLB fantasy sports pooling application where users create teams of 8 MLB players and compete based on real-world home run performance throughout the MLB season. Users pay $100 per team entry, and prizes are awarded monthly and at season end.
+
+**Live at:** [hrderbyus.com](https://www.hrderbyus.com)
 
 ## Project Structure
 
@@ -9,8 +11,8 @@ HRD2.0/
 ├── frontend/          # React + Vite + TypeScript frontend
 ├── backend/           # Express + TypeScript backend API
 ├── PROJECT_CONTEXT.md # Complete project requirements and specifications
-├── CLAUDE.md          # Guide for AI assistants with architecture patterns and development commands
-└── CHANGELOG.md       # Complete changelog of all notable changes organized by development phases
+├── CLAUDE.md          # Architecture patterns and development commands
+└── CHANGELOG.md       # Detailed changelog organized by development phases
 ```
 
 ## Tech Stack
@@ -21,30 +23,45 @@ HRD2.0/
 - Tailwind CSS 3.4
 - TanStack Query v5
 - React Hook Form + Zod validation
-- React Router v6
-- shadcn/ui components
+- React Router v6 with lazy loading
+- Radix UI (shadcn/ui) components
+- Framer Motion animations
 
 ### Backend
 - Node.js 20 LTS
 - Express 4.19
 - TypeScript 5.3
-- Prisma 5.x ORM
+- Hybrid Prisma/Supabase (Prisma schema for types, Supabase client for queries)
 - PostgreSQL 15+ (Supabase)
-- Redis (Upstash)
 - Passport.js (Local + Google OAuth)
-- JWT authentication
-- BullMQ job queue
+- JWT httpOnly cookie authentication with CSRF protection
+- node-cron scheduled jobs
 - Stripe payments
 - Resend email service
+- Twilio SMS notifications
+
+### Deployment
+- **Frontend**: Vercel at `https://www.hrderbyus.com`
+- **Backend**: Railway at `https://api.hrderbyus.com`
+- **Database**: Supabase PostgreSQL
+
+## Features
+
+- **Team Creation** - Draft 8 MLB players under a 172 HR salary cap
+- **Scoring** - Best 7 of 8 players count toward team score
+- **Leaderboards** - Overall season + monthly rankings
+- **Payments** - $100/team via Stripe Checkout
+- **Authentication** - Email/password + Google OAuth with httpOnly cookies
+- **Regional Agents** - Agent assignment with SMS/email notifications
+- **Admin Dashboard** - Team management, user management, notifications, season controls
+- **Season Phases** - off_season → registration → active → completed
+- **Automated Stats** - Daily MLB stats update at 3am ET via Python MLB-StatsAPI script
 
 ## Prerequisites
 
-Before you begin, ensure you have the following installed:
-
 - **Node.js** 20.x LTS or higher
-- **npm** or **yarn** or **pnpm**
-- **PostgreSQL** 15+ (local or Supabase account)
-- **Redis** (local or Upstash account)
+- **npm**
+- **Python 3.8+** (for stats updater)
 - **Git**
 
 ## Getting Started
@@ -60,18 +77,9 @@ cd HRD2.0
 
 ```bash
 cd frontend
-
-# Install dependencies
 npm install
-
-# Copy environment variables template
 cp .env.example .env
-
-# Edit .env and add your configuration
-# VITE_API_URL=http://localhost:5000
-# VITE_STRIPE_PUBLIC_KEY=pk_test_xxx
-
-# Start development server
+# Edit .env: VITE_API_URL=http://localhost:5000
 npm run dev
 ```
 
@@ -81,217 +89,156 @@ The frontend will be available at `http://localhost:5173`
 
 ```bash
 cd backend
-
-# Install dependencies
 npm install
-
-# Copy environment variables template
 cp .env.example .env
+# Edit .env with your Supabase, JWT, Stripe, Resend credentials
 
-# Edit .env and add your configuration (see Environment Variables section below)
-
-# Generate Prisma client
 npm run prisma:generate
-
-# Run database migrations
-npm run prisma:migrate
-
-# Start development server
 npm run dev
 ```
 
 The backend API will be available at `http://localhost:5000`
 
+### 4. Python Stats Setup (Optional)
+
+```bash
+cd backend
+npm run update:stats:install   # Install Python dependencies
+npm run update:stats:python    # Run stats update for yesterday
+```
+
 ## Environment Variables
 
-### Frontend (.env) - Development
+### Frontend (.env)
 
 ```env
 VITE_API_URL=http://localhost:5000
 VITE_STRIPE_PUBLIC_KEY=pk_test_xxx
 ```
 
-### Frontend (Vercel) - Production
+### Backend (.env)
 
 ```env
-VITE_API_URL=https://hrderbyus.com
-VITE_STRIPE_PUBLIC_KEY=pk_live_xxx
-```
+# Database (required)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+SUPABASE_ANON_KEY=your-anon-key
 
-### Backend (.env) - Development
+# Authentication (required)
+JWT_SECRET=your-secret-key-min-32-chars
 
-```env
-DATABASE_URL=postgresql://user:pass@localhost:5432/mlb_pool
-REDIS_URL=redis://localhost:6379
-JWT_SECRET=your-secret-key-change-in-production
-GOOGLE_CLIENT_ID=xxx
-GOOGLE_CLIENT_SECRET=xxx
+# Payments (required)
 STRIPE_SECRET_KEY=sk_test_xxx
 STRIPE_WEBHOOK_SECRET=whsec_xxx
+
+# Email (required in production)
 RESEND_API_KEY=re_xxx
+
+# Google OAuth (optional)
+GOOGLE_CLIENT_ID=xxx
+GOOGLE_CLIENT_SECRET=xxx
+
+# Twilio SMS (optional)
+TWILIO_ACCOUNT_SID=xxx
+TWILIO_AUTH_TOKEN=xxx
+TWILIO_PHONE_NUMBER=+1234567890
+
+# App Configuration
 FRONTEND_URL=http://localhost:5173
 NODE_ENV=development
 PORT=5000
+DISABLE_SCHEDULED_JOBS=true
+ADMIN_ALERT_EMAIL=admin@example.com
 ```
-
-**Production Environment Variables:** See `PROJECT_CONTEXT.md` → Environment Variables → Production for complete backend production configuration.
-
-## Database Setup
-
-### Using Local PostgreSQL
-
-1. Install PostgreSQL 15+
-2. Create a new database:
-   ```sql
-   CREATE DATABASE mlb_pool;
-   ```
-3. Update `DATABASE_URL` in `backend/.env`
-4. Run migrations:
-   ```bash
-   cd backend
-   npm run prisma:migrate
-   ```
-
-### Using Supabase (Recommended)
-
-1. Create a free account at [supabase.com](https://supabase.com)
-2. Create a new project
-3. Copy the connection string from Settings → Database
-4. Update `DATABASE_URL` in `backend/.env`
-5. Run migrations:
-   ```bash
-   cd backend
-   npm run prisma:migrate
-   ```
-
-## Redis Setup
-
-### Using Local Redis
-
-1. Install Redis
-2. Start Redis server:
-   ```bash
-   redis-server
-   ```
-3. Update `REDIS_URL` in `backend/.env` to `redis://localhost:6379`
-
-### Using Upstash (Recommended)
-
-1. Create a free account at [upstash.com](https://upstash.com)
-2. Create a new Redis database
-3. Copy the connection string
-4. Update `REDIS_URL` in `backend/.env`
 
 ## Available Scripts
 
-### Frontend
+### Frontend (from `/frontend`)
 
-- `npm run dev` - Start development server (port 5173)
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
-- `npm run format` - Format code with Prettier
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server (port 5173) |
+| `npm run build` | TypeScript check + Vite build |
+| `npm test` | Run tests (Vitest) |
+| `npm run lint` | Run ESLint |
 
-### Backend
+### Backend (from `/backend`)
 
-- `npm run dev` - Start development server with hot reload
-- `npm run build` - Compile TypeScript to JavaScript
-- `npm start` - Start production server
-- `npm run prisma:generate` - Generate Prisma client
-- `npm run prisma:migrate` - Run database migrations
-- `npm run prisma:studio` - Open Prisma Studio GUI
-- `npm run test:phase3` - Test stats/scoring/leaderboard pipeline
-- `npm run lint` - Run ESLint
-- `npm run format` - Format code with Prettier
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start with hot reload (tsx watch) |
+| `npm run build` | Compile to dist/ |
+| `npm start` | Run compiled code |
+| `npm test` | Run tests (Vitest) |
+| `npm run prisma:generate` | Generate Prisma types |
+| `npm run import:season` | Import season stats for eligibility (yearly) |
+| `npm run update:stats:python` | Update daily stats (during contest) |
+| `npm run job:stats` | Run stats update job |
 
 ## Development Workflow
 
-1. Start the backend server in one terminal:
+1. Start the backend server:
    ```bash
-   cd backend
-   npm run dev
+   cd backend && npm run dev
    ```
 
-2. Start the frontend development server in another terminal:
+2. Start the frontend dev server:
    ```bash
-   cd frontend
-   npm run dev
+   cd frontend && npm run dev
    ```
 
-3. Open your browser to `http://localhost:5173`
+3. Open `http://localhost:5173`
+
+## Database
+
+Uses **Supabase PostgreSQL** with a hybrid Prisma/Supabase pattern:
+- Prisma schema (`backend/prisma/schema.prisma`) defines types and structure
+- Supabase JS client handles queries via `backend/src/services/db.ts`
+- **Never use Prisma client directly** - always use `db.user`, `db.team`, `db.player`, etc.
+
+### Migrations
+
+SQL migration files live in `backend/migrations/`. Apply via Supabase SQL Editor, then:
+```bash
+cd backend && npx prisma db pull && npx prisma generate
+```
 
 ## Production Deployment
 
-This project uses a split deployment architecture:
+**Frontend → Vercel** | **Backend → Railway** | **Database → Supabase**
 
-- **Frontend**: Vercel (static site hosting)
-- **Backend**: Railway or Render (persistent Express server)
-
-### Quick Deploy Guide
-
-**1. Deploy Backend to Railway**
-- Connect GitHub repo at [railway.app](https://railway.app)
-- Set root directory: `backend`
-- Configure build/start commands (auto-detected)
-- Add production environment variables
-- Deploy → Get backend URL (e.g., `https://hrderbyus.com`)
-
-**2. Deploy Frontend to Vercel**
-```bash
-npm install -g vercel
-vercel login
-vercel                    # Preview deployment
-vercel --prod            # Production deployment
-```
-
-**3. Configure Environment Variables**
-- **Vercel**: Add `VITE_API_URL` (your backend URL) and `VITE_STRIPE_PUBLIC_KEY`
-- **Railway**: Add all backend production env vars (see `VERCEL_DEPLOYMENT.md`)
-
-**4. Update Configurations**
-- Update `vercel.json` with your backend domain
-- Update backend CORS to allow your Vercel domain
-- Configure Stripe webhook to point to backend URL
-
-### Deployment Files
-- `vercel.json` - Vercel build configuration and API proxy
-- `.vercelignore` - Excludes backend from frontend deployment
-- `VERCEL_DEPLOYMENT.md` - Complete deployment guide with troubleshooting
-- `frontend/.env.production.example` - Production environment variables template
-
-**For complete step-by-step instructions, see [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md)**
-
-## Project Documentation
-
-For complete project requirements, technical specifications, database schema, API endpoints, and business rules, see [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md)
+See `VERCEL_DEPLOYMENT.md` for full deployment guide, and `docs/deployment-checklist.md` for pre/post deployment checklist.
 
 ## Development Phases
 
-The project is organized into 5 development phases:
+1. **Phase 1: Foundation** - Database, auth, email verification
+2. **Phase 2: Team Creation & Payments** - Player drafting, Stripe integration
+3. **Phase 3: Scoring & Leaderboards** - MLB-StatsAPI, best 7 of 8, rankings
+4. **Phase 4: User Experience & Admin** - UI, admin dashboard, season management
+5. **Phase 5: Testing & Launch** - Unit tests, load tests, deployment
 
-1. **Phase 1: Foundation** ✅ - Database schema, user authentication, email verification
-2. **Phase 2: Team Creation** ✅ - Player data scraper, team builder UI, Stripe integration
-3. **Phase 3: Scoring & Leaderboards** ✅ - Stats polling, scoring calculator, leaderboard caching
-4. **Phase 4: User Experience** 🚧 - Leaderboard UI, player pages, notifications, automation
-5. **Phase 5: Testing & Launch** - Testing, admin dashboard, deployment
+**All phases complete.** See `CHANGELOG.md` for detailed implementation history.
 
-**Current Status:** Phase 3 complete. Backend API fully functional with stats scraping, team scoring ("best 7 of 8"), and leaderboard generation. Ready for frontend UI integration and background job automation.
+## Third-Party Services
 
-## Third-Party Services Required
+| Service | Purpose | Tier |
+|---------|---------|------|
+| [Supabase](https://supabase.com) | PostgreSQL database | Free |
+| [Stripe](https://stripe.com) | Payment processing | Free (test mode) |
+| [Resend](https://resend.com) | Email delivery | Free |
+| [Twilio](https://twilio.com) | SMS notifications | Pay-as-you-go |
+| [Google Cloud](https://console.cloud.google.com) | OAuth credentials | Free |
+| [Vercel](https://vercel.com) | Frontend hosting | Free |
+| [Railway](https://railway.app) | Backend hosting | ~$5-20/month |
 
-To fully run this application, you'll need accounts for:
+## Testing
 
-- **Supabase** - PostgreSQL database (free tier available)
-- **Upstash** - Redis cache (free tier available)
-- **Stripe** - Payment processing (test mode free)
-- **Resend** - Email delivery (free tier available)
-- **Google Cloud Console** - OAuth credentials (free)
-- **Vercel** - Frontend hosting (free tier available)
-- **Railway** - Backend hosting ($5-20/month)
+Both frontend and backend use **Vitest**. See `docs/TESTING.md` for details.
 
-## Contributing
-
-This is a private project. For questions or suggestions, please contact the project owner.
+```bash
+cd frontend && npm test
+cd backend && npm test
+```
 
 ## License
 
