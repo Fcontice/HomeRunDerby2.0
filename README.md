@@ -10,7 +10,6 @@ HRD2.0/
 ├── backend/           # Express + TypeScript backend API
 ├── PROJECT_CONTEXT.md # Complete project requirements and specifications
 ├── CLAUDE.md          # Guide for AI assistants with architecture patterns and development commands
-├── FEATURE_DEV.md     # Prioritized feature roadmap and implementation timeline for MVP completion
 └── CHANGELOG.md       # Complete changelog of all notable changes organized by development phases
 ```
 
