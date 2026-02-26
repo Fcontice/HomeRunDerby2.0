@@ -1,6 +1,6 @@
 # Home Run Derby 2.0
 
-A web-based MLB fantasy sports pooling application where users create teams of 8 MLB players and compete based on real-world home run performance throughout the MLB season. Users pay $100 per team entry, and prizes are awarded monthly and at season end.
+A web-based MLB fantasy sports pooling application where users create teams of 8 MLB players and compete based on real-world home run performance throughout the MLB season. Users pay 100 per team entry, and prizes are awarded monthly and at season end.
 
 **Live at:** [hrderbyus.com](https://www.hrderbyus.com)
 
@@ -50,7 +50,7 @@ HRD2.0/
 - **Team Creation** - Draft 8 MLB players under a 172 HR salary cap
 - **Scoring** - Best 7 of 8 players count toward team score
 - **Leaderboards** - Overall season + monthly rankings
-- **Payments** - $100/team via Stripe Checkout
+- **Payments** - 100/team via Stripe Checkout
 - **Authentication** - Email/password + Google OAuth with httpOnly cookies
 - **Regional Agents** - Agent assignment with SMS/email notifications
 - **Admin Dashboard** - Team management, user management, notifications, season controls
@@ -229,7 +229,7 @@ See `VERCEL_DEPLOYMENT.md` for full deployment guide, and `docs/deployment-check
 | [Twilio](https://twilio.com) | SMS notifications | Pay-as-you-go |
 | [Google Cloud](https://console.cloud.google.com) | OAuth credentials | Free |
 | [Vercel](https://vercel.com) | Frontend hosting | Free |
-| [Railway](https://railway.app) | Backend hosting | ~$5-20/month |
+| [Railway](https://railway.app) | Backend hosting | ~5-20/month |
 
 ## Testing
 
